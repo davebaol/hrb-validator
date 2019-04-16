@@ -1,0 +1,8 @@
+and:
+  - [a, isType, object]
+  - xor:
+    - [a.b, isSet]
+    - [a.c, isSet]
+  - [a.b, optIsType, number]
+  - [a.c, optIsType, boolean]
+  - [a.d, isArrayOf, string]
