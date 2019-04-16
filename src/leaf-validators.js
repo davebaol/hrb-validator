@@ -1,6 +1,6 @@
 const camelCase = require('camelcase');
-const get = require('./util').get;
 const v = require('validator');
+const { get } = require('./util');
 
 /* eslint-disable no-unused-vars */
 const vInfo = {

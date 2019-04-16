@@ -2,13 +2,13 @@ import { assert } from 'chai';
 import U from '../src/util';
 
 describe('Test utility get(obj, path).', () => {
-  const point = {x:0, y:1};
+  const point = { x: 0, y: 1 };
   const list = [6, -4, 7];
   it('get(point) should return point', () => {
     assert(U.get(point) === point, ':(');
   });
   it('get(point, "") should return point', () => {
-    assert(U.get(point, "") === point, ':(');
+    assert(U.get(point, '') === point, ':(');
   });
   it('get(point, []) should return point', () => {
     assert(U.get(point, []) === point, ':(');
