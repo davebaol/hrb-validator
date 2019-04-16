@@ -11,7 +11,7 @@
 Suppose you have the simple object below
 
 ```javascript
-let objectToBeValidated = {
+let toBeValidated = {
   a: {
     b: 1,
     c: true,
@@ -32,6 +32,7 @@ By the way, such a validator is expected to fail because both paths `a.b` and `a
 To create this validator you can choose one of the two approaches described in the following.
 
 :one: **Hard-coded validator**
+
 This sample code programmatically creates the validator for the previous rules.
 ```javascript
 const V = require("smart-validator");
@@ -49,7 +50,7 @@ let validator = V.and(              // Rule 1
 );
 
 // Validate
-let vError = validator(objectToBeValidated);
+let vError = validator(toBeValidated);
 ```
 Notice that this is a tree-like structure where`and` and `xor` are **branch validators** made of children that, in turn, are validators.
 The others are **leaf validators** with no children.
@@ -82,7 +83,7 @@ let vObj = yaml.safeLoad(fs.readFileSync("/path/to/validator/file", 'utf8'));
 let validator = createValidator(vObj); 
 
 // Validate
-let vError = validator(objectToBeValidated);
+let vError = validator(toBeValidated);
 ```
 It's recommended to use *YAML* format instead of *JSON*, because the latter is far less human-readable. For instance, the YAML file above in JSON would be like that:
 ```json
@@ -192,9 +193,9 @@ Here is a list of the branch validators currently available.
 
 Branch Validator            | Description
 :---------------------------|:--------------------------------------
+**alter(child, res1, res2)**| If `child` child is valid `res1` is returned; `res2` otherwise.
 **and(...children)**        | Check if all its children are valid. Validation stops at the first non valid child or when all children are processed.
-**alter(child, res1, res2)**| If `child` child is valid `res1` is returned; `res2` otherwise
-**if(cond, then, else)**    | If `cond` child is valid validates `then` child; `else` otherwise
+**if(cond, then, else)**    | If `cond` child is valid validates `then` child; `else` otherwise. This is useful, for instance, when a the value of a property depends on the value of another property.
 **not(child)**              | Check if the negation of its child is valid.
 **onError(error, child)**   | Force the specified error if its child is non valid.
 **or(...children)**         | Check if at least one child is valid. Validation stops at the first valid child or when all children are processed.
