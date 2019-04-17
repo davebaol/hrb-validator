@@ -60,49 +60,45 @@ The others are **leaf validators** with no children.
 You use a simple tree-like DSL to define your validator. For instance, our sample validator becomes the *YAML* file below:
 ```yaml
 and:
-  - [a, isType, object]
+  - isType: [a, object]
   - xor:
-    - [a.b, isSet]
-    - [a.c, isSet]
-  - [a.b, optIsType, number]
-  - [a.c, optIsType, boolean]
-  - [a.d, isArrayOf, string]
+    - isSet: [a.b]
+    - isSet: [a.c]
+  - optIsType: [a.b, number]
+  - optIsType: [a.c, boolean]
+  - isArrayOf: [a.d, string]
 ```
-Here each **leaf validator** is an array with the field path, the validator name and its arguments.
-Each **branch validator** is an object with exactly one property where the key is its name and the value is the array of its children.
+Here each validator is an object with exactly one property where the key is its name and the value is the array of its arguments.
+For convenience, **leaf validators** are represented as an in-line object, while **branch validators** span multiple lines in a tree-like structure.
 
 To load the validator you can use the sample code below:
 
 ```javascript
 const fs = require("fs");
 const yaml = require("js-yaml");
-const createValidator = require("smart-validator/create");
+const vUtil = require("smart-validator/util");
 
 // Load validator from file
 let vObj = yaml.safeLoad(fs.readFileSync("/path/to/validator/file", 'utf8'));
-let validator = createValidator(vObj); 
+let validator = vUtil.ensureValidator(vObj);
 
 // Validate
 let vError = validator(toBeValidated);
 ```
-It's recommended to use *YAML* format instead of *JSON*, because the latter is far less human-readable. For instance, the YAML file above in JSON would be like that:
+It's recommended to use *YAML* format instead of *JSON*, because the latter is far less human-readable. For instance, the YAML file converted to JSON, while keeping similar formatting, becomes like this:
 ```json
-{
-  "and": [
-    ["a", "isType", "object"],
-    {
-      "xor": [
-        ["a.b", "isSet"],
-        ["a.c", "isSet"]
-      ]
-    },
-    ["a.b", "optIsType", "number"],
-    ["a.c", "optIsType", "boolean"],
-    ["a.d", "isArrayOf", "string"]
-  ]
-}
+{"and": [
+	{"isType": ["a", "object"]},
+	{"xor": [
+		{"isSet": ["a.b"]},
+		{"isSet": ["a.c"]}
+	]},
+	{"optIsType": ["a.b", "number"]},
+	{"optIsType": ["a.c", "boolean"]},
+	{"isArrayOf": ["a.d", "string"]}
+]}
 ```
-About twice the lines! And so many double quotes!
+:astonished: So many braces, double quotes and commas!
 Imagine what would happen for a larger real-world validator.
 
 Of course, for machine to machine communication (for instance, think of a REST API centralizing configurations and their validators), *JSON* is likely a  more appropriate format.
