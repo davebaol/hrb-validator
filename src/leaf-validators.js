@@ -67,7 +67,7 @@ const vInfo = {
 /* eslint-enable no-unused-vars */
 
 function vError(vName, field, vArgs) {
-  return `the field '${field}' must be a string ${vName ? vInfo[vName](vArgs) : ''}`;
+  return `${vName}: the field '${field}' must be a string ${vName ? vInfo[vName](vArgs) : ''}`;
 }
 
 function vFunc(vName) {
@@ -144,9 +144,18 @@ const leafValidators = {
   },
   isType(field, type) {
     if (!typeCheckers[type]) {
-      throw new Error(`Bad validator: the type of isType must be one of [${Object.keys(typeCheckers).join(', ')}]`);
+      throw new Error(`isType: the type must be one of [${Object.keys(typeCheckers).join(', ')}]`);
     }
     return m => (typeCheckers[type](get(m, field)) ? undefined : `the field '${field}' must be a '${type}'`);
+  },
+  isTypeIn(field, types) {
+    if (types.find(type => !typeCheckers[type])) {
+      throw new Error(`isTypeIn: all types must be one of [${Object.keys(typeCheckers).join(', ')}]`);
+    }
+    return m => {
+      let value = get(m, field);
+      return (types.some(type => typeCheckers[type](value)) ? undefined : `the field '${field}' must have one of the types '${types.join(", ")}'`);
+    }
   },
   isOneOf(field, values) {
     return m => (values.includes(get(m, field)) ? undefined : `the field '${field}' must be one of ${values}`);
