@@ -1,8 +1,8 @@
 and:
-  - [a, isType, object]
+  - isType: [a, object]
   - xor:
-    - [a.b, isSet]
-    - [a.c, isSet]
-  - [a.b, optIsType, number]
-  - [a.c, optIsType, boolean]
-  - [a.d, isArrayOf, string]
+    - isSet: [a.b]
+    - isSet: [a.c]
+  - optIsType: [a.b, number]
+  - optIsType: [a.c, boolean]
+  - isArrayOf: [a.d, string]

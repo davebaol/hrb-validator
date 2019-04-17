@@ -2,7 +2,7 @@
 const path = require("path");
 const fs = require("fs");
 const yaml = require("js-yaml");
-const createValidator = require("../lib/create");
+const { ensureValidator } = require("../lib/util");
 
 let toBeValidated = {
     a: {
@@ -14,7 +14,7 @@ let toBeValidated = {
 
 // Load validator from file
 let vObj = yaml.safeLoad(fs.readFileSync(path.join(__dirname, "data-driven.yaml"), 'utf8'));
-let validator = createValidator(vObj); 
+let validator = ensureValidator(vObj);
 
 // Validate
 let vError = validator(toBeValidated);

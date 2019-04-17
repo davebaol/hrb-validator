@@ -1,13 +1,17 @@
+const { ensureValidator, ensureValidators } = require('./util');
+
 //
 // BRANCH VALIDATORS
-// They all take child validators and no field as arguments.
+// They all take child validators as arguments.
 //
 
 module.exports = {
   not(child) {
-    return m => (child(m) ? undefined : "invalid operator 'not'");
+    const c = ensureValidator(child);
+    return m => (c(m) ? undefined : "invalid operator 'not'");
   },
   and(...children) {
+    ensureValidators(children);
     return (m) => {
       let error;
       const invalidChild = children.find((child) => {
@@ -18,6 +22,7 @@ module.exports = {
     };
   },
   or(...children) {
+    ensureValidators(children);
     return (m) => {
       let error;
       const validChild = children.find((child) => {
@@ -28,23 +33,27 @@ module.exports = {
     };
   },
   xor(...children) {
+    ensureValidators(children);
     return (m) => {
-      let c;
+      let count = 0;
       const invalidChild = children.find((child) => {
         const error = child(m);
-        c = error ? c : !c;
-        return c === false;
+        count += error ? 0 : 1;
+        return count === 2;
       });
       return invalidChild ? "invalid operator 'xor'" : undefined;
     };
   },
   if(condChild, thenChild, elseChild) {
-    return m => ((condChild(m) ? elseChild : thenChild)(m));
+    const [cc, tc, ec] = ensureValidators([condChild, thenChild, elseChild]);
+    return m => ((cc(m) ? ec : tc)(m));
   },
   alter(child, resultOnSuccess, resultOnError) {
-    return m => (child(m) ? resultOnError : resultOnSuccess);
+    const c = ensureValidator(child);
+    return m => (c(m) ? resultOnError : resultOnSuccess);
   },
   onError(error, child) {
-    return m => (child(m) ? error : undefined);
+    const c = ensureValidator(child);
+    return m => (c(m) ? error : undefined);
   }
 };
