@@ -191,7 +191,7 @@ Branch Validator            | Description
 :---------------------------|:--------------------------------------
 **alter(child, res1, res2)**| If `child` child is valid `res1` is returned; `res2` otherwise.
 **and(...children)**        | Check if all its children are valid. Validation stops at the first non valid child or when all children are processed.
-**if(cond, then, else)**    | If `cond` child is valid validates `then` child; `else` otherwise. This is useful, for instance, when a the value of a property depends on the value of another property.
+**if(cond, then, else)**    | If `cond` child is valid validates `then` child; `else` child otherwise. This is useful, for instance, when the value of a property depends on the value of another property.
 **not(child)**              | Check if the negation of its child is valid.
 **onError(error, child)**   | Force the specified error if its child is non valid.
 **or(...children)**         | Check if at least one child is valid. Validation stops at the first valid child or when all children are processed.
