@@ -120,7 +120,7 @@ Leaf Validator                          | Description
 **isAfter(field [, date])**:raised_hand: | Check if the string is a date that's after the specified date (defaults to now).
 **isAlpha(field [, locale])**           | Check if the field is a string containing only letters (a-zA-Z).<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `validator.isAlphaLocales`.
 **isAlphanumeric(field [, locale])**    | Check if the field is a string containing only letters and numbers.<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `validator.isAlphanumericLocales`.
-**isArrayOf(field, type)**              | Check if the field is a homogeneous array of the specified type.
+**isArrayOf(field, type)**              | Check if the field is an array whose items either have the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "number", "object", "regex", "string".
 **isAscii(field)**                      | Check if the field is a string containing ASCII chars only.
 **isBase64(field)**                     | Check if the field is a base64 encoded string.
 **isBefore(field [, date])** :raised_hand: | Check if the string is a date that's before the specified date.
@@ -175,7 +175,7 @@ isNotEmpty |
 **isRFC3339(field)**                      | Check if the string is a valid [RFC 3339](https://tools.ietf.org/html/rfc3339) date.
 **isSet(field)**                          | Check if the field is set to a non null value.
 **isSurrogatePair(field)**                | Check if the string contains any surrogate pairs chars.
-**isType(field, type)**                   | Check if the field is of the specified type. Type must be one of "array", "boolean", "number", "object", "regex", "string".
+**isType(field, type)**                   | Check if the field has either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "number", "object", "regex", "string".
 **isUppercase(field)**                    | Check if the string is uppercase.
 **isURL(field [, options])**              | Check if the string is an URL.<br/><br/>`options` is an object which defaults to `{ protocols: ['http','https','ftp'], require_tld: true, require_protocol: false, require_host: true, require_valid_protocol: true, allow_underscores: false, host_whitelist: false, host_blacklist: false, allow_trailing_dot: false, allow_protocol_relative_urls: false, disallow_auth: false }`.
 **isUUID(field [, version])**             | Check if the string is a UUID (version 3, 4 or 5).
