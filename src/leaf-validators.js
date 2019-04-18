@@ -66,18 +66,18 @@ const vInfo = {
 };
 /* eslint-enable no-unused-vars */
 
-function vError(vName, field, vArgs) {
-  return `${vName}: the field '${field}' must be a string ${vName ? vInfo[vName](vArgs) : ''}`;
+function vError(vName, path, vArgs) {
+  return `${vName}: the value at path '${path}' must be a string ${vName ? vInfo[vName](vArgs) : ''}`;
 }
 
 function vFunc(vName) {
-  return (field, ...args) => (m) => {
-    const value = get(m, field);
+  return (path, ...args) => (obj) => {
+    const value = get(obj, path);
     // console.log(value);
     if (typeof value !== 'string') {
-      return vError(null, field);
+      return vError(null, path);
     }
-    return v[vName](value, ...args) ? undefined : vError(vName, field, args);
+    return v[vName](value, ...args) ? undefined : vError(vName, path, args);
   };
 }
 
@@ -95,86 +95,86 @@ const typeCheckers = Object.assign(primitiveTypeCheckers, {
 
 //
 // LEAF VALIDATORS
-// They all take field as the first argument
+// They all take path as the first argument
 //
 const leafValidators = {
-  equals(field, value) {
-    return m => (get(m, field) === value ? undefined : `the field '${field}' must be equal to '${value}'`);
+  equals(path, value) {
+    return obj => (get(obj, path) === value ? undefined : `the value at path '${path}' must be equal to '${value}'`);
   },
-  isLE(field, value) {
-    return m => (get(m, field) <= value ? undefined : `the field '${field}' must be less than or equal to '${value}'`);
+  isLE(path, value) {
+    return obj => (get(obj, path) <= value ? undefined : `the value at path '${path}' must be less than or equal to '${value}'`);
   },
-  isGT(field, value) {
-    return m => (get(m, field) > value ? undefined : `the field '${field}' must be greater than '${value}'`);
+  isGT(path, value) {
+    return obj => (get(obj, path) > value ? undefined : `the value at path '${path}' must be greater than '${value}'`);
   },
-  isSet(field) {
-    return m => (get(m, field) != null ? undefined : `the field '${field}' must be set`);
+  isSet(path) {
+    return obj => (get(obj, path) != null ? undefined : `the value at path '${path}' must be set`);
   },
-  isNotEmpty(field) {
-    return (m) => {
-      const value = get(m, field);
-      if (!value) return `the field '${field}' must be set`;
-      if (typeof value === 'string' && value.trim().length === 0) return `the field '${field}' must have at least a not space char`;
-      if (typeof value === 'number' && value === 0) return `the field '${field}' must not be zero`;
+  isNotEmpty(path) {
+    return (obj) => {
+      const value = get(obj, path);
+      if (!value) return `the value at path '${path}' must be set`;
+      if (typeof value === 'string' && value.trim().length === 0) return `the value at path '${path}' must have at least a not space char`;
+      if (typeof value === 'number' && value === 0) return `the value at path '${path}' must not be zero`;
       return undefined;
     };
   },
-  isPort(field, options) {
+  isPort(path, options) {
     const opts = Object.assign({ asNumber: true, asString: true }, options || {});
     if (!opts.asNumber && !opts.asString) {
       throw new Error('Bad validator: inconsistent isPort options: either asNumber or asString must be true');
     }
-    return (m) => {
-      let value = get(m, field);
+    return (obj) => {
+      let value = get(obj, path);
       if (typeof value === 'number') {
         if (opts.asNumber) {
           value += '';
         } else if (opts.asString) {
-          return `the field '${field}' must be a string`;
+          return `the value at path '${path}' must be a string`;
         }
       } else if (typeof value === 'string') {
         if (!opts.asString && opts.asNumber) {
-          return `the field '${field}' must be a number`;
+          return `the value at path '${path}' must be a number`;
         }
       } else {
-        return `the field '${field}' must be either a string or a number`;
+        return `the value at path '${path}' must be either a string or a number`;
       }
-      return v.isPort(value) ? undefined : `the field '${field}' must be a valid port`;
+      return v.isPort(value) ? undefined : `the value at path '${path}' must be a valid port`;
     };
   },
-  isType(field, type) {
+  isType(path, type) {
     if (typeof type === 'string' && typeCheckers[type]) {
-      return m => (typeCheckers[type](get(m, field)) ? undefined : `the field '${field}' must be a '${type}'`);
+      return obj => (typeCheckers[type](get(obj, path)) ? undefined : `the value at path '${path}' must be a '${type}'`);
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
-      return (m) => {
-        const value = get(m, field);
-        return (type.some(t => typeCheckers[t](value)) ? undefined : `the field '${field}' must have one of the specified types '${type.join(', ')}'`);
+      return (obj) => {
+        const value = get(obj, path);
+        return (type.some(t => typeCheckers[t](value)) ? undefined : `the value at path '${path}' must have one of the specified types '${type.join(', ')}'`);
       };
     }
     throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
   },
-  isOneOf(field, values) {
-    return m => (values.includes(get(m, field)) ? undefined : `the field '${field}' must be one of ${values}`);
+  isOneOf(path, values) {
+    return obj => (values.includes(get(obj, path)) ? undefined : `the value at path '${path}' must be one of ${values}`);
   },
-  isDate(field) {
-    return m => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(m, field)) ? undefined : `the field '${field}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
+  isDate(path) {
+    return obj => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, path)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
   },
-  isArrayOf(field, type) {
+  isArrayOf(path, type) {
     if (typeof type === 'string' && typeCheckers[type]) {
-      return (m) => {
-        const value = get(m, field);
-        if (!Array.isArray(value)) return `isArrayOf: the field '${field}' must be an array`;
+      return (obj) => {
+        const value = get(obj, path);
+        if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array`;
         const flag = value.every(e => typeCheckers[type](e));
-        return flag ? undefined : `the field '${field}' must be a 'array of ${type}'`;
+        return flag ? undefined : `the value at path '${path}' must be a 'array of ${type}'`;
       };
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
-      return (m) => {
-        const value = get(m, field);
-        if (!Array.isArray(value)) return `isArrayOf: the field '${field}' must be a 'array'`;
+      return (obj) => {
+        const value = get(obj, path);
+        if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be a 'array'`;
         const flag = value.every(e => type.some(t => typeCheckers[t](e)));
-        return flag ? undefined : `isArrayOf: the field '${field}' must be an array where each item has a type amongst ${Object.keys(type).join(', ')}'`;
+        return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array where each item has a type amongst ${Object.keys(type).join(', ')}'`;
       };
     }
     throw new Error(`isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
@@ -199,10 +199,10 @@ Object.keys(vInfo).reduce((acc, k) => {
 //
 const shortcuts = {
   opt(f) {
-    return (field, ...args) => m => (get(m, field) ? f(field, ...args)(m) : undefined);
+    return (path, ...args) => obj => (get(obj, path) ? f(path, ...args)(obj) : undefined);
   },
   not(f, k) {
-    return (field, ...args) => m => (f(field, ...args)(m) ? undefined : `the field '${field}' must satisfy the validator '${k}'`);
+    return (path, ...args) => obj => (f(path, ...args)(obj) ? undefined : `the value at path '${path}' must satisfy the validator '${k}'`);
   }
 };
 
