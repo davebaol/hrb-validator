@@ -1,21 +1,18 @@
 import { assert } from 'chai';
 import V from '../../src';
 
+const successExpected = [false, true, 0, 1, {}, []].map(v => ({ a: v }));
+const failureExpected = [{ a: null }, {}];
+
+function check(obj, shouldSucceed) {
+  it(`isSet("a") should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
+    const v = V.isSet('a');
+    const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;
+    assert(result, ':(');
+  });
+}
+
 describe('Test leaf validator isSet.', () => {
-  it('isSet("a") should succeed for {a:false}', () => {
-    const v = V.isSet('a');
-    assert(v({ a: false }) === undefined, ':(');
-  });
-  it('isSet("a") should succeed for {a:{}}', () => {
-    const v = V.isSet('a');
-    assert(v({ a: {} }) === undefined, ':(');
-  });
-  it('isSet("a") should fail for {a:null}', () => {
-    const v = V.isSet('a');
-    assert(v({ a: null }) !== undefined, ':(');
-  });
-  it('isSet("a") should fail for {}', () => {
-    const v = V.isSet('a');
-    assert(v({}) !== undefined, ':(');
-  });
+  successExpected.forEach(obj => check(obj, true));
+  failureExpected.forEach(obj => check(obj, false));
 });
