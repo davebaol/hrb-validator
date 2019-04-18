@@ -1,3 +1,4 @@
+const camelCase = require('camelcase');
 const get = require('lodash.get');
 const V = require('.');
 
@@ -28,10 +29,28 @@ function ensureValidators(vlds) {
   return vlds;
 }
 
+const shortcuts = {
+  opt(f) {
+    return (path, ...args) => obj => (get(obj, path) ? f(path, ...args)(obj) : undefined);
+  },
+  not(f, k) {
+    return (path, ...args) => obj => (f(path, ...args)(obj) ? undefined : `the value at path '${path}' must satisfy the validator '${k}'`);
+  }
+};
+
+function addShortcuts(obj, key) {
+  return Object.keys(shortcuts).reduce((acc, shortcut) => {
+    const newKey = camelCase(`${shortcut} ${key}`);
+    acc[newKey] = shortcuts[shortcut](obj[key], newKey);
+    return acc;
+  }, obj);
+}
+
 module.exports = {
   get(obj, path) {
     return ((typeof path === 'string' || Array.isArray(path)) && path.length > 0 ? get(obj, path) : obj);
   },
   ensureValidator,
-  ensureValidators
+  ensureValidators,
+  addShortcuts
 };

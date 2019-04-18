@@ -1,20 +1,23 @@
-const { get, ensureValidator, ensureValidators } = require('./util');
+const {
+  get, ensureValidator, ensureValidators, addShortcuts
+} = require('./util');
+
 //
 // BRANCH VALIDATORS
 // They all take child validators as arguments.
 //
 
-module.exports = {
+const branchValidators = {
   not(child) {
     const c = ensureValidator(child);
-    return m => (c(m) ? undefined : "invalid operator 'not'");
+    return obj => (c(obj) ? undefined : 'not: the child validator must fail');
   },
   and(...children) {
     ensureValidators(children);
-    return (m) => {
+    return (obj) => {
       let error;
       const invalidChild = children.find((child) => {
-        error = child(m);
+        error = child(obj);
         return error;
       });
       return invalidChild ? error : undefined;
@@ -22,10 +25,10 @@ module.exports = {
   },
   or(...children) {
     ensureValidators(children);
-    return (m) => {
+    return (obj) => {
       let error;
       const validChild = children.find((child) => {
-        error = child(m);
+        error = child(obj);
         return !error;
       });
       return validChild ? undefined : error;
@@ -33,10 +36,10 @@ module.exports = {
   },
   xor(...children) {
     ensureValidators(children);
-    return (m) => {
+    return (obj) => {
       let count = 0;
       const invalidChild = children.find((child) => {
-        const error = child(m);
+        const error = child(obj);
         count += error ? 0 : 1;
         return count === 2;
       });
@@ -45,62 +48,69 @@ module.exports = {
   },
   if(condChild, thenChild, elseChild) {
     const [cc, tc, ec] = ensureValidators([condChild, thenChild, elseChild]);
-    return m => ((cc(m) ? ec : tc)(m));
+    return obj => ((cc(obj) ? ec : tc)(obj));
   },
-  every(field, child) {
+  every(path, child) {
     const c = ensureValidator(child);
-    return (m) => {
-      const m2 = get(m, field);
-      if (Array.isArray(m2)) {
+    return (obj) => {
+      const obj2 = get(obj, path);
+      if (Array.isArray(obj2)) {
         let error;
-        const invalidItem = m2.find((item, index) => {
-          error = c({ index, value: item, original: m });
+        const invalidItem = obj2.find((item, index) => {
+          error = c({ index, value: item, original: obj });
           return error;
         });
         return invalidItem ? error : undefined;
-      } if (typeof m2 === 'object') {
+      } if (typeof obj2 === 'object') {
         let error;
-        const invalidItem = Object.keys(m2).find((key, index) => {
+        const invalidItem = Object.keys(obj2).find((key, index) => {
           error = c({
-            index, key, value: m2[key], original: m
+            index, key, value: obj2[key], original: obj
           });
           return error;
         });
         return invalidItem ? error : undefined;
       }
-      return `each: the field '${field}' must be either an array or an object; found type '${typeof m2}'`;
+      return `each: the value at path '${path}' must be either an array or an object; found type '${typeof obj2}'`;
     };
   },
-  some(field, child) {
+  some(path, child) {
     const c = ensureValidator(child);
-    return (m) => {
-      const m2 = get(m, field);
-      if (Array.isArray(m2)) {
+    return (obj) => {
+      const obj2 = get(obj, path);
+      if (Array.isArray(obj2)) {
         let error;
-        const validItem = m2.find((item, index) => {
-          error = c({ index, value: item, original: m });
+        const validItem = obj2.find((item, index) => {
+          error = c({ index, value: item, original: obj });
           return !error;
         });
         return validItem ? undefined : error;
-      } if (typeof m2 === 'object') {
+      } if (typeof obj2 === 'object') {
         let error;
-        const validItem = Object.keys(m2).find((key, index) => {
+        const validItem = Object.keys(obj2).find((key, index) => {
           error = c({
-            index, key, value: m2[key], original: m
+            index, key, value: obj2[key], original: obj
           });
           return !error;
         });
         return validItem ? undefined : error;
       }
-      return `each: the field '${field}' must be either an array or an object; found type '${typeof m2}'`;
+      return `some: the value at path '${path}' must be either an array or an object; found type '${typeof obj2}'`;
     };
   },
   alter(child, resultOnSuccess, resultOnError) {
     const c = ensureValidator(child);
-    return m => (c(m) ? resultOnError : resultOnSuccess);
+    return obj => (c(obj) ? resultOnError : resultOnSuccess);
   },
   onError(error, child) {
     const c = ensureValidator(child);
-    return m => (c(m) ? error : undefined);
+    return obj => (c(obj) ? error : undefined);
   }
 };
+
+//
+// Augment with shortcuts 'opt' and 'not' all branch validators taking a path as first argument
+//
+['every', 'some'].reduce((acc, key) => addShortcuts(acc, key), branchValidators);
+
+module.exports = branchValidators;

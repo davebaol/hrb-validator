@@ -1,6 +1,5 @@
-const camelCase = require('camelcase');
 const v = require('validator');
-const { get } = require('./util');
+const { get, addShortcuts } = require('./util');
 
 /* eslint-disable no-unused-vars */
 const vInfo = {
@@ -122,7 +121,7 @@ const leafValidators = {
   isPort(path, options) {
     const opts = Object.assign({ asNumber: true, asString: true }, options || {});
     if (!opts.asNumber && !opts.asString) {
-      throw new Error('Bad validator: inconsistent isPort options: either asNumber or asString must be true');
+      throw new Error('isPort: inconsistent isPort options: either asNumber or asString must be true');
     }
     return (obj) => {
       let value = get(obj, path);
@@ -130,32 +129,32 @@ const leafValidators = {
         if (opts.asNumber) {
           value += '';
         } else if (opts.asString) {
-          return `the value at path '${path}' must be a string`;
+          return `isPort: the value at path '${path}' must be a string`;
         }
       } else if (typeof value === 'string') {
         if (!opts.asString && opts.asNumber) {
-          return `the value at path '${path}' must be a number`;
+          return `isPort: the value at path '${path}' must be a number`;
         }
       } else {
-        return `the value at path '${path}' must be either a string or a number`;
+        return `isPort: the value at path '${path}' must be either a string or a number`;
       }
-      return v.isPort(value) ? undefined : `the value at path '${path}' must be a valid port`;
+      return v.isPort(value) ? undefined : `isPort: the value at path '${path}' must be a valid port`;
     };
   },
   isType(path, type) {
     if (typeof type === 'string' && typeCheckers[type]) {
-      return obj => (typeCheckers[type](get(obj, path)) ? undefined : `the value at path '${path}' must be a '${type}'`);
+      return obj => (typeCheckers[type](get(obj, path)) ? undefined : `isType: the value at path '${path}' must be a '${type}'`);
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
       return (obj) => {
         const value = get(obj, path);
-        return (type.some(t => typeCheckers[t](value)) ? undefined : `the value at path '${path}' must have one of the specified types '${type.join(', ')}'`);
+        return (type.some(t => typeCheckers[t](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${type.join(', ')}'`);
       };
     }
     throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
   },
   isOneOf(path, values) {
-    return obj => (values.includes(get(obj, path)) ? undefined : `the value at path '${path}' must be one of ${values}`);
+    return obj => (values.includes(get(obj, path)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${values}`);
   },
   isDate(path) {
     return obj => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, path)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
@@ -166,7 +165,7 @@ const leafValidators = {
         const value = get(obj, path);
         if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array`;
         const flag = value.every(e => typeCheckers[type](e));
-        return flag ? undefined : `the value at path '${path}' must be a 'array of ${type}'`;
+        return flag ? undefined : `isArrayOf: the value at path '${path}' must be a 'array of ${type}'`;
       };
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
@@ -193,27 +192,9 @@ Object.keys(vInfo).reduce((acc, k) => {
   return acc;
 }, leafValidators);
 
-
 //
 // Augment leaf validators with shortcuts 'opt' and 'not'
 //
-const shortcuts = {
-  opt(f) {
-    return (path, ...args) => obj => (get(obj, path) ? f(path, ...args)(obj) : undefined);
-  },
-  not(f, k) {
-    return (path, ...args) => obj => (f(path, ...args)(obj) ? undefined : `the value at path '${path}' must satisfy the validator '${k}'`);
-  }
-};
-
-function addShortcuts(obj, key) {
-  return Object.keys(shortcuts).reduce((acc, shortcut) => {
-    const newKey = camelCase(`${shortcut} ${key}`);
-    acc[newKey] = shortcuts[shortcut](obj[key], newKey);
-    return acc;
-  }, obj);
-}
-
 Object.keys(leafValidators).reduce((acc, key) => addShortcuts(acc, key), leafValidators);
 
 
