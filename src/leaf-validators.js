@@ -143,19 +143,16 @@ const leafValidators = {
     };
   },
   isType(field, type) {
-    if (!typeCheckers[type]) {
-      throw new Error(`isType: the type must be one of [${Object.keys(typeCheckers).join(', ')}]`);
+    if (typeof type === 'string' && typeCheckers[type]) {
+      return m => (typeCheckers[type](get(m, field)) ? undefined : `the field '${field}' must be a '${type}'`);
     }
-    return m => (typeCheckers[type](get(m, field)) ? undefined : `the field '${field}' must be a '${type}'`);
-  },
-  isTypeIn(field, types) {
-    if (types.find(type => !typeCheckers[type])) {
-      throw new Error(`isTypeIn: all types must be one of [${Object.keys(typeCheckers).join(', ')}]`);
+    if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
+      return (m) => {
+        const value = get(m, field);
+        return (type.some(t => typeCheckers[t](value)) ? undefined : `the field '${field}' must have one of the specified types '${type.join(', ')}'`);
+      };
     }
-    return m => {
-      let value = get(m, field);
-      return (types.some(type => typeCheckers[type](value)) ? undefined : `the field '${field}' must have one of the types '${types.join(", ")}'`);
-    }
+    throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
   },
   isOneOf(field, values) {
     return m => (values.includes(get(m, field)) ? undefined : `the field '${field}' must be one of ${values}`);
@@ -164,16 +161,23 @@ const leafValidators = {
     return m => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(m, field)) ? undefined : `the field '${field}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
   },
   isArrayOf(field, type) {
-    if (!primitiveTypeCheckers[type]) {
-      throw new Error(`Bad validator: isArrayOf only supports primitive types ${Object.keys(primitiveTypeCheckers).join(', ')}`);
+    if (typeof type === 'string' && typeCheckers[type]) {
+      return (m) => {
+        const value = get(m, field);
+        if (!Array.isArray(value)) return `isArrayOf: the field '${field}' must be an array`;
+        const flag = value.every(e => typeCheckers[type](e));
+        return flag ? undefined : `the field '${field}' must be a 'array of ${type}'`;
+      };
     }
-    return (m) => {
-      const value = get(m, field);
-      if (!Array.isArray(value)) return `the field '${field}' must be a 'array'`;
-      const flag = value.reduce((result, e) => result && primitiveTypeCheckers[type](e), true);
-      if (!flag) return `the field '${field}' must be a 'array of ${type}'`;
-      return undefined;
-    };
+    if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
+      return (m) => {
+        const value = get(m, field);
+        if (!Array.isArray(value)) return `isArrayOf: the field '${field}' must be a 'array'`;
+        const flag = value.every(e => type.some(t => typeCheckers[t](e)));
+        return flag ? undefined : `isArrayOf: the field '${field}' must be an array where each item has a type amongst ${Object.keys(type).join(', ')}'`;
+      };
+    }
+    throw new Error(`isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
   },
 };
 
