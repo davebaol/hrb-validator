@@ -193,12 +193,14 @@ Here is a list of the branch validators currently available.
 Branch Validator            | Description
 :---------------------------|:--------------------------------------
 **alter(child, res1, res2)**| If `child` child is valid `res1` is returned; `res2` otherwise.
-**and(...children)**        | Check if all its children are valid. Validation stops at the first non valid child or when all children are processed.
+**and(...children)**        | Check if all its children are valid. Validation fails at the first non valid child and succeeds if all children are valid.
+**every(path, child)**      | Validate `child` for the items of the value at `path`, which must be either an array or an object. Validation fails at the first non valid child and succeeds if all children are valid. The object aginst with `child` is validated depends on the type of the value at `path`:<br/>&#8226; **array** -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; **object** -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`
 **if(cond, then, else)**    | If `cond` child is valid validates `then` child; `else` child otherwise. This is useful, for instance, when the value of a property depends on the value of another property.
 **not(child)**              | Check if the negation of its child is valid.
 **onError(error, child)**   | Force the specified error if its child is non valid.
-**or(...children)**         | Check if at least one child is valid. Validation stops at the first valid child or when all children are processed.
-**xor(...children)**        | Check if exactly one child is valid. Validation stops at the second valid child or when all children are processed.
+**or(...children)**         | Check if at least one child is valid. Validation succeeds at the first valid child and fails if all children are non valid.
+**some(path, child)**      | Validate `child` for the items of the value at `path`, which must be either an array or an object. Validation succeeds at the first valid child and fails if all children are non valid. The object aginst with `child` is validated depends on the type of the value at `path`:<br/>&#8226; **array** -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; **object** -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`
+**xor(...children)**        | Check if exactly one child is valid. Validation fails at the second valid child or when all children are processed an no child was valid. Validation succeeds when all children are processed and exactly one child was valid.
 
 # License
 
