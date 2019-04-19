@@ -113,10 +113,10 @@ const leafValidators = {
     return obj => (get(obj, path) >= value ? undefined : `isGreaterThanOrEquals: the value at path '${path}' must be greater than or equal to ${value}`);
   },
   isBetween(path, lower, upper) {
-    return obj => {
+    return (obj) => {
       const value = get(obj, path);
-      return value >= lower && value <= upper ? undefined : `isBetween: the value at path '${path}' must be in the range [${lower}, ${upper}]`
-    }
+      return value >= lower && value <= upper ? undefined : `isBetween: the value at path '${path}' must be in the range [${lower}, ${upper}]`;
+    };
   },
   isSet(path) {
     return obj => (get(obj, path) != null ? undefined : `isSet: the value at path '${path}' must be set`);
