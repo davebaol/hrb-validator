@@ -1,5 +1,5 @@
 const v = require('validator');
-const { get, addShortcuts } = require('./util');
+const { get, addShortcutOpt } = require('./util');
 
 /* eslint-disable no-unused-vars */
 const vInfo = {
@@ -207,7 +207,7 @@ Object.keys(vInfo).reduce((acc, k) => {
 //
 // Augment leaf validators with shortcuts 'opt' and 'not'
 //
-Object.keys(leafValidators).reduce((acc, key) => addShortcuts(acc, key), leafValidators);
+Object.keys(leafValidators).reduce((acc, key) => addShortcutOpt(acc, key), leafValidators);
 
 
 module.exports = leafValidators;

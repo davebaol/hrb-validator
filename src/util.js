@@ -2,6 +2,10 @@ const camelCase = require('camelcase');
 const get = require('lodash.get');
 const V = require('.');
 
+//
+// ENSURE VALIDATORS
+//
+
 function ensureValidator(vld) {
   if (typeof vld === 'function') {
     return vld;
@@ -29,22 +33,24 @@ function ensureValidators(vlds) {
   return vlds;
 }
 
-const shortcuts = {
-  opt(f) {
-    return (path, ...args) => obj => (get(obj, path) ? f(path, ...args)(obj) : undefined);
-  },
-  not(f, k) {
-    return (path, ...args) => obj => (f(path, ...args)(obj) ? undefined : `the value at path '${path}' must satisfy the validator '${k}'`);
-  }
-};
+//
+// SHORTCUT OPT
+//
 
-function addShortcuts(obj, key) {
-  return Object.keys(shortcuts).reduce((acc, shortcut) => {
-    const newKey = camelCase(`${shortcut} ${key}`);
-    acc[newKey] = shortcuts[shortcut](obj[key], newKey);
-    return acc;
-  }, obj);
+function shortcutOpt(f) {
+  return (path, ...args) => obj => (get(obj, path) ? f(path, ...args)(obj) : undefined);
 }
+
+function addShortcutOpt(obj, key) {
+  const newKey = camelCase(`opt ${key}`);
+  // eslint-disable-next-line no-param-reassign
+  obj[newKey] = shortcutOpt(obj[key]);
+  return obj;
+}
+
+//
+// EXPORTS
+//
 
 module.exports = {
   get(obj, path) {
@@ -52,5 +58,5 @@ module.exports = {
   },
   ensureValidator,
   ensureValidators,
-  addShortcuts
+  addShortcutOpt
 };

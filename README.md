@@ -4,6 +4,7 @@
 
 ### Table of Contents
 - [Key Concepts](#key-concepts)
+- [Shortcut for optional paths](#shortcut-for-optional-paths)
 - [Leaf Validators](#leaf-validators)
 - [Branch Validators](#branch-validators)
 
@@ -103,15 +104,22 @@ Imagine what would happen for a larger real-world validator.
 
 Of course, for machine to machine communication (for instance, think of a REST API centralizing configurations and their validators), *JSON* is likely a  more appropriate format.
 
+## Shortcut for optional paths
+
+Each validator `xyz(path, ...args)`, either leaf or branch, that takes a path as the first argument has a counterpart validator `optXyz(path, ...args)`:
+- **optXyz(path, ...args)**: Check if the value at `path` is not set or passes validator `xyz`.
+
+This shortcut is equivalent to the composite validator
+```javascript
+  V.or(
+    V.not(V.isSet(path)),
+    V.xyz(path, ...args)
+  )
+```
 
 ## Leaf Validators
 
 Here is a list of the leaf validators currently available.
-
-> :pushpin: **Shortcuts**
-> Each validator `xyz` from the list below has 2 additional versions:
-> - **notXyz(path, ...args)**: Check if the value at `path` does not pass validator `xyz`. This is equivalent to `V.not(V.xyz(path, ...args))`
-> - **optXyz(path, ...args)**: Check if the value at `path` is not set or passes validator `xyz`. This is equivalent to `V.or(V.not(V.isSet(path)), V.xyz(path, ...args))`
 
 Leaf Validator                          | Description
 :---------------------------------------|:--------------------------------------

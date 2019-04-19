@@ -1,5 +1,5 @@
 const {
-  get, ensureValidator, ensureValidators, addShortcuts
+  get, ensureValidator, ensureValidators, addShortcutOpt
 } = require('./util');
 
 //
@@ -111,6 +111,6 @@ const branchValidators = {
 //
 // Augment with shortcuts 'opt' and 'not' all branch validators taking a path as first argument
 //
-['every', 'some'].reduce((acc, key) => addShortcuts(acc, key), branchValidators);
+['every', 'some'].reduce((acc, key) => addShortcutOpt(acc, key), branchValidators);
 
 module.exports = branchValidators;
