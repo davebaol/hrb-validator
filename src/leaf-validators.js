@@ -98,16 +98,28 @@ const typeCheckers = Object.assign(primitiveTypeCheckers, {
 //
 const leafValidators = {
   equals(path, value) {
-    return obj => (get(obj, path) === value ? undefined : `the value at path '${path}' must be equal to '${value}'`);
+    return obj => (get(obj, path) === value ? undefined : `equals: the value at path '${path}' must be equal to ${value}`);
   },
-  isLE(path, value) {
-    return obj => (get(obj, path) <= value ? undefined : `the value at path '${path}' must be less than or equal to '${value}'`);
+  isLessThan(path, value) {
+    return obj => (get(obj, path) < value ? undefined : `isLessThan: the value at path '${path}' must be less than ${value}`);
   },
-  isGT(path, value) {
-    return obj => (get(obj, path) > value ? undefined : `the value at path '${path}' must be greater than '${value}'`);
+  isLessThanOrEquals(path, value) {
+    return obj => (get(obj, path) <= value ? undefined : `isLessThanOrEquals: the value at path '${path}' must be less than or equal to ${value}`);
+  },
+  isGreaterThan(path, value) {
+    return obj => (get(obj, path) > value ? undefined : `isGreaterThan: the value at path '${path}' must be greater than ${value}`);
+  },
+  isGreaterThanOrEquals(path, value) {
+    return obj => (get(obj, path) >= value ? undefined : `isGreaterThanOrEquals: the value at path '${path}' must be greater than or equal to ${value}`);
+  },
+  isBetween(path, lower, upper) {
+    return obj => {
+      const value = get(obj, path);
+      return value >= lower && value <= upper ? undefined : `isBetween: the value at path '${path}' must be in the range [${lower}, ${upper}]`
+    }
   },
   isSet(path) {
-    return obj => (get(obj, path) != null ? undefined : `the value at path '${path}' must be set`);
+    return obj => (get(obj, path) != null ? undefined : `isSet: the value at path '${path}' must be set`);
   },
   isNotEmpty(path) {
     return (obj) => {

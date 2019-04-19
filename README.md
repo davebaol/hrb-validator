@@ -124,6 +124,7 @@ Leaf Validator                          | Description
 **isAscii(path)**                      | Check if the value at `path` is a string containing ASCII chars only.
 **isBase64(path)**                     | Check if the value at `path` is a base64 encoded string.
 **isBefore(path [, date])** :raised_hand: | Check if the string is a date that's before the specified date.
+**isBetween(path, lower, upper)**      | Check if the value at `path` is in the range [`lower`, `upper`]
 **isBoolean(path)** :raised_hand::raised_hand:      | Check if a string is a boolean.
 **isByteLength(path [, options])** :raised_hand:         | Check if the string's length (in UTF-8 bytes) falls in a range.<br/><br/>`options` is an object which defaults to `{min:0, max: undefined}`.
 **isCreditCard(path)**                 | Check if the value at `path` is a string representing a credit card.
@@ -137,7 +138,8 @@ Leaf Validator                          | Description
 **isFloat(path [, options])** :raised_hand:           | Check if the string is a float.<br/><br/>`options` is an object which can contain the keys `min`, `max`, `gt`, and/or `lt` to validate the float is within boundaries (e.g. `{ min: 7.22, max: 9.55 }`) it also has `locale` as an option.<br/><br/>`min` and `max` are equivalent to 'greater or equal' and 'less or equal', respectively while `gt` and `lt` are their strict counterparts.<br/><br/>`locale` determine the decimal separator and is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`. Locale list is `validator.isFloatLocales`.
 **isFQDN(path [, options])**             | Check if the string is a fully qualified domain name (e.g. domain.com).<br/><br/>`options` is an object which defaults to `{ require_tld: true, allow_underscores: false, allow_trailing_dot: false }`.
 **isFullWidth(path)**                    | Check if the string contains any full-width chars.
-**isGT(path)*                          |
+**isGreaterThan(path, value)**           | Check if the value at `path` is greater than `value`
+**isGreaterThanOrEquals(path, value)**   | Check if the value at `path` is greater than or equal to `value`
 **isHalfWidth(path)**                    | Check if the string contains any half-width chars.
 **isHash(path, algorithm)**              | Check if the string is a hash of type algorithm.<br/><br/>Algorithm is one of `['md4', 'md5', 'sha1', 'sha256', 'sha384', 'sha512', 'ripemd128', 'ripemd160', 'tiger128', 'tiger160', 'tiger192', 'crc32', 'crc32b']`
 **isHexadecimal(path)** :raised_hand:                 | Check if the string is a hexadecimal number.
@@ -159,6 +161,8 @@ Leaf Validator                          | Description
 **isLatLong(path)**                      | Check if the string is a valid latitude-longitude coordinate in the format `lat,long` or `lat, long`.
 isLE |
 **isLength(path [, options])** :raised_hand:          | Check if the string's length falls in a range.<br/><br/>`options` is an object which defaults to `{min:0, max: undefined}`. Note: this function takes into account surrogate pairs.
+**isLessThan(path, value)**           | Check if the value at `path` is less than `value`
+**isLessThanOrEquals(path, value)**   | Check if the value at `path` is less than or equal to `value`
 **isLowercase(path)**                    | Check if the string is lowercase.
 **isMACAddress(path)**                   | Check if the string is a MAC address.<br/><br/>`options` is an object which defaults to `{no_colons: false}`. If `no_colons` is true, the validator will allow MAC addresses without the colons.
 **isMagnetURI(path)**                    | Check if the string is a [magnet uri format](https://en.wikipedia.org/wiki/Magnet_URI_scheme).
