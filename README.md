@@ -159,7 +159,6 @@ Leaf Validator                          | Description
 **isJSON(path)**                         | Check if the string is valid JSON (note: uses JSON.parse).
 **isJWT(path)**                          | Check if the string is valid JWT token.
 **isLatLong(path)**                      | Check if the string is a valid latitude-longitude coordinate in the format `lat,long` or `lat, long`.
-isLE |
 **isLength(path [, options])** :raised_hand:          | Check if the string's length falls in a range.<br/><br/>`options` is an object which defaults to `{min:0, max: undefined}`. Note: this function takes into account surrogate pairs.
 **isLessThan(path, value)**           | Check if the value at `path` is less than `value`
 **isLessThanOrEquals(path, value)**   | Check if the value at `path` is less than or equal to `value`
