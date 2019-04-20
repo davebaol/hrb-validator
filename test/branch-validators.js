@@ -7,17 +7,17 @@ const failure = () => 'failure';
 describe('Test branch validator if.', () => {
   const vThen = () => 'then';
   const vElse = () => 'else';
-    it('if(success, then, else) should return then validation result', () => {
+  it('if(success, then, else) should return then validation result', () => {
     const v = V.if(success, vThen, vElse);
-    assert(v({}) === "then", ':(');
+    assert(v({}) === 'then', ':(');
   });
   it('if(failure, then, else) should return else validation result', () => {
     const v = V.if(failure, vThen, vElse);
-    assert(v({}) === "else", ':(');
+    assert(v({}) === 'else', ':(');
   });
   it('if(success, then) should return then validation result', () => {
     const v = V.if(success, vThen);
-    assert(v({}) === "then", ':(');
+    assert(v({}) === 'then', ':(');
   });
   it('if(failure, then) should be always valid', () => {
     const v = V.if(failure, vThen);
