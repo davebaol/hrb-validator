@@ -5,13 +5,23 @@ const success = () => undefined;
 const failure = () => 'failure';
 
 describe('Test branch validator if.', () => {
-  it('if(success, success, failure) should succeed', () => {
-    const v = V.if(success, success, failure);
-    assert(v({}) === undefined, ':(');
+  const vThen = () => 'then';
+  const vElse = () => 'else';
+    it('if(success, then, else) should return then validation result', () => {
+    const v = V.if(success, vThen, vElse);
+    assert(v({}) === "then", ':(');
   });
-  it('if(failure, success, failure) should fail', () => {
-    const v = V.if(failure, success, failure);
-    assert(v({}) !== undefined, ':(');
+  it('if(failure, then, else) should return else validation result', () => {
+    const v = V.if(failure, vThen, vElse);
+    assert(v({}) === "else", ':(');
+  });
+  it('if(success, then) should return then validation result', () => {
+    const v = V.if(success, vThen);
+    assert(v({}) === "then", ':(');
+  });
+  it('if(failure, then) should be always valid', () => {
+    const v = V.if(failure, vThen);
+    assert(v({}) === undefined, ':(');
   });
   const notBoth = (condStr, condFunc) => it(`if(${condStr}, then, else) should validate either then or else, never both`, () => {
     let count = 0;
