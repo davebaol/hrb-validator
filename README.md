@@ -2,13 +2,16 @@
 
 [![Build Status](https://travis-ci.org/davebaol/smart-validator.svg?branch=master)](https://travis-ci.org/davebaol/smart-validator) [![dependencies Status](https://david-dm.org/davebaol/smart-validator/status.svg)](https://david-dm.org/davebaol/smart-validator) [![devDependencies Status](https://david-dm.org/davebaol/smart-validator/dev-status.svg)](https://david-dm.org/davebaol/smart-validator?type=dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-### Table of Contents
+## Table of Contents
 - [Key Concepts](#key-concepts)
-- [Shortcut for optional paths](#shortcut-for-optional-paths)
+  - [Hard-coded Validators](#hard-coded-validators)
+  - [Loading Validators from File](#loading-validators-from-file)
+  - [YAML vs JSON](#yaml-vs-json)
+  - [Shortcut for optional paths](#shortcut-for-optional-paths)
 - [Leaf Validators](#leaf-validators)
 - [Branch Validators](#branch-validators)
 
-### Key Concepts
+## Key Concepts
 Suppose you have the simple object below
 
 ```javascript
@@ -30,9 +33,11 @@ and you want to validate it like that:
 
 By the way, such a validator is expected to fail because both paths `a.b` and `a.c` are set, thus breaking rule 3 which in turn breaks rule 1.
 
-To create this validator you can choose one of the two approaches described in the following.
+To create this validator you can choose one of the two approaches described in the following: 
+- [Hard-coded Validators](#hard-coded-validators)
+- [Loading Validators from File](#loading-validators-from-file)
 
-:one: **Hard-coded validator**
+### Hard-coded validators
 
 This sample code programmatically creates the validator for the previous rules.
 ```javascript
@@ -56,7 +61,8 @@ let vError = validator(toBeValidated);
 Notice that this is a tree-like structure where`and` and `xor` are **branch validators** made of children that, in turn, are validators.
 The others are **leaf validators** with no children.
 
-:two: **Loading a validator from file**
+
+### Loading validators from file
 
 You use a simple tree-like DSL to define your validator. For instance, our sample validator becomes the *YAML* file below:
 ```yaml
@@ -86,7 +92,13 @@ let validator = vUtil.ensureValidator(vObj);
 // Validate
 let vError = validator(toBeValidated);
 ```
-It's recommended to use *YAML* format instead of *JSON*, because the latter is far less human-readable. For instance, the YAML file converted to JSON, while keeping similar formatting, becomes like this:
+
+
+### YAML vs JSON
+
+The choice between *YAML* and *JSON* formats depends on your scenario.
+
+When **human-readability** is important for you, it's recommended to use *YAML* instead of *JSON*. For instance, previous [YAML file](#loading-validators-from-file) converted to JSON, while keeping similar formatting, becomes like this:
 ```json
 {"and": [
 	{"isType": ["a", "object"]},
@@ -102,9 +114,10 @@ It's recommended to use *YAML* format instead of *JSON*, because the latter is f
 :astonished: So many braces, double quotes and commas!
 Imagine what would happen for a larger real-world validator.
 
-Of course, for machine to machine communication (for instance, think of a REST API centralizing configurations and their validators), *JSON* is likely a  more appropriate format.
+On the other hand, for **machine to machine communication** *JSON* is likely a  more appropriate format. For instance, think of a REST API centralizing configurations and their validators.
 
-## Shortcut for optional paths
+
+### Shortcut for optional paths
 
 Each validator `xyz(path, ...args)`, either leaf or branch, that takes a path as the first argument has a counterpart validator `optXyz(path, ...args)`:
 - **optXyz(path, ...args)**: Check if the value at `path` is not set or passes validator `xyz`.
