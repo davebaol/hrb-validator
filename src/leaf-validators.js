@@ -1,5 +1,5 @@
 const v = require('validator');
-const { get, addShortcutOpt } = require('./util');
+const { get, ensurePath, addShortcutOpt } = require('./util');
 
 /* eslint-disable no-unused-vars */
 const vInfo = {
@@ -70,13 +70,16 @@ function vError(vName, path, vArgs) {
 }
 
 function vFunc(vName) {
-  return (path, ...args) => (obj) => {
-    const value = get(obj, path);
-    // console.log(value);
-    if (typeof value !== 'string') {
-      return vError(null, path);
-    }
-    return v[vName](value, ...args) ? undefined : vError(vName, path, args);
+  return (path, ...args) => {
+    const p = ensurePath(path);
+    return (obj) => {
+      const value = get(obj, p);
+      // console.log(value);
+      if (typeof value !== 'string') {
+        return vError(null, path);
+      }
+      return v[vName](value, ...args) ? undefined : vError(vName, path, args);
+    };
   };
 }
 
@@ -98,32 +101,40 @@ const typeCheckers = Object.assign(primitiveTypeCheckers, {
 //
 const leafValidators = {
   equals(path, value) {
-    return obj => (get(obj, path) === value ? undefined : `equals: the value at path '${path}' must be equal to ${value}`);
+    const p = ensurePath(path);
+    return obj => (get(obj, p) === value ? undefined : `equals: the value at path '${path}' must be equal to ${value}`);
   },
   isLessThan(path, value) {
-    return obj => (get(obj, path) < value ? undefined : `isLessThan: the value at path '${path}' must be less than ${value}`);
+    const p = ensurePath(path);
+    return obj => (get(obj, p) < value ? undefined : `isLessThan: the value at path '${path}' must be less than ${value}`);
   },
   isLessThanOrEquals(path, value) {
-    return obj => (get(obj, path) <= value ? undefined : `isLessThanOrEquals: the value at path '${path}' must be less than or equal to ${value}`);
+    const p = ensurePath(path);
+    return obj => (get(obj, p) <= value ? undefined : `isLessThanOrEquals: the value at path '${path}' must be less than or equal to ${value}`);
   },
   isGreaterThan(path, value) {
-    return obj => (get(obj, path) > value ? undefined : `isGreaterThan: the value at path '${path}' must be greater than ${value}`);
+    const p = ensurePath(path);
+    return obj => (get(obj, p) > value ? undefined : `isGreaterThan: the value at path '${path}' must be greater than ${value}`);
   },
   isGreaterThanOrEquals(path, value) {
-    return obj => (get(obj, path) >= value ? undefined : `isGreaterThanOrEquals: the value at path '${path}' must be greater than or equal to ${value}`);
+    const p = ensurePath(path);
+    return obj => (get(obj, p) >= value ? undefined : `isGreaterThanOrEquals: the value at path '${path}' must be greater than or equal to ${value}`);
   },
   isBetween(path, lower, upper) {
+    const p = ensurePath(path);
     return (obj) => {
-      const value = get(obj, path);
+      const value = get(obj, p);
       return value >= lower && value <= upper ? undefined : `isBetween: the value at path '${path}' must be in the range [${lower}, ${upper}]`;
     };
   },
   isSet(path) {
-    return obj => (get(obj, path) != null ? undefined : `isSet: the value at path '${path}' must be set`);
+    const p = ensurePath(path);
+    return obj => (get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`);
   },
   isNotEmpty(path) {
+    const p = ensurePath(path);
     return (obj) => {
-      const value = get(obj, path);
+      const value = get(obj, p);
       if (!value) return `the value at path '${path}' must be set`;
       if (typeof value === 'string' && value.trim().length === 0) return `the value at path '${path}' must have at least a not space char`;
       if (typeof value === 'number' && value === 0) return `the value at path '${path}' must not be zero`;
@@ -131,12 +142,13 @@ const leafValidators = {
     };
   },
   isPort(path, options) {
+    const p = ensurePath(path);
     const opts = Object.assign({ asNumber: true, asString: true }, options || {});
     if (!opts.asNumber && !opts.asString) {
       throw new Error('isPort: inconsistent isPort options: either asNumber or asString must be true');
     }
     return (obj) => {
-      let value = get(obj, path);
+      let value = get(obj, p);
       if (typeof value === 'number') {
         if (opts.asNumber) {
           value += '';
@@ -154,27 +166,34 @@ const leafValidators = {
     };
   },
   isType(path, type) {
+    const p = ensurePath(path);
     if (typeof type === 'string' && typeCheckers[type]) {
-      return obj => (typeCheckers[type](get(obj, path)) ? undefined : `isType: the value at path '${path}' must be a '${type}'`);
+      return obj => (typeCheckers[type](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${type}'`);
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
       return (obj) => {
-        const value = get(obj, path);
+        const value = get(obj, p);
         return (type.some(t => typeCheckers[t](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${type.join(', ')}'`);
       };
     }
     throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
   },
   isOneOf(path, values) {
-    return obj => (values.includes(get(obj, path)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${values}`);
+    const p = ensurePath(path);
+    if (!Array.isArray(values)) {
+      throw new Error('isOneOf: argument \'values\' must be an array');
+    }
+    return obj => (values.includes(get(obj, p)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${values}`);
   },
   isDate(path) {
-    return obj => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, path)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
+    const p = ensurePath(path);
+    return obj => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, p)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
   },
   isArrayOf(path, type) {
+    const p = ensurePath(path);
     if (typeof type === 'string' && typeCheckers[type]) {
       return (obj) => {
-        const value = get(obj, path);
+        const value = get(obj, p);
         if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array`;
         const flag = value.every(e => typeCheckers[type](e));
         return flag ? undefined : `isArrayOf: the value at path '${path}' must be a 'array of ${type}'`;
@@ -182,7 +201,7 @@ const leafValidators = {
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
       return (obj) => {
-        const value = get(obj, path);
+        const value = get(obj, p);
         if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be a 'array'`;
         const flag = value.every(e => type.some(t => typeCheckers[t](e)));
         return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array where each item has a type amongst ${Object.keys(type).join(', ')}'`;

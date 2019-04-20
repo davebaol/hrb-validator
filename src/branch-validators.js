@@ -1,5 +1,5 @@
 const {
-  get, ensureValidator, ensureValidators, ensureValidatorMap, addShortcutOpt, Context
+  get, ensurePath, ensureValidator, ensureValidators, ensureValidatorMap, addShortcutOpt, Context
 } = require('./util');
 
 //
@@ -9,6 +9,7 @@ const {
 
 const branchValidators = {
   call(path, childName, scope) {
+    const p = ensurePath(path);
     if (scope) {
       ensureValidatorMap(scope);
     }
@@ -19,7 +20,7 @@ const branchValidators = {
         context.push(scope);
       }
       const child = context.find(childName);
-      const result = child ? child(get(obj, path), context) : `call: validator with name '${childName}' not found`;
+      const result = child ? child(get(obj, p), context) : `call: validator with name '${childName}' not found`;
       if (scope) {
         context.pop();
       }
@@ -73,9 +74,10 @@ const branchValidators = {
     return (obj, context) => (cc(obj, context) ? undefined : tc(obj, context));
   },
   every(path, child) {
+    const p = ensurePath(path);
     const c = ensureValidator(child);
     return (obj, context) => {
-      const value = get(obj, path);
+      const value = get(obj, p);
       if (Array.isArray(value)) {
         let error;
         const found = value.find((item, index) => {
@@ -98,9 +100,10 @@ const branchValidators = {
     };
   },
   some(path, child) {
+    const p = ensurePath(path);
     const c = ensureValidator(child);
     return (obj, context) => {
-      const value = get(obj, path);
+      const value = get(obj, p);
       if (Array.isArray(value)) {
         let error;
         const found = value.find((item, index) => {

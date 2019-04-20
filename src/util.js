@@ -1,6 +1,28 @@
 const camelCase = require('camelcase');
-const get = require('lodash.get');
+const lodashGet = require('lodash.get');
+const lodashToPath = require('lodash.topath');
 const V = require('.');
+
+//
+// PATHS
+//
+
+// Make sure the path is in the form of an array or undefined if empty.
+// This is called during validator creation to make validation faster,
+// since validation can happen multiple times ;)
+function ensurePath(path, validatorName) {
+  if (path == null || ((typeof path === 'string' || Array.isArray(path)) && path.length === 0)) {
+    return undefined;
+  }
+  if (typeof path === 'string' || Array.isArray(path)) {
+    return lodashToPath(path);
+  }
+  throw new Error(`${validatorName}: the path must be a string, an array or null`);
+}
+
+function get(obj, path) {
+  return path == null ? obj : lodashGet(obj, path);
+}
 
 //
 // ENSURE VALIDATORS
@@ -89,9 +111,8 @@ class Context {
 //
 
 module.exports = {
-  get(obj, path) {
-    return ((typeof path === 'string' || Array.isArray(path)) && path.length > 0 ? get(obj, path) : obj);
-  },
+  get,
+  ensurePath,
   ensureValidator,
   ensureValidators,
   ensureValidatorMap,
