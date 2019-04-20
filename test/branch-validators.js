@@ -5,6 +5,20 @@ const success = () => undefined;
 const failure = () => 'failure';
 
 describe('Test branch validator if.', () => {
+  function testExceptionOnArg(i) {
+    const d = [
+      { s: 'cond', v: () => undefined },
+      { s: 'then', v: () => undefined },
+      { s: 'else', v: () => undefined },
+    ];
+    d[i] = { s: '"not a validator"', v: 'not a validator' };
+    it(`if(${d[0].s}, ${d[1].s}, ${d[2].s}) should throw an error immediately`, () => {
+      assert.throws(() => V.if(d[0].v, d[1].v, d[2].v), Error);
+    });
+  }
+  testExceptionOnArg(0);
+  testExceptionOnArg(1);
+  testExceptionOnArg(2);
   const vThen = () => 'then';
   const vElse = () => 'else';
   it('if(success, then, else) should return then validation result', () => {
@@ -32,6 +46,28 @@ describe('Test branch validator if.', () => {
   });
   notBoth('success', success);
   notBoth('failure', failure);
+});
+
+describe('Test branch validator call.', () => {
+  it('call("a", "TEST", {TEST: "I\'m not a validator"}) should throw an error immediately', () => {
+    assert.throws(() => V.call('a', 'TEST', { TEST: "I'm not a validator" }), Error);
+  });
+  it('call("a", "TEST") should always fail since TEST validator is not defined', () => {
+    const v = V.call('a', 'TEST');
+    assert(v({ a: 123 }) !== undefined, ':(');
+  });
+  it('call("a", "TEST", {TEST: {isType: ["", "number"]}}) should succeed for {a: -3.14}', () => {
+    const v = V.call('a', 'TEST', { TEST: { isType: ['', 'number'] } });
+    assert(v({ a: -3.14 }) === undefined, ':(');
+  });
+  it('call("a", "TEST", {TEST: {isType: ["", "number"]}}) should fail for {a: "-3.14"}', () => {
+    const v = V.call('a', 'TEST', { TEST: { isType: ['', 'number'] } });
+    assert(v({ a: '-3.14' }) !== undefined, ':(');
+  });
+  it('call("a", "TEST", {TEST: {isType: ["", "number"]}}) should fail for {}', () => {
+    const v = V.call('a', 'TEST', { TEST: { isType: ['', 'number'] } });
+    assert(v({}) !== undefined, ':(');
+  });
 });
 
 //
