@@ -49,10 +49,10 @@ const branchValidators = {
   if(condChild, thenChild, elseChild) {
     if (elseChild) {
       const [cc, tc, ec] = ensureValidators([condChild, thenChild, elseChild]);
-      return (obj) => ((cc(obj) ? ec : tc)(obj));
+      return obj => ((cc(obj) ? ec : tc)(obj));
     }
     const [cc, tc] = ensureValidators([condChild, thenChild]);
-    return (obj) => (cc(obj) ? undefined : tc(obj));
+    return obj => (cc(obj) ? undefined : tc(obj));
   },
   every(path, child) {
     const c = ensureValidator(child);
