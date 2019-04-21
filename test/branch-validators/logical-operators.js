@@ -72,7 +72,7 @@ describe('Test branch validator xor.', () => {
   });
   it('xor(failure, failure) should fail', () => {
     const v = V.xor(failure, failure);
-    assert(v({}) === undefined, ':(');
+    assert(v({}) !== undefined, ':(');
   });
   it('xor(success, failure) should succeed', () => {
     const v = V.xor(success, failure);

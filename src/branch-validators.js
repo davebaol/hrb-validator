@@ -60,12 +60,12 @@ const branchValidators = {
     ensureValidators(children);
     return (obj, context) => {
       let count = 0;
-      const invalidChild = children.find((child) => {
+      children.find((child) => {
         const error = child(obj, context);
         count += error ? 0 : 1;
         return count === 2;
       });
-      return invalidChild ? "invalid operator 'xor'" : undefined;
+      return count === 1 ? undefined : `xor: expectd exactly 1 valid child; found ${count} instead`;
     };
   },
   if(condChild, thenChild, elseChild) {
@@ -99,7 +99,7 @@ const branchValidators = {
         });
         return found ? error : undefined;
       }
-      return `each: the value at path '${path}' must be either an array or an object; found type '${typeof value}'`;
+      return `every: the value at path '${path}' must be either an array or an object; found type '${typeof value}'`;
     };
   },
   some(path, child) {
@@ -125,7 +125,7 @@ const branchValidators = {
         });
         return found ? undefined : error;
       }
-      return `some: the value at path '${path}' must be either an array or an object; found type '${typeof value}'`;
+      return `some: the value at path '${path}' must be either an array or an object; found type '${typeof value}' instead`;
     };
   },
   alter(child, resultOnSuccess, resultOnError) {
