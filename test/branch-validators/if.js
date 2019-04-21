@@ -1,26 +1,14 @@
 import { assert } from 'chai';
+import { shouldThrowErrorOnBadChild } from '../test-utils';
 import V from '../../src';
 
 describe('Test branch validator if.', () => {
-  function testExceptionOnArg(i) {
-    const d = [
-      { s: 'cond', v: () => undefined },
-      { s: 'then', v: () => undefined },
-      { s: 'else', v: () => undefined },
-    ];
-    d[i] = { s: '"not a validator"', v: 'not a validator' };
-    it(`if(${d[0].s}, ${d[1].s}, ${d[2].s}) should throw an error immediately`, () => {
-      assert.throws(() => V.if(d[0].v, d[1].v, d[2].v), Error);
-    });
-  }
-  testExceptionOnArg(0);
-  testExceptionOnArg(1);
-  testExceptionOnArg(2);
-
   const success = () => undefined;
   const failure = () => 'failure';
   const vThen = () => 'then';
   const vElse = () => 'else';
+  const args = [success, vThen, vElse];
+  args.forEach((a, i) => shouldThrowErrorOnBadChild('if', args, i));
   it('if(success, then, else) should return then validation result', () => {
     const v = V.if(success, vThen, vElse);
     assert(v({}) === 'then', ':(');

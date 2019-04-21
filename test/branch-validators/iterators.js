@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import shouldThrowErrorOnBadPath from '../test-utils';
+import { shouldThrowErrorOnBadPath, shouldThrowErrorOnBadChild } from '../test-utils';
 import V from '../../src';
 
 function testEveryOrSome(name) {
@@ -8,6 +8,7 @@ function testEveryOrSome(name) {
   const failureForEvery = () => (isEvery ? 'error' : undefined);
   describe(`Test branch validator ${name}.`, () => {
     shouldThrowErrorOnBadPath(name);
+    shouldThrowErrorOnBadChild(name, ['a'], 1);
     const test = {
       array: [1, 2, 3],
       object: { one: 1, two: 2, three: 3 },

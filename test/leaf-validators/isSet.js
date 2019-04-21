@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import shouldThrowErrorOnBadPath from '../test-utils';
+import { shouldThrowErrorOnBadPath } from '../test-utils';
 import V from '../../src';
 
 const successExpected = [false, true, 0, 1, {}, []].map(v => ({ a: v }));

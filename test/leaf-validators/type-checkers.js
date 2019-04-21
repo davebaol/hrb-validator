@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import shouldThrowErrorOnBadPath from '../test-utils';
+import { shouldThrowErrorOnBadPath } from '../test-utils';
 import V from '../../src';
 
 function shouldThrowErrorOnBadType(validatorName, errorLike) {
