@@ -1,7 +1,18 @@
 import { assert } from 'chai';
+import shouldThrowErrorOnBadPath from '../test-utils';
 import V from '../../src';
 
 describe('Test branch validator call.', () => {
+  shouldThrowErrorOnBadPath('call');
+  it('Should throw immediately an error on missing validator name', () => {
+    assert.throws(() => V.call(''), Error);
+  });
+  it('Should throw immediately an error on bad validator name', () => {
+    assert.throws(() => V.call('', 1234), Error);
+  });
+  it('Should throw immediately an error on bad scope', () => {
+    assert.throws(() => V.call('', 'TEST', 1234), Error);
+  });
   it('call("a", "TEST", {TEST: "I\'m not a validator"}) should throw an error immediately', () => {
     assert.throws(() => V.call('a', 'TEST', { TEST: "I'm not a validator" }), Error);
   });

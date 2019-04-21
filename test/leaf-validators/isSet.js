@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import shouldThrowErrorOnBadPath from '../test-utils';
 import V from '../../src';
 
 const successExpected = [false, true, 0, 1, {}, []].map(v => ({ a: v }));
@@ -13,6 +14,7 @@ function check(obj, shouldSucceed) {
 }
 
 describe('Test leaf validator isSet.', () => {
+  shouldThrowErrorOnBadPath('isSet');
   successExpected.forEach(obj => check(obj, true));
   failureExpected.forEach(obj => check(obj, false));
 });

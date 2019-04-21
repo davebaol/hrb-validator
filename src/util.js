@@ -55,12 +55,15 @@ function ensureValidators(vlds) {
   return vlds;
 }
 
-function ensureValidatorMap(vlds) {
-  Object.keys(vlds).forEach((k) => {
+function ensureScope(scope) {
+  if (typeof scope !== 'object') {
+    throw new Error('The scope must be an object');
+  }
+  Object.keys(scope).forEach((k) => {
     // eslint-disable-next-line no-param-reassign
-    vlds[k] = ensureValidator(vlds[k]);
+    scope[k] = ensureValidator(scope[k]);
   });
-  return vlds;
+  return scope;
 }
 
 //
@@ -115,7 +118,7 @@ module.exports = {
   ensurePath,
   ensureValidator,
   ensureValidators,
-  ensureValidatorMap,
+  ensureScope,
   addShortcutOpt,
   Context
 };

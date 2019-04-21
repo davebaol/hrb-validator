@@ -1,5 +1,5 @@
 const {
-  get, ensurePath, ensureValidator, ensureValidators, ensureValidatorMap, addShortcutOpt, Context
+  get, ensurePath, ensureValidator, ensureValidators, ensureScope, addShortcutOpt, Context
 } = require('./util');
 
 //
@@ -10,8 +10,11 @@ const {
 const branchValidators = {
   call(path, childName, scope) {
     const p = ensurePath(path);
-    if (scope) {
-      ensureValidatorMap(scope);
+    if (!childName || typeof childName !== 'string') {
+      throw new Error('call: validator name must be a non empty string');
+    }
+    if (scope !== undefined) {
+      ensureScope(scope);
     }
     return (obj, context) => {
       // eslint-disable-next-line no-param-reassign
