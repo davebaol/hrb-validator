@@ -65,7 +65,7 @@ const branchValidators = {
         count += error ? 0 : 1;
         return count === 2;
       });
-      return count === 1 ? undefined : `xor: expectd exactly 1 valid child; found ${count} instead`;
+      return count === 1 ? undefined : `xor: expected exactly 1 valid child; found ${count} instead`;
     };
   },
   if(condChild, thenChild, elseChild) {
