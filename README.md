@@ -49,17 +49,23 @@ and you want to validate it like that:
 By the way, such a validator is expected to fail against the object above, because both paths `a.b` and `a.c` are set, thus breaking rule 3 which in turn breaks rule 1.
 
 Notice that you can easily represent previous rules with the following tree:
+
+![Validation Tree](https://user-images.githubusercontent.com/2366334/56497128-98d2d180-64fc-11e9-8afa-edc624b47dfd.PNG)
+
+<!--
+Unfortunately github is not able to render mermaid graphs so we have to use a .png and comment the graph :(
+
 ```mermaid
 graph TB
 1.AND(1. AND)
 3.XOR(3. XOR)
-1.AND-->2(2. The value at path 'a' is an object)
-1.AND-->3.XOR
-3.XOR-->3.1(Path 'a.b' is set)
-3.XOR-->3.2(Path 'a.c' is set)
-1.AND-->4(4. The value at path 'a.b' is either a number or not specified)
-1.AND-->5(5. The value at path 'a.c' is either a number or not specified)
-1.AND-->6(6. The value at path `a.d` is an array of strings)
+1.AND---2(2. The value at path 'a' is an object)
+1.AND---3.XOR
+3.XOR---3.1(Path 'a.b' is set)
+3.XOR---3.2(Path 'a.c' is set)
+1.AND---4(4. The value at path 'a.b' is either a number or not specified)
+1.AND---5(5. The value at path 'a.c' is either a number or not specified)
+1.AND---6(6. The value at path 'a.d' is an array of strings)
 
 2---3.XOR
 3.XOR---4
@@ -71,6 +77,7 @@ linkStyle 8 stroke-width:0px;
 linkStyle 9 stroke-width:0px;
 linkStyle 10 stroke-width:0px;
 ```
+-->
 
 To create this validator you can choose one of the two approaches described in the following: 
 - [Hard-coded Validators](#hard-coded-validators)
