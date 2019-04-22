@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/davebaol/smart-validator.svg?branch=master)](https://travis-ci.org/davebaol/smart-validator) [![dependencies Status](https://david-dm.org/davebaol/smart-validator/status.svg)](https://david-dm.org/davebaol/smart-validator) [![devDependencies Status](https://david-dm.org/davebaol/smart-validator/dev-status.svg)](https://david-dm.org/davebaol/smart-validator?type=dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Table of Contents
+- [Intro](#intro)
 - [Usage](#usage)
   - [Hard-coded Validators](#hard-coded-validators)
   - [Loading Validators from File](#loading-validators-from-file)
@@ -10,6 +11,20 @@
   - [Shortcut for optional paths](#shortcut-for-optional-paths)
 - [Leaf Validators](#leaf-validators)
 - [Branch Validators](#branch-validators)
+
+## Intro
+Hierarchical Rule-Based Validator is a simple yet powerful data validation engine. Unlike schema-based validation libraries, this framework allows you to compose validation rules in higher order rules to validate complex data structures.
+
+Major supported features are:
+
+- Both browsers and NodeJS supported
+- Validators defined either in code or using JSON/YAML syntax in a declarative way
+- Rich set of leaf validators (most from [validator](https://www.npmjs.com/package/validator) and the others implemented internally) to check field values and types
+- Branch validators to compose validators in a hierarchical way through:
+  - Iterative validation on arrays and objects
+  - Recursive validation
+  - Logical operators
+  - Conditional validation
 
 ## Usage
 Suppose you have the simple object below
@@ -31,7 +46,31 @@ and you want to validate it like that:
 1. The value at path `a.c` is a boolean (whenever set)
 1. The value at path `a.d` is an array of strings
 
-By the way, such a validator is expected to fail because both paths `a.b` and `a.c` are set, thus breaking rule 3 which in turn breaks rule 1.
+By the way, such a validator is expected to fail against the object above, because both paths `a.b` and `a.c` are set, thus breaking rule 3 which in turn breaks rule 1.
+
+Notice that you can easily represent previous rules with the following tree:
+```mermaid
+graph TB
+1.AND(1. AND)
+3.XOR(3. XOR)
+1.AND-->2(2. The value at path 'a' is an object)
+1.AND-->3.XOR
+3.XOR-->3.1(Path 'a.b' is set)
+3.XOR-->3.2(Path 'a.c' is set)
+1.AND-->4(4. The value at path 'a.b' is either a number or not specified)
+1.AND-->5(5. The value at path 'a.c' is either a number or not specified)
+1.AND-->6(6. The value at path `a.d` is an array of strings)
+
+2---3.XOR
+3.XOR---4
+4---5
+5---6
+
+linkStyle 7 stroke-width:0px;
+linkStyle 8 stroke-width:0px;
+linkStyle 9 stroke-width:0px;
+linkStyle 10 stroke-width:0px;
+```
 
 To create this validator you can choose one of the two approaches described in the following: 
 - [Hard-coded Validators](#hard-coded-validators)
@@ -75,7 +114,8 @@ and:
   - optIsType: [a.c, boolean]
   - isArrayOf: [a.d, string]
 ```
-Here each validator is an object with exactly one property where the key is its name and the value is the array of its arguments.
+Here each validator is an object with exactly one property where the key is its name and the value is the array of its arguments. They look like, and in fact they are, regular function calls.
+
 For convenience, **leaf validators** are represented as an in-line object, while **branch validators** span multiple lines in a tree-like structure.
 
 To load the validator you can use the sample code below:
