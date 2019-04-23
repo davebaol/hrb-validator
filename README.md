@@ -21,7 +21,7 @@ Major supported features are:
 - Validators defined either in code or using JSON/YAML syntax in a declarative way
 - Rich set of leaf validators (most from [validator](https://www.npmjs.com/package/validator) and the others implemented internally) to check field values and types
 - Branch validators to compose validators in a hierarchical way through:
-  - Iterative validation on arrays and objects
+  - Iterative validation on array elements and object properties
   - Recursive validation
   - Logical operators
   - Conditional validation
