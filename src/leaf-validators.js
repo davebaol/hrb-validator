@@ -1,5 +1,5 @@
 const v = require('validator');
-const { get, ensurePath, addShortcutOpt } = require('./util');
+const { get, ensureArrayPath, addShortcutOpt } = require('./util');
 
 /* eslint-disable no-unused-vars */
 const vInfo = {
@@ -71,7 +71,7 @@ function vError(vName, path, vArgs) {
 
 function vFunc(vName) {
   return (path, ...args) => {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return (obj) => {
       const value = get(obj, p);
       // console.log(value);
@@ -107,38 +107,38 @@ function getType(value) {
 //
 const leafValidators = {
   equals(path, value) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return obj => (get(obj, p) === value ? undefined : `equals: the value at path '${path}' must be equal to ${value}`);
   },
   isLessThan(path, value) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return obj => (get(obj, p) < value ? undefined : `isLessThan: the value at path '${path}' must be less than ${value}`);
   },
   isLessThanOrEquals(path, value) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return obj => (get(obj, p) <= value ? undefined : `isLessThanOrEquals: the value at path '${path}' must be less than or equal to ${value}`);
   },
   isGreaterThan(path, value) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return obj => (get(obj, p) > value ? undefined : `isGreaterThan: the value at path '${path}' must be greater than ${value}`);
   },
   isGreaterThanOrEquals(path, value) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return obj => (get(obj, p) >= value ? undefined : `isGreaterThanOrEquals: the value at path '${path}' must be greater than or equal to ${value}`);
   },
   isBetween(path, lower, upper) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return (obj) => {
       const value = get(obj, p);
       return value >= lower && value <= upper ? undefined : `isBetween: the value at path '${path}' must be in the range [${lower}, ${upper}]`;
     };
   },
   isSet(path) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return obj => (get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`);
   },
   isNotEmpty(path) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return (obj) => {
       const value = get(obj, p);
       if (!value) return `the value at path '${path}' must be set`;
@@ -148,7 +148,7 @@ const leafValidators = {
     };
   },
   isPort(path, options) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     const opts = Object.assign({ asNumber: true, asString: true }, options || {});
     if (!opts.asNumber && !opts.asString) {
       throw new Error('isPort: inconsistent isPort options: either asNumber or asString must be true');
@@ -172,7 +172,7 @@ const leafValidators = {
     };
   },
   isType(path, type) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     if (typeof type === 'string' && typeCheckers[type]) {
       return obj => (typeCheckers[type](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${type}'; found '${getType(get(obj, p)) || 'unknown'}' instead`);
     }
@@ -185,18 +185,18 @@ const leafValidators = {
     throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
   },
   isOneOf(path, values) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     if (!Array.isArray(values)) {
       throw new Error('isOneOf: argument \'values\' must be an array');
     }
     return obj => (values.includes(get(obj, p)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${values}`);
   },
   isDate(path) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     return obj => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, p)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
   },
   isArrayOf(path, type) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     if (typeof type === 'string' && typeCheckers[type]) {
       return (obj) => {
         const value = get(obj, p);

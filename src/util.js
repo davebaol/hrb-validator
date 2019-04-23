@@ -1,6 +1,5 @@
 const camelCase = require('camelcase');
-const lodashGet = require('lodash.get');
-const lodashToPath = require('lodash.topath');
+const getValue = require('get-value');
 const V = require('.');
 
 //
@@ -10,18 +9,35 @@ const V = require('.');
 // Make sure the path is in the form of an array or undefined if empty.
 // This is called during validator creation to make validation faster,
 // since validation can happen multiple times ;)
-function ensurePath(path, validatorName) {
-  if (path == null || ((typeof path === 'string' || Array.isArray(path)) && path.length === 0)) {
+function ensureArrayPath(path, validatorName) {
+  const typeOfPath = typeof path;
+  if (path == null || (path.length === 0 && (typeOfPath === 'string' || Array.isArray(path)))) {
     return undefined;
   }
-  if (typeof path === 'string' || Array.isArray(path)) {
-    return lodashToPath(path);
+  if (typeOfPath === 'string') {
+    return path.split('.');
   }
-  throw new Error(`${validatorName}: the path must be a string, an array or null`);
+  if (typeOfPath === 'number') {
+    return String(path).split('.');
+  }
+  if (Array.isArray(path)) {
+    return path;
+  }
+  throw new Error(`${validatorName}: the path must be a string, an array, a number or null`);
 }
 
+function ensureStringPath(path) {
+  path.join('.');
+}
+
+const getValueOptions = {
+  default: undefined,
+  separator: '.',
+  joinChar: '.'
+};
+
 function get(obj, path) {
-  return path == null ? obj : lodashGet(obj, path);
+  return path == null ? obj : getValue(obj, path, getValueOptions);
 }
 
 //
@@ -115,7 +131,8 @@ class Context {
 
 module.exports = {
   get,
-  ensurePath,
+  ensureArrayPath,
+  ensureStringPath,
   ensureValidator,
   ensureValidators,
   ensureScope,

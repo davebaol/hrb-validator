@@ -1,5 +1,5 @@
 const {
-  get, ensurePath, ensureValidator, ensureValidators, ensureScope, addShortcutOpt, Context
+  get, ensureArrayPath, ensureValidator, ensureValidators, ensureScope, addShortcutOpt, Context
 } = require('./util');
 
 //
@@ -9,7 +9,7 @@ const {
 
 const branchValidators = {
   call(path, childName, scope) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     if (!childName || typeof childName !== 'string') {
       throw new Error('call: validator name must be a non empty string');
     }
@@ -77,7 +77,7 @@ const branchValidators = {
     return (obj, context) => (cc(obj, context) ? undefined : tc(obj, context));
   },
   every(path, child) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     const c = ensureValidator(child);
     return (obj, context) => {
       const value = get(obj, p);
@@ -103,7 +103,7 @@ const branchValidators = {
     };
   },
   some(path, child) {
-    const p = ensurePath(path);
+    const p = ensureArrayPath(path);
     const c = ensureValidator(child);
     return (obj, context) => {
       const value = get(obj, p);

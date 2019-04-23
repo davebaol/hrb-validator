@@ -3,7 +3,7 @@ import V from '../src';
 
 function shouldThrowErrorOnBadPath(validatorName, errorLike) {
   it('Should throw immediately an error on bad path as 1st argument', () => {
-    assert.throws(() => V[validatorName](0), errorLike || Error);
+    assert.throws(() => V[validatorName]({ badPath: true }), errorLike || Error);
   });
 }
 
