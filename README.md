@@ -184,6 +184,7 @@ Notice that for a couple of validators the shortcut is somewhat redundant. For i
 ## Leaf Validators
 
 Here is a list of the leaf validators currently available.
+
 Keep in mind that all leaf validators, without exception, have their shortcut opt (not reported in the list below).
 
 Leaf Validator                          | Description
@@ -262,6 +263,7 @@ isNotEmpty |
 ## Branch Validators
 
 Here is a list of the branch validators currently available.
+
 The :zap: means that the opt shortcut is available.
 
 Branch Validator              | Description
