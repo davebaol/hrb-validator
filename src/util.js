@@ -71,7 +71,7 @@ function ensureScope(scope) {
 //
 
 function shortcutOpt(f) {
-  return (path, ...args) => obj => (get(obj, path) ? f(path, ...args)(obj) : undefined);
+  return (path, ...args) => (obj, ctx) => (get(obj, path) ? f(path, ...args)(obj, ctx) : undefined);
 }
 
 function addShortcutOpt(obj, key) {
