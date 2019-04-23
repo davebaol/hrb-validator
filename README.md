@@ -176,6 +176,10 @@ This shortcut is equivalent to the composite validator
     V.xyz(path, ...args)
   )
 ```
+Notice that for a couple of validators the shortcut is somewhat redundant. For instance,
+- `V.optIsSet("a")` is always valid, since that path `a` cannot be set and null at the same time
+- `V.optIsType("a", "string")` is equivalent to `V.isType("a", ["null", "string"])`
+
 
 ## Leaf Validators
 
@@ -189,7 +193,7 @@ Leaf Validator                          | Description
 **isAfter(path [, date])**:raised_hand: | Check if the string is a date that's after the specified date (defaults to now).
 **isAlpha(path [, locale])**           | Check if the value at `path` is a string containing only letters (a-zA-Z).<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `validator.isAlphaLocales`.
 **isAlphanumeric(path [, locale])**    | Check if the value at `path` is a string containing only letters and numbers.<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `validator.isAlphanumericLocales`.
-**isArrayOf(path, type)**              | Check if the value at `path` is an array whose items have either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "number", "object", "regex", "string".
+**isArrayOf(path, type)**              | Check if the value at `path` is an array whose items have either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
 **isAscii(path)**                      | Check if the value at `path` is a string containing ASCII chars only.
 **isBase64(path)**                     | Check if the value at `path` is a base64 encoded string.
 **isBefore(path [, date])** :raised_hand: | Check if the string is a date that's before the specified date.
@@ -247,7 +251,7 @@ isNotEmpty |
 **isRFC3339(path)**                      | Check if the string is a valid [RFC 3339](https://tools.ietf.org/html/rfc3339) date.
 **isSet(path)**                          | Check if the value at `path` is a non null value.
 **isSurrogatePair(path)**                | Check if the string contains any surrogate pairs chars.
-**isType(path, type)**                   | Check if the value at `path` has either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "number", "object", "regex", "string".
+**isType(path, type)**                   | Check if the value at `path` has either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
 **isUppercase(path)**                    | Check if the string is uppercase.
 **isURL(path [, options])**              | Check if the string is an URL.<br/><br/>`options` is an object which defaults to `{ protocols: ['http','https','ftp'], require_tld: true, require_protocol: false, require_host: true, require_valid_protocol: true, allow_underscores: false, host_whitelist: false, host_blacklist: false, allow_trailing_dot: false, allow_protocol_relative_urls: false, disallow_auth: false }`.
 **isUUID(path [, version])**             | Check if the string is a UUID (version 3, 4 or 5).

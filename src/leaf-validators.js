@@ -85,6 +85,7 @@ function vFunc(vName) {
 
 const primitiveTypeCheckers = {
   boolean: arg => typeof arg === 'boolean',
+  null: arg => arg == null,
   number: arg => typeof arg === 'number',
   string: arg => typeof arg === 'string'
 };
@@ -94,6 +95,11 @@ const typeCheckers = Object.assign(primitiveTypeCheckers, {
   object: arg => typeof arg === 'object' && arg != null && arg.constructor === Object,
   regex: arg => arg instanceof RegExp
 });
+
+const typeCheckerKeys = Object.keys(typeCheckers);
+function getType(value) {
+  return typeCheckerKeys.find(k => typeCheckers[k](value));
+}
 
 //
 // LEAF VALIDATORS
@@ -168,12 +174,12 @@ const leafValidators = {
   isType(path, type) {
     const p = ensurePath(path);
     if (typeof type === 'string' && typeCheckers[type]) {
-      return obj => (typeCheckers[type](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${type}'`);
+      return obj => (typeCheckers[type](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${type}'; found '${getType(get(obj, p)) || "unknown"}' instead`);
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
       return (obj) => {
         const value = get(obj, p);
-        return (type.some(t => typeCheckers[t](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${type.join(', ')}'`);
+        return (type.some(t => typeCheckers[t](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${type.join(', ')}'; found '${getType(value) || "unknown"}' instead`);
       };
     }
     throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
@@ -194,17 +200,17 @@ const leafValidators = {
     if (typeof type === 'string' && typeCheckers[type]) {
       return (obj) => {
         const value = get(obj, p);
-        if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array`;
+        if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array; found '${getType(value) || "unknown"}' instead`;
         const flag = value.every(e => typeCheckers[type](e));
-        return flag ? undefined : `isArrayOf: the value at path '${path}' must be a 'array of ${type}'`;
+        return flag ? undefined : `isArrayOf: the value at path '${path}' must be a 'array of ${type}'; found '${getType(value) || "unknown"}' instead`;
       };
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
       return (obj) => {
         const value = get(obj, p);
-        if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be a 'array'`;
+        if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be a 'array'; found '${getType(value)}' instead`;
         const flag = value.every(e => type.some(t => typeCheckers[t](e)));
-        return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array where each item has a type amongst ${Object.keys(type).join(', ')}'`;
+        return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array where each item has a type amongst ${Object.keys(type).join(', ')}'; found '${getType(value)}' instead`;
       };
     }
     throw new Error(`isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
