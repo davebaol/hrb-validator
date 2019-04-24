@@ -1,6 +1,7 @@
 const camelCase = require('camelcase');
 const getValue = require('get-value');
 const isPlainObject = require('is-plain-object');
+const objectLength = require('object-length');
 const V = require('.');
 
 //
@@ -144,10 +145,22 @@ class Context {
 }
 
 //
+// MISC
+//
+
+function lengthOf(value) {
+  if (typeof value === 'string' || Array.isArray(value)) {
+    return value.length;
+  }
+  return (value !== null && typeof value === 'object') ? objectLength(value) : undefined;
+}
+
+//
 // EXPORTS
 //
 
 module.exports = {
+  lengthOf,
   get,
   ensureArrayPath,
   ensureStringPath,

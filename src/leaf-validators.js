@@ -1,7 +1,8 @@
 const v = require('validator');
 const isPlainObject = require('is-plain-object');
-const objectLength = require('object-length');
-const { get, ensureArrayPath, addShortcutOpt } = require('./util');
+const {
+  lengthOf, get, ensureArrayPath, addShortcutOpt
+} = require('./util');
 
 /* eslint-disable no-unused-vars */
 const vInfo = {
@@ -139,18 +140,13 @@ const leafValidators = {
     const p = ensureArrayPath(path);
     const opts = options || {};
     const min = opts.min || 0;
-    const max = opts.max || Number.POSITIVE_INFINITY;
+    const { max } = opts;
     return (obj) => {
-      const value = get(obj, p);
-      let len;
-      if (typeof value === 'string' || Array.isArray(value)) {
-        len = value.length;
-      } else if (value !== null && typeof value === 'object') {
-        len = objectLength(value);
-      } else {
+      const len = lengthOf(get(obj, p));
+      if (len === undefined) {
         return `isLength: the value at path '${path}' must be a string, an array or an object`;
       }
-      return len >= min && len <= max ? undefined : `isLength: the value at path '${path}' must have a length between ${min} and ${max}`;
+      return len >= min && (max === undefined || len <= max) ? undefined : `isLength: the value at path '${path}' must have a length between ${min} and ${max}`;
     };
   },
   isSet(path) {
