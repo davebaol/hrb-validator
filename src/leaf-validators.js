@@ -1,5 +1,6 @@
 const v = require('validator');
 const isPlainObject = require('is-plain-object');
+const objectLength = require('object-length');
 const { get, ensureArrayPath, addShortcutOpt } = require('./util');
 
 /* eslint-disable no-unused-vars */
@@ -43,7 +44,7 @@ const vInfo = {
   isJSON: args => 'matching to a valid JSON',
   isJWT: args => 'matching to a valid JWT token',
   isLatLong: args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'",
-  isLength: args => 'whose length falls in the specified range',
+  // isLength: args => 'whose length falls in the specified range',
   isLowercase: args => 'in lowercase',
   isMACAddress: args => 'in MAC address format',
   isMagnetURI: args => 'in magnet uri format',
@@ -134,6 +135,24 @@ const leafValidators = {
       return value >= lower && value <= upper ? undefined : `isBetween: the value at path '${path}' must be in the range [${lower}, ${upper}]`;
     };
   },
+  isLength(path, options) {
+    const p = ensureArrayPath(path);
+    const opts = options || {};
+    const min = opts.min || 0;
+    const max = opts.max || Number.POSITIVE_INFINITY;
+    return (obj) => {
+      const value = get(obj, p);
+      let len;
+      if (typeof value === 'string' || Array.isArray(value)) {
+        len = value.length;
+      } else if (value !== null && typeof value === 'object') {
+        len = objectLength(value);
+      } else {
+        return `isLength: the value at path '${path}' must be a string, an array or an object`;
+      }
+      return len >= min && len <= max ? undefined : `isLength: the value at path '${path}' must have a length between ${min} and ${max}`;
+    };
+  },
   isSet(path) {
     const p = ensureArrayPath(path);
     return obj => (get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`);
@@ -222,9 +241,10 @@ const leafValidators = {
 // Augment leaf validators with the ones from validator module
 //
 Object.keys(vInfo).reduce((acc, k) => {
-  // Make sure the function exists in order to prevent errors
-  // due to changes in new versions of the validator module
-  if (typeof v[k] === 'function') {
+  // 1. Make sure not to overwrite any function already defined locally
+  // 2. The value from the validator module must be a function (this prevents errors
+  //    due to changes in new versions of the module)
+  if (!(k in acc) && typeof v[k] === 'function') {
     acc[k] = vFunc(k);
   }
   return acc;
