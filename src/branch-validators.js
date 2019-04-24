@@ -99,7 +99,18 @@ const branchValidators = {
         });
         return found ? error : undefined;
       }
-      return `every: the value at path '${path}' must be either an array or an object; found type '${typeof value}'`;
+      if (typeof value === 'string') {
+        let error;
+        // eslint-disable-next-line no-cond-assign
+        for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
+          error = c({ index, value: char, original: obj }, context);
+          if (error) {
+            break;
+          }
+        }
+        return error;
+      }
+      return `every: the value at path '${path}' must be either a string, an array or an object; found type '${typeof value}'`;
     };
   },
   some(path, child) {
@@ -125,7 +136,18 @@ const branchValidators = {
         });
         return found ? undefined : error;
       }
-      return `some: the value at path '${path}' must be either an array or an object; found type '${typeof value}' instead`;
+      if (typeof value === 'string') {
+        let error;
+        // eslint-disable-next-line no-cond-assign
+        for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
+          error = c({ index, value: char, original: obj }, context);
+          if (!error) {
+            break;
+          }
+        }
+        return error;
+      }
+      return `some: the value at path '${path}' must be either a string, an array or an object; found type '${typeof value}' instead`;
     };
   },
   alter(child, resultOnSuccess, resultOnError) {

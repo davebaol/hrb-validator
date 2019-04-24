@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import objectLength from 'object-length';
 import { shouldThrowErrorOnBadPath, shouldThrowErrorOnBadChild } from '../test-utils';
 import V from '../../src';
 
@@ -14,7 +15,8 @@ function testEveryOrSome(name) {
       object: { one: 1, two: 2, three: 3 },
       string: 'test this!'
     };
-    ['array', 'object'].forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'fail at first invalid' : 'succeed at first valid'} iteration`, () => {
+    const testKeys = Object.keys(test);
+    testKeys.forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'fail at first invalid' : 'succeed at first valid'} iteration`, () => {
       let count = 0;
       const expected = 2;
       const vIt = () => {
@@ -25,9 +27,9 @@ function testEveryOrSome(name) {
       v(test);
       assert(count === expected, ':(');
     }));
-    ['array', 'object'].forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'succeed when all iterations are valid' : 'fail when all iterations are invalid'}`, () => {
+    testKeys.forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'succeed when all iterations are valid' : 'fail when all iterations are invalid'}`, () => {
       let count = 0;
-      const expected = 3;
+      const expected = objectLength(test[t]);
       const vIt = () => { count += 1; return successForEvery(); };
       const v = V[name](t, vIt);
       v(test);
@@ -46,11 +48,12 @@ function testEveryOrSome(name) {
     iterationChecker('object', Object.keys(test.object).map((k, i) => ({
       index: i, key: k, value: test.object[k], original: test
     })));
+    iterationChecker('string', [...test.string].map((v, i,) => ({ index: i, value: v, original: test })));
 
-    it(`For strings ${name} should fail`, () => {
+    it(`For numbers ${name} should fail`, () => {
       const vIt = () => undefined;
-      const v = V[name]('string', vIt);
-      assert(v(test) !== undefined, ':(');
+      const v = V[name]('', vIt);
+      assert(v(12) !== undefined, ':(');
     });
   });
 }
