@@ -1,4 +1,5 @@
 const v = require('validator');
+const isPlainObject = require('is-plain-object');
 const { get, ensureArrayPath, addShortcutOpt } = require('./util');
 
 /* eslint-disable no-unused-vars */
@@ -85,14 +86,14 @@ function vFunc(vName) {
 
 const primitiveTypeCheckers = {
   boolean: arg => typeof arg === 'boolean',
-  null: arg => arg == null,
+  null: arg => arg == null, // null or undefined
   number: arg => typeof arg === 'number',
   string: arg => typeof arg === 'string'
 };
 
 const typeCheckers = Object.assign(primitiveTypeCheckers, {
   array: arg => Array.isArray(arg),
-  object: arg => typeof arg === 'object' && arg != null && arg.constructor === Object,
+  object: arg => isPlainObject(arg),
   regex: arg => arg instanceof RegExp
 });
 

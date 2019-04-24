@@ -1,5 +1,6 @@
 const camelCase = require('camelcase');
 const getValue = require('get-value');
+const isPlainObject = require('is-plain-object');
 const V = require('.');
 
 //
@@ -44,23 +45,40 @@ function get(obj, path) {
 // ENSURE VALIDATORS
 //
 
+const hasOwn = Object.prototype.hasOwnProperty;
+
+// This is an optimized version of the following code
+//   let keys = Object.keys(obj);
+//   return keys.length === 1 ? keys[0] : undefined;
+function checkUniqueKey(obj) {
+  let k1;
+  // eslint-disable-next-line no-restricted-syntax
+  for (const k in obj) {
+    if (hasOwn.call(obj, k)) {
+      if (k1 !== undefined) {
+        return undefined;
+      }
+      k1 = k;
+    }
+  }
+  return k1;
+}
 function ensureValidator(vld) {
   if (typeof vld === 'function') {
     return vld;
   }
-  if (vld.constructor !== Object) {
-    throw new Error(`Expected a validator as either a function or a plain object; found a ${typeof vld} instead`);
+  if (isPlainObject(vld)) {
+    const method = checkUniqueKey(vld);
+    if (!method) {
+      throw new Error('Error: A plain object validator must have exactly one property where the key is its name and the value is the array of its arguments');
+    }
+    const validator = V[method];
+    if (!validator) {
+      throw new Error(`Error: Unknown validator '${method}'`);
+    }
+    return validator(...vld[method]);
   }
-  const methods = Object.keys(vld);
-  if (methods.length !== 1) {
-    throw new Error('Error: A validators as a plain object must have exactly one property where the key is its name and the value is the array of its arguments');
-  }
-  const method = methods[0];
-  const validator = V[method];
-  if (!validator) {
-    throw new Error(`Error: Unknown validator '${method}'`);
-  }
-  return validator(...vld[method]);
+  throw new Error(`Expected a validator as either a function or a plain object; found a ${typeof vld} instead`);
 }
 
 function ensureValidators(vlds) {
