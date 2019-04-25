@@ -1,6 +1,6 @@
 # Smart Validator
 
-[![Build Status](https://travis-ci.org/davebaol/smart-validator.svg?branch=master)](https://travis-ci.org/davebaol/smart-validator) [![Codecove](https://codecov.io/github/davebaol/smart-validator/coverage.svg?precision=2) [![dependencies Status](https://david-dm.org/davebaol/smart-validator/status.svg)](https://david-dm.org/davebaol/smart-validator) [![devDependencies Status](https://david-dm.org/davebaol/smart-validator/dev-status.svg)](https://david-dm.org/davebaol/smart-validator?type=dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://travis-ci.org/davebaol/smart-validator.svg?branch=master)](https://travis-ci.org/davebaol/smart-validator) [![Codecove](https://codecov.io/github/davebaol/smart-validator/coverage.svg?precision=2)](https://codecov.io/github/davebaol/smart-validator) [![dependencies Status](https://david-dm.org/davebaol/smart-validator/status.svg)](https://david-dm.org/davebaol/smart-validator) [![devDependencies Status](https://david-dm.org/davebaol/smart-validator/dev-status.svg)](https://david-dm.org/davebaol/smart-validator?type=dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Table of Contents
 - [Intro](#intro)
