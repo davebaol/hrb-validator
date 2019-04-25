@@ -1,7 +1,7 @@
 import { assert } from 'chai';
+import lengthOf from '@davebaol/length-of';
 import { shouldThrowErrorOnBadPath, shouldThrowErrorOnBadChild } from '../test-utils';
 import V from '../../src';
-import U from '../../src/util';
 
 function testEveryOrSome(name) {
   const isEvery = name === 'every';
@@ -29,7 +29,7 @@ function testEveryOrSome(name) {
     }));
     testKeys.forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'succeed when all iterations are valid' : 'fail when all iterations are invalid'}`, () => {
       let count = 0;
-      const expected = U.lengthOf(test[t]);
+      const expected = lengthOf(test[t]);
       const vIt = () => { count += 1; return successForEvery(); };
       const v = V[name](t, vIt);
       v(test);

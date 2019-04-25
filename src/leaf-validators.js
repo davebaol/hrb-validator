@@ -1,8 +1,7 @@
 const v = require('validator');
 const isPlainObject = require('is-plain-object');
-const {
-  lengthOf, get, ensureArrayPath, addShortcutOpt
-} = require('./util');
+const lengthOf = require('@davebaol/length-of');
+const { get, ensureArrayPath, addShortcutOpt } = require('./util');
 
 /* eslint-disable no-unused-vars */
 const vInfo = {
