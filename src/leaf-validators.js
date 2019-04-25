@@ -1,7 +1,8 @@
 const v = require('validator');
 const isPlainObject = require('is-plain-object');
 const lengthOf = require('@davebaol/length-of');
-const { get, ensureArrayPath, addShortcutOpt } = require('./util');
+const { get, ensureArrayPath } = require('./util/path');
+const createShortcuts = require('./util/create-shortcuts');
 
 /* eslint-disable no-unused-vars */
 const vInfo = {
@@ -246,9 +247,8 @@ Object.keys(vInfo).reduce((acc, k) => {
 }, leafValidators);
 
 //
-// Augment leaf validators with shortcuts 'opt' and 'not'
+// Augment all leaf validators with shortcut 'opt'
 //
-Object.keys(leafValidators).reduce((acc, key) => addShortcutOpt(acc, key), leafValidators);
-
+createShortcuts(leafValidators, leafValidators);
 
 module.exports = leafValidators;

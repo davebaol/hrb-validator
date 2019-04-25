@@ -1,6 +1,7 @@
-const {
-  get, ensureArrayPath, ensureValidator, ensureValidators, ensureScope, addShortcutOpt, Context
-} = require('./util');
+const { get, ensureArrayPath } = require('./util/path');
+const { ensureValidator, ensureValidators, ensureScope } = require('./util/misc');
+const Context = require('./util/context');
+const createShortcuts = require('./util/create-shortcuts');
 
 //
 // BRANCH VALIDATORS
@@ -163,6 +164,6 @@ const branchValidators = {
 //
 // Augment with shortcut 'opt' all branch validators taking a path as first argument
 //
-['call', 'every', 'some'].reduce((acc, key) => addShortcutOpt(acc, key), branchValidators);
+createShortcuts(branchValidators, branchValidators, ['call', 'every', 'some']);
 
 module.exports = branchValidators;
