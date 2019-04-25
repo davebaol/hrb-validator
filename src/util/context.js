@@ -1,5 +1,4 @@
 class Context {
-  
   constructor() {
     this.stack = [];
   }
