@@ -137,29 +137,6 @@ const leafValidators = {
     const p = ensureArrayPath(path);
     return obj => (get(obj, p) === value ? undefined : `equals: the value at path '${path}' must be equal to ${value}`);
   },
-  isLessThan(path, value) {
-    const p = ensureArrayPath(path);
-    return obj => (get(obj, p) < value ? undefined : `isLessThan: the value at path '${path}' must be less than ${value}`);
-  },
-  isLessThanOrEquals(path, value) {
-    const p = ensureArrayPath(path);
-    return obj => (get(obj, p) <= value ? undefined : `isLessThanOrEquals: the value at path '${path}' must be less than or equal to ${value}`);
-  },
-  isGreaterThan(path, value) {
-    const p = ensureArrayPath(path);
-    return obj => (get(obj, p) > value ? undefined : `isGreaterThan: the value at path '${path}' must be greater than ${value}`);
-  },
-  isGreaterThanOrEquals(path, value) {
-    const p = ensureArrayPath(path);
-    return obj => (get(obj, p) >= value ? undefined : `isGreaterThanOrEquals: the value at path '${path}' must be greater than or equal to ${value}`);
-  },
-  isBetween(path, lower, upper) {
-    const p = ensureArrayPath(path);
-    return (obj) => {
-      const value = get(obj, p);
-      return value >= lower && value <= upper ? undefined : `isBetween: the value at path '${path}' must be in the range [${lower}, ${upper}]`;
-    };
-  },
   isLength(path, options) {
     const p = ensureArrayPath(path);
     const opts = ensureOptions(options, { min: 0, max: undefined });
