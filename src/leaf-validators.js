@@ -21,10 +21,10 @@ const vInfo = {
   isCurrency: args => 'representing a valid currency amount',
   isDataURI: args => 'in data uri format',
   // isDecimal: args => `equal to the value '${args[0]}'`,
-  // isDivisibleBy: args => `equal to the value '${args[0]}'`,
+  isDivisibleBy: args => `that's divisible by ${args[0]}`,
   isEmail: args => 'representing an email address',
   // isEmpty: args => `equal to the value '${args[0]}'`,
-  // isFloat: args => `equal to the value '${args[0]}'`,
+  isFloat: args => 'that\'s a float falling in the specified range',
   isFQDN: args => 'representing a fully qualified domain name (e.g. domain.com)',
   isFullWidth: args => 'containing any full-width chars',
   isHalfWidth: args => 'containing any half-width chars',
@@ -33,7 +33,7 @@ const vInfo = {
   isHexColor: args => 'matching to a hexadecimal color',
   isIdentityCard: args => 'matching to a valid identity card code',
   // isIn: args => `equal to the value '${args[0]}'`,
-  // isInt: args => `equal to the value '${args[0]}'`,
+  isInt: args => 'that\'s an integer falling in the specified range',
   isIP: args => 'matching to an IP',
   isIPRange: args => 'matching to an IP Range',
   isISBN: args => 'matching to an ISBN',
@@ -56,7 +56,7 @@ const vInfo = {
   isMongoId: args => 'in the form of a valid hex-encoded representation of a MongoDB ObjectId.',
   isMultibyte: args => 'containing one or more multibyte chars',
   isNumeric: args => 'containing only numbers',
-  // isPort: args => `equal to the value '${args[0]}'`,
+  isPort: args => 'representing a valid port',
   isPostalCode: args => 'representing a postal code',
   isRFC3339: args => 'matching to a valid RFC 3339 date',
   isSurrogatePair: args => 'containing any surrogate pairs chars',
@@ -69,22 +69,45 @@ const vInfo = {
 };
 /* eslint-enable no-unused-vars */
 
-function vError(vName, path, vArgs) {
-  return `${vName}: the value at path '${path}' must be a string ${vName ? vInfo[vName](vArgs) : ''}`;
+class StringOnly {
+  static error(vName, path, vArgs) {
+    return `${vName}: the value at path '${path}' must be a string ${vName ? vInfo[vName](vArgs) : ''}`;
+  }
+
+  static validator(vName) {
+    return (path, ...args) => {
+      const p = ensureArrayPath(path);
+      return (obj) => {
+        const value = get(obj, p);
+        if (typeof value !== 'string') {
+          return this.error(null, path);
+        }
+        return v[vName](value, ...args) ? undefined : this.error(vName, path, args);
+      };
+    };
+  }
 }
 
-function vFunc(vName) {
-  return (path, ...args) => {
-    const p = ensureArrayPath(path);
-    return (obj) => {
-      const value = get(obj, p);
-      // console.log(value);
-      if (typeof value !== 'string') {
-        return vError(null, path);
-      }
-      return v[vName](value, ...args) ? undefined : vError(vName, path, args);
+class StringAndNumber {
+  static error(vName, path, vArgs) {
+    return `${vName}: the value at path '${path}' must be either a string or a number ${vName ? vInfo[vName](vArgs) : ''}`;
+  }
+
+  static validator(vName) {
+    return (path, ...args) => {
+      const p = ensureArrayPath(path);
+      return (obj) => {
+        let value = get(obj, p);
+        const valueType = typeof value;
+        if (valueType === 'number') {
+          value = String(value);
+        } else if (valueType !== 'string') {
+          return this.error(null, path);
+        }
+        return v[vName](value, ...args) ? undefined : this.error(vName, path, args);
+      };
     };
-  };
+  }
 }
 
 const primitiveTypeCheckers = {
@@ -162,22 +185,6 @@ const leafValidators = {
       return undefined;
     };
   },
-  isPort(path) {
-    //
-    // isDivisibleBy should be treated like this since the value at path can be either a string or a number
-    //
-    const p = ensureArrayPath(path);
-    return (obj) => {
-      let value = get(obj, p);
-      const valueType = typeof value;
-      if (valueType === 'number') {
-        value = String(value);
-      } else if (valueType !== 'string') {
-        return `isPort: the value at path '${path}' must be either a number or a string`;
-      }
-      return v.isPort(value) ? undefined : `isPort: the value at path '${path}' must be a valid port`;
-    };
-  },
   isType(path, type) {
     const p = ensureArrayPath(path);
     if (typeof type === 'string' && typeCheckers[type]) {
@@ -227,12 +234,16 @@ const leafValidators = {
 //
 // Augment leaf validators with the ones from validator module
 //
+const acceptStringAndNumber = ['isDivisibleBy', 'isFloat', 'isInt', 'isPort'].reduce((acc, k) => {
+  acc[k] = true;
+  return acc;
+}, {});
 Object.keys(vInfo).reduce((acc, k) => {
   // 1. Make sure not to overwrite any function already defined locally
   // 2. The value from the validator module must be a function (this prevents errors
   //    due to changes in new versions of the module)
   if (!(k in acc) && typeof v[k] === 'function') {
-    acc[k] = vFunc(k);
+    acc[k] = (acceptStringAndNumber[k] ? StringAndNumber : StringOnly).validator(k);
   }
   return acc;
 }, leafValidators);
