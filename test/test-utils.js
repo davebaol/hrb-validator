@@ -4,7 +4,8 @@ import V from '../src';
 const badValues = {
   array: "I'm a bad array!",
   child: "I'm a bad child!",
-  path: { badPath: true },
+  object: "I'm a bad object!",
+  path: { badPath: true }
 };
 
 function ordinal(n) {

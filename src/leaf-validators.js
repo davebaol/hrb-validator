@@ -165,9 +165,12 @@ const leafValidators = {
   },
   isPort(path, options) {
     const p = ensureArrayPath(path);
+    if (options != null && typeof options !== 'object') {
+      throw new Error('isPort: optional argument \'options\' must be an object (if specified)');
+    }
     const opts = Object.assign({ asNumber: true, asString: true }, options || {});
     if (!opts.asNumber && !opts.asString) {
-      throw new Error('isPort: inconsistent isPort options: either asNumber or asString must be true');
+      throw new Error('isPort: inconsistent options: either asNumber or asString must be true');
     }
     return (obj) => {
       let value = get(obj, p);
