@@ -16,7 +16,7 @@ const vInfo = {
   isBase64: args => 'base64 encoded',
   // isBefore: args => `equal to the value '${args[0]}'`,
   // isBoolean: args => `equal to the value '${args[0]}'`,
-  // isByteLength: args => `equal to the value '${args[0]}'`,
+  isByteLength: args => 'whose length (in UTF-8 bytes) falls in the specified range',
   isCreditCard: args => 'representing a credit card',
   isCurrency: args => 'representing a valid currency amount',
   isDataURI: args => 'in data uri format',
@@ -163,6 +163,9 @@ const leafValidators = {
     };
   },
   isPort(path) {
+    //
+    // isDivisibleBy should be treated like this since the value at path can be either a string or a number
+    //
     const p = ensureArrayPath(path);
     return (obj) => {
       let value = get(obj, p);
