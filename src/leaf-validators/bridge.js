@@ -1,126 +1,169 @@
 const v = require('validator');
 const { get, ensureArrayPath } = require('../util/path');
 
-/* eslint-disable no-unused-vars */
-const vInfo = {
-  contains: args => `containing the value '${args[0]}'`,
-  // equals: args => `equal to the value '${args[0]}'`,
-  // isAfter: args => `equal to the value '${args[0]}'`,
-  isAlpha: args => 'containing only letters (a-zA-Z)',
-  isAlphanumeric: args => 'containing only letters and numbers',
-  isAscii: args => 'containing ASCII chars only',
-  isBase64: args => 'base64 encoded',
-  // isBefore: args => `equal to the value '${args[0]}'`,
-  // isBoolean: args => `equal to the value '${args[0]}'`,
-  isByteLength: args => 'whose length (in UTF-8 bytes) falls in the specified range',
-  isCreditCard: args => 'representing a credit card',
-  isCurrency: args => 'representing a valid currency amount',
-  isDataURI: args => 'in data uri format',
-  // isDecimal: args => `equal to the value '${args[0]}'`,
-  isDivisibleBy: args => `that's divisible by ${args[0]}`,
-  isEmail: args => 'representing an email address',
-  // isEmpty: args => `equal to the value '${args[0]}'`,
-  isFloat: args => 'that\'s a float falling in the specified range',
-  isFQDN: args => 'representing a fully qualified domain name (e.g. domain.com)',
-  isFullWidth: args => 'containing any full-width chars',
-  isHalfWidth: args => 'containing any half-width chars',
-  isHash: args => `matching to the format of the hash algorithm ${args[0]}`,
-  // isHexadecimal: args => `equal to the value '${args[0]}'`,
-  isHexColor: args => 'matching to a hexadecimal color',
-  isIdentityCard: args => 'matching to a valid identity card code',
-  // isIn: args => `equal to the value '${args[0]}'`,
-  isInt: args => 'that\'s an integer falling in the specified range',
-  isIP: args => 'matching to an IP',
-  isIPRange: args => 'matching to an IP Range',
-  isISBN: args => 'matching to an ISBN',
-  isISIN: args => 'matching to an ISIN',
-  isISO31661Alpha2: args => 'matching to a valid ISO 3166-1 alpha-2 officially assigned country code',
-  isISO31661Alpha3: args => 'matching to a valid ISO 3166-1 alpha-3 officially assigned country code',
-  isISO8601: args => 'matching to a valid ISO 8601 date',
-  isISRC: args => 'matching to an ISRC',
-  isISSN: args => 'matching to an ISSN',
-  isJSON: args => 'matching to a valid JSON',
-  isJWT: args => 'matching to a valid JWT token',
-  isLatLong: args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'",
-  // isLength: args => 'whose length falls in the specified range',
-  isLowercase: args => 'in lowercase',
-  isMACAddress: args => 'in MAC address format',
-  isMagnetURI: args => 'in magnet uri format',
-  isMD5: args => 'representing a valid MD5 hash',
-  isMimeType: args => 'matching to a valid MIME type format',
-  isMobilePhone: args => 'representing a mobile phone number',
-  isMongoId: args => 'in the form of a valid hex-encoded representation of a MongoDB ObjectId.',
-  isMultibyte: args => 'containing one or more multibyte chars',
-  isNumeric: args => 'containing only numbers',
-  isPort: args => 'representing a valid port',
-  isPostalCode: args => 'representing a postal code',
-  isRFC3339: args => 'matching to a valid RFC 3339 date',
-  isSurrogatePair: args => 'containing any surrogate pairs chars',
-  isUppercase: args => 'in uppercase',
-  isURL: args => 'representing a valid URL',
-  isUUID: args => 'matching to a UUID (version 3, 4 or 5)',
-  isVariableWidth: args => 'containing a mixture of full and half-width chars',
-  isWhitelisted: args => 'whose characters belongs to the whitelist',
-  matches: args => `matching the regex '${args[0]}'`
-};
-/* eslint-enable no-unused-vars */
-
 class StringOnly {
-  static error(vName, path, vArgs) {
-    return `${vName}: the value at path '${path}' must be a string ${vName ? vInfo[vName](vArgs) : ''}`;
+  constructor(name, errorFunc, ...argCheckers) {
+    this.name = name;
+    this.errorFunc = errorFunc;
+    this.argCheckers = argCheckers;
   }
 
-  static validator(vName) {
+  error(path, vArgs) {
+    return `${this.name}: the value at path '${path}' must be a string ${vArgs ? this.errorFunc(vArgs) : ''}`;
+  }
+
+  validator() {
+    const validator = v[this.name];
     return (path, ...args) => {
       const p = ensureArrayPath(path);
+      this.argCheckers.forEach((check, index) => check(args[index]));
       return (obj) => {
         const value = get(obj, p);
         if (typeof value !== 'string') {
-          return this.error(null, path);
+          return this.error(path);
         }
-        return v[vName](value, ...args) ? undefined : this.error(vName, path, args);
+        return validator(value, ...args) ? undefined : this.error(path, args);
       };
     };
   }
 }
 
 class StringAndNumber {
-  static error(vName, path, vArgs) {
-    return `${vName}: the value at path '${path}' must be either a string or a number ${vName ? vInfo[vName](vArgs) : ''}`;
+  constructor(name, errorFunc, ...argCheckers) {
+    this.name = name;
+    this.errorFunc = errorFunc;
+    this.argCheckers = argCheckers;
   }
 
-  static validator(vName) {
+  error(path, vArgs) {
+    return `${this.name}: the value at path '${path}' must be either a string or a number ${vArgs ? this.errorFunc(vArgs) : ''}`;
+  }
+
+  validator() {
+    const validator = v[this.name];
     return (path, ...args) => {
       const p = ensureArrayPath(path);
+      this.argCheckers.forEach((check, index) => check(args[index]));
       return (obj) => {
         let value = get(obj, p);
         const valueType = typeof value;
         if (valueType === 'number') {
           value = String(value);
         } else if (valueType !== 'string') {
-          return this.error(null, path);
+          return this.error(path);
         }
-        return v[vName](value, ...args) ? undefined : this.error(vName, path, args);
+        return validator(value, ...args) ? undefined : this.error(path, args);
       };
     };
   }
 }
 
-const acceptStringAndNumber = ['isDivisibleBy', 'isFloat', 'isInt', 'isPort'].reduce((acc, k) => {
-  acc[k] = true;
-  return acc;
-}, {});
+function checkOptions(optional) {
+  if (optional) {
+    return (a) => {
+      if (a != null && typeof a !== 'object') {
+        throw new Error('Argument \'options\' is optional, but must be an object if specified');
+      }
+    };
+  }
+  return (a) => {
+    if (a == null || typeof a !== 'object') {
+      throw new Error('Argument \'options\' must be an object');
+    }
+  };
+}
+
+
+function checkLocale(optional, arrayToo) {
+  if (optional) {
+    return (a) => {
+      if (a !== undefined && (typeof a !== 'string' || (arrayToo && !Array.isArray(a)))) {
+        throw new Error(`Argument 'locale' is optional, but must be a string ${arrayToo ? 'or an array of strings ' : ''}if specified`);
+      }
+    };
+  }
+  return (a) => {
+    if (typeof a !== 'string' || (arrayToo && !Array.isArray(a))) {
+      throw new Error(`Argument 'locale' must be a string ${arrayToo ? 'or an array of strings ' : ''}if specified`);
+    }
+  };
+}
+
+/* eslint-disable no-unused-vars */
+const vInfo = [
+  new StringOnly('contains', args => `containing the value '${args[0]}'`),
+  // new StringOnly('equals', args => `equal to the value '${args[0]}'`),
+  // new StringOnly('isAfter', args => `equal to the value '${args[0]}'`),
+  new StringOnly('isAlpha', args => 'containing only letters (a-zA-Z)', checkLocale(true, false)),
+  new StringOnly('isAlphanumeric', args => 'containing only letters and numbers', checkLocale(true, false)),
+  new StringOnly('isAscii', args => 'containing ASCII chars only'),
+  new StringOnly('isBase64', args => 'base64 encoded'),
+  // new StringOnly('isBefore', args => `equal to the value '${args[0]}'`),
+  // new StringOnly('isBoolean', args => `equal to the value '${args[0]}'`),
+  new StringOnly('isByteLength', args => 'whose length (in UTF-8 bytes) falls in the specified range', checkOptions(true)),
+  new StringOnly('isCreditCard', args => 'representing a credit card'),
+  new StringOnly('isCurrency', args => 'representing a valid currency amount'),
+  new StringOnly('isDataURI', args => 'in data uri format'),
+  // new StringOnly('isDecimal', args => `equal to the value '${args[0]}'`),
+  new StringAndNumber('isDivisibleBy', args => `that's divisible by ${args[0]}`),
+  new StringOnly('isEmail', args => 'representing an email address', checkOptions(true)),
+  // new StringOnly('isEmpty', args => `equal to the value '${args[0]}'`),
+  new StringAndNumber('isFloat', args => 'that\'s a float falling in the specified range', checkOptions(true)),
+  new StringOnly('isFQDN', args => 'representing a fully qualified domain name (e.g. domain.com)', checkOptions(true)),
+  new StringOnly('isFullWidth', args => 'containing any full-width chars'),
+  new StringOnly('isHalfWidth', args => 'containing any half-width chars'),
+  new StringOnly('isHash', args => `matching to the format of the hash algorithm ${args[0]}`),
+  // new StringOnly('isHexadecimal', args => `equal to the value '${args[0]}'`),
+  new StringOnly('isHexColor', args => 'matching to a hexadecimal color'),
+  new StringOnly('isIdentityCard', args => 'matching to a valid identity card code', checkLocale(true, false)),
+  // new StringOnly('isIn', args => `equal to the value '${args[0]}'`),
+  new StringAndNumber('isInt', args => 'that\'s an integer falling in the specified range', checkOptions(true)),
+  new StringOnly('isIP', args => 'matching to an IP'),
+  new StringOnly('isIPRange', args => 'matching to an IP Range'),
+  new StringOnly('isISBN', args => 'matching to an ISBN'),
+  new StringOnly('isISIN', args => 'matching to an ISIN'),
+  new StringOnly('isISO31661Alpha2', args => 'matching to a valid ISO 3166-1 alpha-2 officially assigned country code'),
+  new StringOnly('isISO31661Alpha3', args => 'matching to a valid ISO 3166-1 alpha-3 officially assigned country code'),
+  new StringOnly('isISO8601', args => 'matching to a valid ISO 8601 date'),
+  new StringOnly('isISRC', args => 'matching to an ISRC'),
+  new StringOnly('isISSN', args => 'matching to an ISSN', checkOptions(true)),
+  new StringOnly('isJSON', args => 'matching to a valid JSON'),
+  new StringOnly('isJWT', args => 'matching to a valid JWT token'),
+  new StringOnly('isLatLong', args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'"),
+  // new StringOnly('isLength', args => 'whose length falls in the specified range'),
+  new StringOnly('isLowercase', args => 'in lowercase'),
+  new StringOnly('isMACAddress', args => 'in MAC address format'),
+  new StringOnly('isMagnetURI', args => 'in magnet uri format'),
+  new StringOnly('isMD5', args => 'representing a valid MD5 hash'),
+  new StringOnly('isMimeType', args => 'matching to a valid MIME type format'),
+  new StringOnly('isMobilePhone', args => 'representing a mobile phone number', checkLocale(true, true), checkOptions(true)),
+  new StringOnly('isMongoId', args => 'in the form of a valid hex-encoded representation of a MongoDB ObjectId.'),
+  new StringOnly('isMultibyte', args => 'containing one or more multibyte chars'),
+  new StringOnly('isNumeric', args => 'containing only numbers', checkOptions(true)),
+  new StringAndNumber('isPort', args => 'representing a valid port'),
+  new StringOnly('isPostalCode', args => 'representing a postal code', checkLocale(false, false)),
+  new StringOnly('isRFC3339', args => 'matching to a valid RFC 3339 date'),
+  new StringOnly('isSurrogatePair', args => 'containing any surrogate pairs chars'),
+  new StringOnly('isUppercase', args => 'in uppercase'),
+  new StringOnly('isURL', args => 'representing a valid URL', checkOptions(true)),
+  new StringOnly('isUUID', args => 'matching to a UUID (version 3, 4 or 5)'),
+  new StringOnly('isVariableWidth', args => 'containing a mixture of full and half-width chars'),
+  new StringOnly('isWhitelisted', args => 'whose characters belongs to the whitelist'),
+  new StringOnly('matches', args => `matching the regex '${args[0]}'`)
+];
+/* eslint-enable no-unused-vars */
 
 function bridge(target) {
-  return Object.keys(vInfo).reduce((acc, k) => {
+  vInfo.forEach((b) => {
+    const k = b.name;
     // 1. Make sure not to overwrite any function already defined in the target
     // 2. The value from the validator module must be a function (this prevents errors
     //    due to changes in new versions of the module)
-    if (!(k in acc) && typeof v[k] === 'function') {
-      acc[k] = (acceptStringAndNumber[k] ? StringAndNumber : StringOnly).validator(k);
+    if (!(k in target) && typeof v[k] === 'function') {
+      target[k] = b.validator(); // eslint-disable-line no-param-reassign
     }
-    return acc;
-  }, target);
+  });
+  return target;
 }
 
 module.exports = bridge;
