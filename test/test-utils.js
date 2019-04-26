@@ -1,11 +1,11 @@
 import { assert } from 'chai';
 import V from '../src';
 
-function shouldThrowErrorOnBadPath(validatorName, errorLike) {
-  it('Should throw immediately an error on bad path as 1st argument', () => {
-    assert.throws(() => V[validatorName]({ badPath: true }), errorLike || Error);
-  });
-}
+const badValues = {
+  array: "I'm a bad array!",
+  child: "I'm a bad child!",
+  path: { badPath: true },
+};
 
 function ordinal(n) {
   switch (n) {
@@ -15,14 +15,28 @@ function ordinal(n) {
     default: return `${n}th`;
   }
 }
-function shouldThrowErrorOnBadChild(validatorName, args, index, errorLike) {
-  const badArgs = args.map((a, i) => (i === index ? "I'm a bad child!" : a));
-  it(`Should throw immediately an error on bad child as ${ordinal(index + 1)} argument`, () => {
+
+function shouldThrowErrorOnBad(type, validatorName, args, index, errorLike) {
+  if (!(type in badValues)) {
+    throw new Error(`Unknown bad argument of type '${type}'`);
+  }
+  const badArgs = Array.from(args);
+  badArgs[index] = badValues[type];
+  it(`Should throw immediately an error on bad ${type} as ${ordinal(index + 1)} argument`, () => {
     assert.throws(() => V[validatorName](...badArgs), errorLike || Error);
   });
 }
 
+function shouldThrowErrorOnBadPath(validatorName, errorLike) {
+  shouldThrowErrorOnBad('path', validatorName, [], 0, errorLike);
+}
+
+function shouldThrowErrorOnBadChild(validatorName, args, index, errorLike) {
+  shouldThrowErrorOnBad('child', validatorName, args, index, errorLike);
+}
+
 export {
+  shouldThrowErrorOnBad,
   shouldThrowErrorOnBadPath,
   shouldThrowErrorOnBadChild
 };
