@@ -4,7 +4,8 @@ const { get, ensureArrayPath } = require('./path');
 function optShortcutOf(validator) {
   return (path, ...args) => {
     const p = ensureArrayPath(path);
-    return (obj, ctx) => (get(obj, p) ? validator(p, ...args)(obj, ctx) : undefined);
+    const v = validator(p, ...args);
+    return (obj, ctx) => (get(obj, p) ? v(obj, ctx) : undefined);
   };
 }
 
