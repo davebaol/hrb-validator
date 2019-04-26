@@ -248,7 +248,7 @@ Leaf Validator                          | Description
 isNotEmpty |
 **isNumeric(path [, options])**                      | Check if the string contains only numbers.<br/><br/>`options` is an object which defaults to `{no_symbols: false}`. If `no_symbols` is true, the validator will reject numeric strings that feature a symbol (e.g. `+`, `-`, or `.`).
 **isOneOf(path, values)**                | Check if the value at `path` belongs to the specified array of primitive values (string, number, boolean).
-**isPort(path)**     [Also number]       | Check if the string is a valid port number. :heavy_exclamation_mark: :heavy_exclamation_mark: :heavy_exclamation_mark:
+**isPort(path)**                         | Check if the value at `path` is either a string or a number representing a valid port.
 **isPostalCode(path, locale)**           | Check if the value at `path` is a string representing a postal code,<br/><br/>(locale is one of `[ 'AD', 'AT', 'AU', 'BE', 'BG', 'CA', 'CH', 'CZ', 'DE', 'DK', 'DZ', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IL', 'IN', 'IS', 'IT', 'JP', 'KE', 'LI', 'LT', 'LU', 'LV', 'MX', 'NL', 'NO', 'PL', 'PT', 'RO', 'RU', 'SA', 'SE', 'SI', 'TN', 'TW', 'UA', 'US', 'ZA', 'ZM' ]` OR 'any'. If 'any' is used, function will Check if any of the locals match. Locale list is `validator.isPostalCodeLocales`.).
 **isRFC3339(path)**                      | Check if the value at `path` is a string representing a valid [RFC 3339](https://tools.ietf.org/html/rfc3339) date.
 **isSet(path)**                          | Check if the value at `path` is a non null value.

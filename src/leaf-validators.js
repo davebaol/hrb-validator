@@ -2,6 +2,7 @@ const v = require('validator');
 const isPlainObject = require('is-plain-object');
 const lengthOf = require('@davebaol/length-of');
 const { get, ensureArrayPath } = require('./util/path');
+const { ensureOptions } = require('./util/misc');
 const createShortcuts = require('./util/create-shortcuts');
 
 /* eslint-disable no-unused-vars */
@@ -138,15 +139,13 @@ const leafValidators = {
   },
   isLength(path, options) {
     const p = ensureArrayPath(path);
-    const opts = options || {};
-    const min = opts.min || 0;
-    const { max } = opts;
+    const opts = ensureOptions(options, { min: 0, max: undefined });
     return (obj) => {
       const len = lengthOf(get(obj, p));
       if (len === undefined) {
         return `isLength: the value at path '${path}' must be a string, an array or an object`;
       }
-      return len >= min && (max === undefined || len <= max) ? undefined : `isLength: the value at path '${path}' must have a length between ${min} and ${max}`;
+      return len >= opts.min && (opts.max === undefined || len <= opts.max) ? undefined : `isLength: the value at path '${path}' must have a length between ${opts.min} and ${opts.max}`;
     };
   },
   isSet(path) {
@@ -163,29 +162,15 @@ const leafValidators = {
       return undefined;
     };
   },
-  isPort(path, options) {
+  isPort(path) {
     const p = ensureArrayPath(path);
-    if (options != null && typeof options !== 'object') {
-      throw new Error('isPort: optional argument \'options\' must be an object (if specified)');
-    }
-    const opts = Object.assign({ asNumber: true, asString: true }, options || {});
-    if (!opts.asNumber && !opts.asString) {
-      throw new Error('isPort: inconsistent options: either asNumber or asString must be true');
-    }
     return (obj) => {
       let value = get(obj, p);
-      if (typeof value === 'number') {
-        if (opts.asNumber) {
-          value += '';
-        } else if (opts.asString) {
-          return `isPort: the value at path '${path}' must be a string`;
-        }
-      } else if (typeof value === 'string') {
-        if (!opts.asString && opts.asNumber) {
-          return `isPort: the value at path '${path}' must be a number`;
-        }
-      } else {
-        return `isPort: the value at path '${path}' must be either a string or a number`;
+      const valueType = typeof value;
+      if (valueType === 'number') {
+        value = String(value);
+      } else if (valueType !== 'string') {
+        return `isPort: the value at path '${path}' must be either a number or a string`;
       }
       return v.isPort(value) ? undefined : `isPort: the value at path '${path}' must be a valid port`;
     };

@@ -56,8 +56,16 @@ function ensureScope(scope) {
   return scope;
 }
 
+function ensureOptions(options, baseOptions) {
+  if (options != null && typeof options !== 'object') {
+    throw new Error('optional argument \'options\' must be an object (if specified)');
+  }
+  return baseOptions ? Object.assign(baseOptions, options) : options;
+}
+
 module.exports = {
   ensureValidator,
   ensureValidators,
-  ensureScope
+  ensureScope,
+  ensureOptions
 };
