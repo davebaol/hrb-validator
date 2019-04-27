@@ -2,7 +2,7 @@
 const path = require("path");
 const fs = require("fs");
 const yaml = require("js-yaml");
-const { ensureValidator } = require("../lib/util");
+const { ensureValidator } = require("../lib/util/misc");
 
 let toBeValidated = {
     a: {
