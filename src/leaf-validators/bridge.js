@@ -1,19 +1,32 @@
 const v = require('validator');
 const { get, ensureArrayPath } = require('../util/path');
 
-class StringOnly {
+class Bridge {
   constructor(name, errorFunc, ...argCheckers) {
     this.name = name;
     this.errorFunc = errorFunc;
     this.argCheckers = argCheckers;
   }
 
+  /* eslint-disable-next-line class-methods-use-this */
+  bridge() {
+    throw new Error('Inherited classes have to implement the method brige!');
+  }
+
+  validator() {
+    const bridged = this.bridge();
+    bridged.owner = this;
+    return bridged;
+  }
+}
+
+class StringOnly extends Bridge {
   error(path, vArgs) {
     return `${this.name}: the value at path '${path}' must be a string ${vArgs ? this.errorFunc(vArgs) : ''}`;
   }
 
-  validator() {
-    const validator = v[this.name];
+  bridge() {
+    const original = v[this.name];
     return (path, ...args) => {
       const p = ensureArrayPath(path);
       this.argCheckers.forEach((check, index) => check(args[index]));
@@ -22,25 +35,19 @@ class StringOnly {
         if (typeof value !== 'string') {
           return this.error(path);
         }
-        return validator(value, ...args) ? undefined : this.error(path, args);
+        return original(value, ...args) ? undefined : this.error(path, args);
       };
     };
   }
 }
 
-class StringAndNumber {
-  constructor(name, errorFunc, ...argCheckers) {
-    this.name = name;
-    this.errorFunc = errorFunc;
-    this.argCheckers = argCheckers;
-  }
-
+class StringAndNumber extends Bridge {
   error(path, vArgs) {
     return `${this.name}: the value at path '${path}' must be either a string or a number ${vArgs ? this.errorFunc(vArgs) : ''}`;
   }
 
-  validator() {
-    const validator = v[this.name];
+  bridge() {
+    const original = v[this.name];
     return (path, ...args) => {
       const p = ensureArrayPath(path);
       this.argCheckers.forEach((check, index) => check(args[index]));
@@ -52,7 +59,7 @@ class StringAndNumber {
         } else if (valueType !== 'string') {
           return this.error(path);
         }
-        return validator(value, ...args) ? undefined : this.error(path, args);
+        return original(value, ...args) ? undefined : this.error(path, args);
       };
     };
   }
@@ -90,6 +97,7 @@ function checkLocale(optional, arrayToo) {
 }
 
 /* eslint-disable no-unused-vars */
+/* istanbul ignore next */
 const vInfo = [
   new StringOnly('contains', args => `containing the value '${args[0]}'`),
   // new StringOnly('equals', args => `equal to the value '${args[0]}'`),
