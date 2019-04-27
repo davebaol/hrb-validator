@@ -47,16 +47,6 @@ const leafValidators = {
     const p = ensureArrayPath(path);
     return obj => (get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`);
   },
-  isNotEmpty(path) {
-    const p = ensureArrayPath(path);
-    return (obj) => {
-      const value = get(obj, p);
-      if (!value) return `the value at path '${path}' must be set`;
-      if (typeof value === 'string' && value.trim().length === 0) return `the value at path '${path}' must have at least a not space char`;
-      if (typeof value === 'number' && value === 0) return `the value at path '${path}' must not be zero`;
-      return undefined;
-    };
-  },
   isType(path, type) {
     const p = ensureArrayPath(path);
     if (typeof type === 'string' && typeCheckers[type]) {

@@ -1,12 +1,6 @@
 import { assert } from 'chai';
 import V from '../src';
 
-const badValues = {
-  array: "I'm a bad array!",
-  child: "I'm a bad child!",
-  object: "I'm a bad object!",
-  path: { badPath: true }
-};
 
 function ordinal(n) {
   switch (n) {
@@ -16,6 +10,21 @@ function ordinal(n) {
     default: return `${n}th`;
   }
 }
+
+function shouldThrowErrorOnMissingArg(validatorName, args, index, errorLike) {
+  const badArgs = Array.from(args);
+  badArgs[index] = undefined;
+  it(`Should throw immediately an error if the ${ordinal(index + 1)} argument is missing`, () => {
+    assert.throws(() => V[validatorName](...badArgs), errorLike || Error);
+  });
+}
+
+const badValues = {
+  array: "I'm a bad array!",
+  child: "I'm a bad child!",
+  object: "I'm a bad object!",
+  path: { badPath: true }
+};
 
 function shouldThrowErrorOnBad(type, validatorName, args, index, errorLike) {
   if (!(type in badValues)) {
@@ -37,6 +46,7 @@ function shouldThrowErrorOnBadChild(validatorName, args, index, errorLike) {
 }
 
 export {
+  shouldThrowErrorOnMissingArg,
   shouldThrowErrorOnBad,
   shouldThrowErrorOnBadPath,
   shouldThrowErrorOnBadChild
