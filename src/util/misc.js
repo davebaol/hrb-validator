@@ -46,13 +46,16 @@ function ensureValidators(vlds) {
 }
 
 function ensureScope(scope) {
-  if (typeof scope !== 'object') {
+  if (!isPlainObject(scope)) {
     throw new Error('The scope must be an object');
   }
-  Object.keys(scope).forEach((k) => {
-    // eslint-disable-next-line no-param-reassign
-    scope[k] = ensureValidator(scope[k]);
-  });
+  // eslint-disable-next-line no-restricted-syntax
+  for (const k in scope) {
+    if (hasOwn.call(scope, k)) {
+      // eslint-disable-next-line no-param-reassign
+      scope[k] = ensureValidator(scope[k]);
+    }
+  }
   return scope;
 }
 
