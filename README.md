@@ -232,7 +232,7 @@ Leaf Validator                         | Description
 **isJSON(path)**                       | Check if the value at `path` is a string representing valid JSON (note: uses JSON.parse).
 **isJWT(path)**                        | Check if the value at `path` is a string representing valid JWT token.
 **isLatLong(path)**                    | Check if the value at `path` is a string representing a valid latitude-longitude coordinate in the format `lat,long` or `lat, long`.
-**isLength(path [, options])**         | Check if the value at `path` is a string, an array or an object whose length falls in the specified range.<br/><br/>`options` is an object which defaults to `{min:0, max: Infinity}`. 
+**isLength(path [, options])**         | Check if the value at `path` is a string, an array or an object whose length falls in the specified range.<br/><br/>`options` is an object which defaults to `{min:0, max: undefined}`.
 **isLowercase(path)**                  | Check if the value at `path` is a string in lowercase.
 **isMACAddress(path)**                 | Check if the value at `path` is a string representing a MAC address.<br/><br/>`options` is an object which defaults to `{no_colons: false}`. If `no_colons` is true, the validator will allow MAC addresses without the colons.
 **isMagnetURI(path)**                  | Check if the value at `path` is a string representing a [magnet uri format](https://en.wikipedia.org/wiki/Magnet_URI_scheme).
@@ -262,19 +262,19 @@ Here is a list of the branch validators currently available.
 
 The :zap: means that the opt shortcut is available.
 
-Branch Validator              | Description
-:-----------------------------|:------------------------------------
-**alter(child, res1, res2)**  | If `child` child is valid `res1` is returned; `res2` otherwise.
-**and(...children)**          | Check if all its children are valid. Validation fails at the first non valid child and succeeds if all children are valid.
-**call(path, name [, scope])** :zap: <img width=600/>| ...
-**every(path, child)** :zap:  | Validate `child` for the items of the value at `path`, which must be an array, an object or a string. Validation fails at the first non valid child and succeeds if all children are valid. The object against which `child` is validated depends on the type of the value at `path`:<br/>&#8226; **array** -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; **object** -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; **string** -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
-**if(cond, then [, else])**   | If `cond` child is valid validates `then` child; `else` child otherwise (if present). It always succeeds when `cond` child is not valid and `else` child is not specified. This validator is useful, for instance, when the value of a property depends on the value of another property.
-**not(child)**                | Check if the negation of its child is valid.
-**onError(error, child)**     | Force the specified error if its child is non valid.
-**or(...children)**           | Check if at least one child is valid. Validation succeeds at the first valid child and fails if all children are non valid.
-**some(path, child)** :zap:   | Validate `child` for the items of the value at `path`, which must be either an array or an object. Validation succeeds at the first valid child and fails if all children are non valid. The object aginst with `child` is validated depends on the type of the value at `path`:<br/>&#8226; **array** -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; **object** -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; **string** -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
-**xor(...children)**          | Check if exactly one child is valid. Validation fails at the second valid child or when all children are processed an no child was valid. Validation succeeds when all children are processed and exactly one child was valid.
+Branch Validator                | Description
+:-------------------------------|:------------------------------------
+**alter(child, res1, res2)**    | If `child` child is valid `res1` is returned; `res2` otherwise.
+**and(...children)**            | Check if all its children are valid. Validation fails at the first non valid child and succeeds if all children are valid.
+**call(path, name [, scope])** :zap:| Search nested scopes (from inner to outer) for a validator with the specified name. The validator found is validated against the value at the specified path.
+**every(path, child)** :zap:    | Validate `child` for the items of the value at `path`, which must be an array, an object or a string. Validation fails at the first non valid child and succeeds if all children are valid. The object against which `child` is validated depends on the type of the value at `path`:<br/>&#8226; **array** -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; **object** -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; **string** -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
+**if(cond, then [, else])**     | If `cond` child is valid validates `then` child; `else` child otherwise (if present). It always succeeds when `cond` child is not valid and `else` child is not specified. This validator is useful, for instance, when the value of a property depends on the value of another property.
+**not(child)** <img width=600/> | Check if the negation of its child is valid.
+**onError(error, child)**       | Force the specified error if its child is non valid.
+**or(...children)**             | Check if at least one child is valid. Validation succeeds at the first valid child and fails if all children are non valid.
+**some(path, child)** :zap:     | Validate `child` for the items of the value at `path`, which must be either an array or an object. Validation succeeds at the first valid child and fails if all children are non valid. The object aginst with `child` is validated depends on the type of the value at `path`:<br/>&#8226; **array** -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; **object** -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; **string** -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
+**xor(...children)**            | Check if exactly one child is valid. Validation fails at the second valid child or when all children are processed an no child was valid. Validation succeeds when all children are processed and exactly one child was valid.
 
 # License
 
-MIT © Davide Sessi
+MIT Â© Davide Sessi
