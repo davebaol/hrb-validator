@@ -1,0 +1,84 @@
+call:
+  - ''
+  - VALIDATOR
+  - VALIDATOR: 
+      and:
+        - isType: ['', object]
+        - isLength: ['', {min: 1, max: 1}]
+        - xor:
+          - call: ['', LEAF_VALIDATOR]
+          - call: ['', BRANCH_VALIDATOR]
+
+    LEAF_VALIDATOR:
+      every:
+        - ''
+        - and:
+          - isOneOf: [key, [contains, equals, isAfter, isAlpha, isAlphanumeric, isArrayOf, isAscii, isBase64, isAfter, isBefore, isBoolean, isByteLength, isCreditCard, isAfter, isDataURI, isDate, isDecimal, isDivisibleBy, isEmail, isEmpty, isFloat, isFQDN, isFullWidth, isHalfWidth, isHash, isHexadecimal, isHexColor, isIdentityCard, isIn, isInt, isIP, isIPRange, isISBN, isISIN, isISO31661Alpha2, isISO31661Alpha3, isISO8601, isISRC, isISSN, isJSON, isJWT, isLatLong, isLength, isLowercase, isMACAddress, isMagnetURI, isMD5, isMimeType, isMobilePhone, isMongoId, isMultibyte, isNumeric, isOneOf, isPort, isPostalCode, isRFC3339, isSet, isSurrogatePair, isType, isUppercase, isURL, isUUID, isVariableWidth, isWhitelisted, matches, optContains, optEquals, optIsAfter, optIsAlpha, optIsAlphanumeric, optIsArrayOf, optIsAscii, optIsBase64, optIsAfter, optIsBefore, optIsBoolean, optIsByteLength, optIsCreditCard, optIsAfter, optIsDataUri, optIsDate, optIsDecimal, optIsDivisibleBy, optIsEmail, optIsEmpty, optIsFloat, optIsFqdn, optIsFullWidth, optIsHalfWidth, optIsHash, optIsHexadecimal, optIsHexColor, optIsIdentityCard, optIsIn, optIsInt, optIsIp, optIsIpRange, optIsIsbn, optIsIsin, optIsIso31661Alpha2, optIsIso31661Alpha3, optIsIso8601, optIsIsrc, optIsIssn, optIsJson, optIsJwt, optIsLatLong, optIsLength, optIsLowercase, optIsMacAddress, optIsMagnetUri, optIsMd5, optIsMimeType, optIsMobilePhone, optIsMongoId, optIsMultibyte, optIsNumeric, optIsOneOf, optIsPort, optIsPostalCode, optIsRfc3339, optIsSet, optIsSurrogatePair, optIsType, optIsUppercase, optIsUrl, optIsUuid, optIsVariableWidth, optIsWhitelisted, optMatches]]
+          - isType: [value, array]
+          - call: [value.0, ARG_PATH]
+    
+    BRANCH_VALIDATOR:
+      xor:
+        - call: [alter, ARG_ONE_CHILD_AND_TWO_RESULTS]
+        - call: [and, ARG_ZERO_OR_MORE_CHILDREN]
+        - call: [call, ARG_PATH_STRING_AND_SCOPE]
+        - call: [every, ARG_PATH_AND_ONE_CHILD]
+        - call: [if, ARG_TWO_OR_THREE_CHILDREN]
+        - call: [not, ARG_ONE_CHILD]
+        - call: [optCall, ARG_PATH_STRING_AND_SCOPE]
+        - call: [optEvery, ARG_PATH_AND_ONE_CHILD]
+        - call: [optSome, ARG_PATH_AND_ONE_CHILD]
+        - call: [or, ARG_ZERO_OR_MORE_CHILDREN]
+        - call: [some, ARG_PATH_AND_ONE_CHILD]
+        - call: [xor, ARG_ZERO_OR_MORE_CHILDREN]
+    
+    ARG_ONE_CHILD_AND_TWO_RESULTS:
+      and:
+        - isType: ['', array]
+        - call: [0, VALIDATOR]
+        - optIsType: [1, string]
+        - optIsType: [2, string]
+
+    ARG_PATH:
+      or:
+        - isType: ["", [string, number]]
+        - isArrayOf: ["", [string, number]]
+
+    ARG_SCOPE:
+      and:
+        - isType: ["", object]
+        - every:
+          - ""
+          - call: [value, VALIDATOR]
+
+    ARG_PATH_STRING_AND_SCOPE:
+      and:
+        - isType: ['', array]
+        - call: [0, ARG_PATH]
+        - isType: [1, string]
+        - optCall: [2, ARG_SCOPE]
+    
+    ARG_PATH_AND_ONE_CHILD:
+      and:
+        - isType: ['', array]
+        - call: [0, ARG_PATH]
+        - call: [1, VALIDATOR]
+    
+    ARG_ZERO_OR_MORE_CHILDREN:
+      and:
+        - isType: ['', array]
+        - every:
+          - ''
+          - call: ['value', VALIDATOR]
+    
+    ARG_ONE_CHILD:
+      and:
+        - isType: ['', array]
+        - call: [0, VALIDATOR]
+    
+    ARG_TWO_OR_THREE_CHILDREN:
+      and:
+        - isType: ['', array]
+        - call: [0, VALIDATOR]
+        - call: [1, VALIDATOR]
+        - optCall: [2, VALIDATOR]
