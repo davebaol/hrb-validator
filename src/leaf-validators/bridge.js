@@ -21,6 +21,11 @@ class Bridge {
 }
 
 class StringOnly extends Bridge {
+  // eslint-disable-next-line class-methods-use-this
+  cast(value) {
+    return value;
+  }
+
   error(path, vArgs) {
     return `${this.name}: the value at path '${path}' must be a string ${vArgs ? this.errorFunc(vArgs) : ''}`;
   }
@@ -31,7 +36,7 @@ class StringOnly extends Bridge {
       const p = ensureArrayPath(path);
       this.argCheckers.forEach((check, index) => check(args[index]));
       return (obj) => {
-        const value = get(obj, p);
+        const value = this.cast(get(obj, p));
         if (typeof value !== 'string') {
           return this.error(path);
         }
@@ -41,27 +46,25 @@ class StringOnly extends Bridge {
   }
 }
 
-class StringAndNumber extends Bridge {
+class StringAndNumber extends StringOnly {
+  // eslint-disable-next-line class-methods-use-this
+  cast(value) {
+    return typeof value === 'number' ? String(value) : value;
+  }
+
   error(path, vArgs) {
     return `${this.name}: the value at path '${path}' must be either a string or a number ${vArgs ? this.errorFunc(vArgs) : ''}`;
   }
+}
 
-  bridge() {
-    const original = v[this.name];
-    return (path, ...args) => {
-      const p = ensureArrayPath(path);
-      this.argCheckers.forEach((check, index) => check(args[index]));
-      return (obj) => {
-        let value = get(obj, p);
-        const valueType = typeof value;
-        if (valueType === 'number') {
-          value = String(value);
-        } else if (valueType !== 'string') {
-          return this.error(path);
-        }
-        return original(value, ...args) ? undefined : this.error(path, args);
-      };
-    };
+class StringAndArray extends StringOnly {
+  // eslint-disable-next-line class-methods-use-this
+  cast(value) {
+    return Array.isArray(value) ? value.join(',') : value;
+  }
+
+  error(path, vArgs) {
+    return `${this.name}: the value at path '${path}' must be either a string or an array ${vArgs ? this.errorFunc(vArgs) : ''}`;
   }
 }
 
@@ -137,7 +140,7 @@ const vInfo = [
   new StringOnly('isISSN', args => 'matching to an ISSN', checkOptions(true)),
   new StringOnly('isJSON', args => 'matching to a valid JSON'),
   new StringOnly('isJWT', args => 'matching to a valid JWT token'),
-  new StringOnly('isLatLong', args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'"),
+  new StringAndArray('isLatLong', args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'"),
   // new StringOnly('isLength', args => 'whose length falls in the specified range'),
   new StringOnly('isLowercase', args => 'in lowercase'),
   new StringOnly('isMACAddress', args => 'in MAC address format'),

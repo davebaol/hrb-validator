@@ -15,7 +15,7 @@ describe('Test bridged leaf validators.', () => {
     assert(Object.keys(bv).every(k => typeof bv[k] === 'function'), ':(');
   });
 
-  const owners = ['StringOnly', 'StringAndNumber'];
+  const owners = ['StringOnly', 'StringAndNumber', 'StringAndArray'];
   it(`Bridged leaf validator owners belong all to [${owners.join(', ')}]`, () => {
     const result = Object.keys(bv).reduce((acc, k) => {
       acc[bv[k].owner.constructor.name] = true;
@@ -45,5 +45,18 @@ describe('Test bridged leaf validators.', () => {
   });
   it('Bridged leaf validator isInt rejects anything other than string or number', () => {
     assert(isInt('a')({ a: true }) !== undefined, ':(');
+  });
+
+  const { isLatLong } = bv;
+  testOwnerClass(isLatLong, 'StringAndArray');
+  shouldThrowErrorOnBadPath('isLatLong');
+  it('Bridged leaf validator isLatLong accepts string', () => {
+    assert(isLatLong('a')({ a: '+90.0, -127.554334' }) === undefined, ':(');
+  });
+  it('Bridged leaf validator isLatLong accepts array', () => {
+    assert(isLatLong('a')({ a: [+90.0, -127.554334] }) === undefined, ':(');
+  });
+  it('Bridged leaf validator isLatLong rejects anything other than string or array', () => {
+    assert(isLatLong('a')({ a: true }) !== undefined, ':(');
   });
 });
