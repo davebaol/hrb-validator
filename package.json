@@ -57,7 +57,7 @@
     "@davebaol/length-of": "^1.0.0",
     "camelcase": "^5.3.1",
     "get-value": "^3.0.1",
-    "is-plain-object": "^2.0.4",
+    "is-plain-object": "^3.0.0",
     "validator": "^10.11.0"
   }
 }
