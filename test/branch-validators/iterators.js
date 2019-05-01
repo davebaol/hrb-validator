@@ -51,11 +51,12 @@ function testEveryOrSome(name) {
     })));
     iterationChecker('string', [...test.string].map((v, i,) => ({ index: i, value: v, original: test })));
 
-    it(`For numbers ${name} should fail`, () => {
+    const failureExpected = { numbers: 123, booleans: true };
+    Object.keys(failureExpected).forEach(k => it(`For ${k} ${name} should fail`, () => {
       const vIt = () => undefined;
       const v = V[name]('', vIt);
-      assert(v(12) !== undefined, ':(');
-    });
+      assert(v(failureExpected[k]) !== undefined, ':(');
+    }));
   });
 }
 
@@ -102,6 +103,12 @@ describe('Test branch validator while.', () => {
   iterationChecker('string', [...test.string].map((v, i,) => ({
     index: i, value: v, succeeded: i, failed: 0, original: test
   })));
+
+  const failureExpected = { numbers: 123, booleans: true };
+  Object.keys(failureExpected).forEach(k => it(`For ${k} while should fail`, () => {
+    const v = V.while('', () => undefined, () => undefined);
+    assert(v(failureExpected[k]) !== undefined, ':(');
+  }));
 
   function checkParents(shouldSucceed) {
     it(`Test "No more than two parents" should ${shouldSucceed ? 'succeed' : 'fail'}`, () => {
