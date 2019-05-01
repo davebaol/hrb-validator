@@ -218,6 +218,6 @@ const branchValidators = {
 //
 // Augment with shortcut 'opt' all branch validators taking a path as first argument
 //
-createShortcuts(branchValidators, branchValidators, ['call', 'every', 'some']);
+createShortcuts(branchValidators, branchValidators, ['call', 'every', 'some', 'while']);
 
 module.exports = branchValidators;
