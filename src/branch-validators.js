@@ -158,7 +158,61 @@ const branchValidators = {
   onError(error, child) {
     const c = ensureValidator(child);
     return (obj, context) => (c(obj, context) ? error : undefined);
-  }
+  },
+  while(path, condChild, doChild) {
+    const p = ensureArrayPath(path);
+    const cc = ensureValidator(condChild);
+    const dc = ensureValidator(doChild);
+    return (obj, context) => {
+      const value = get(obj, p);
+      const status = { succeeded: 0, failed: 0, original: obj };
+      if (Array.isArray(value)) {
+        let error;
+        const found = value.find((item, index) => {
+          status.index = index;
+          status.value = item;
+          error = cc(status, context);
+          if (!error) {
+            status.failed += dc(status, context) ? 1 : 0;
+            status.succeeded = index + 1 - status.failed;
+          }
+          return error;
+        });
+        return found ? error : undefined;
+      }
+      if (typeof value === 'object') {
+        let error;
+        const found = Object.keys(value).find((key, index) => {
+          status.index = index;
+          status.key = key;
+          status.value = value[key];
+          error = cc(status, context);
+          if (!error) {
+            status.failed += dc(status, context) ? 1 : 0;
+            status.succeeded = index + 1 - status.failed;
+          }
+          return error;
+        });
+        return found ? error : undefined;
+      }
+      if (typeof value === 'string') {
+        let error;
+        // eslint-disable-next-line no-cond-assign
+        for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
+          status.index = index;
+          status.value = char;
+          error = cc(status, context);
+          if (error) {
+            break;
+          }
+          status.failed += dc(status, context) ? 1 : 0;
+          status.succeeded = index + 1 - status.failed;
+        }
+        return error;
+      }
+      return `while: the value at path '${path}' must be either a string, an array or an object; found type '${typeof value}'`;
+    };
+  },
 };
 
 //
