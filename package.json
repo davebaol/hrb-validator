@@ -1,5 +1,5 @@
 {
-  "name": "hrb-validator",
+  "name": "@davebaol/hrb-validator",
   "version": "0.1.0",
   "description": "Hierarchical, rule-based, data-driven validator for complex data structures with support for nested scopes and recursion",
   "main": "./lib/index.js",
@@ -25,6 +25,8 @@
   },
   "keywords": [
     "data-driven",
+    "hierarchical",
+    "rule-based",
     "validator",
     "validation",
     "validate"
