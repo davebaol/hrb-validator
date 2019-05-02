@@ -1,4 +1,3 @@
-
 # HRB Validator
 
 [![npm version](https://badge.fury.io/js/%40davebaol%2Fhrb-validator.svg)](https://badge.fury.io/js/%40davebaol%2Fhrb-validator) [![Build Status](https://travis-ci.org/davebaol/hrb-validator.svg?branch=master)](https://travis-ci.org/davebaol/hrb-validator) [![Codecove](https://codecov.io/github/davebaol/hrb-validator/coverage.svg?precision=0)](https://codecov.io/github/davebaol/hrb-validator) [![dependencies Status](https://david-dm.org/davebaol/hrb-validator/status.svg)](https://david-dm.org/davebaol/hrb-validator) [![devDependencies Status](https://david-dm.org/davebaol/hrb-validator/dev-status.svg)](https://david-dm.org/davebaol/hrb-validator?type=dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -128,11 +127,11 @@ To load the validator you can use the sample code below:
 ```javascript
 const fs = require("fs");
 const yaml = require("js-yaml");
-const vUtil = require("@davebaol/hrb-validator/util");
+const ensureValidator = require("@davebaol/hrb-validator/lib/ensure-validator");
 
 // Load validator from file
 let vObj = yaml.safeLoad(fs.readFileSync("/path/to/validator/file", 'utf8'));
-let validator = vUtil.ensureValidator(vObj);
+let validator = ensureValidator(vObj);
 
 // Validate
 let vError = validator(toBeValidated);
