@@ -1,23 +1,11 @@
 
-# Smart Validator
+# HRB Validator
 
-[![Build Status](https://travis-ci.org/davebaol/smart-validator.svg?branch=master)](https://travis-ci.org/davebaol/smart-validator) [![Codecove](https://codecov.io/github/davebaol/smart-validator/coverage.svg?precision=0)](https://codecov.io/github/davebaol/smart-validator) [![dependencies Status](https://david-dm.org/davebaol/smart-validator/status.svg)](https://david-dm.org/davebaol/smart-validator) [![devDependencies Status](https://david-dm.org/davebaol/smart-validator/dev-status.svg)](https://david-dm.org/davebaol/smart-validator?type=dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://travis-ci.org/davebaol/hrb-validator.svg?branch=master)](https://travis-ci.org/davebaol/hrb-validator) [![Codecove](https://codecov.io/github/davebaol/hrb-validator/coverage.svg?precision=0)](https://codecov.io/github/davebaol/hrb-validator) [![dependencies Status](https://david-dm.org/davebaol/hrb-validator/status.svg)](https://david-dm.org/davebaol/hrb-validator) [![devDependencies Status](https://david-dm.org/davebaol/hrb-validator/dev-status.svg)](https://david-dm.org/davebaol/hrb-validator?type=dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-## Table of Contents
-- [Intro](#intro)
-- [Usage](#usage)
-  - [Hard-coded Validators](#hard-coded-validators)
-  - [Loading Validators from File](#loading-validators-from-file)
-  - [YAML vs JSON](#yaml-vs-json)
-  - [Shortcut for optional paths](#shortcut-for-optional-paths)
-- [Leaf Validators](#leaf-validators)
-- [Branch Validators](#branch-validators)
-
-## Intro
 Hierarchical Rule-Based Validator is a simple yet powerful data validation engine. Unlike schema-based validation libraries, this framework allows you to compose validation rules in higher order rules to validate complex data structures.
 
-Major supported features are:
-
+### Major Features
 - Both browsers and NodeJS supported
 - Validators defined either in code or using JSON/YAML syntax in a declarative way
 - Rich set of leaf validators (most from [validator](https://www.npmjs.com/package/validator) and the others implemented internally) to check field values and types
@@ -26,6 +14,15 @@ Major supported features are:
   - Recursive validation
   - Logical operators
   - Conditional validation
+
+### Table of Contents
+- [Usage](#usage)
+  - [Hard-coded Validators](#hard-coded-validators)
+  - [Loading Validators from File](#loading-validators-from-file)
+  - [YAML vs JSON](#yaml-vs-json)
+  - [Shortcut for optional paths](#shortcut-for-optional-paths)
+- [Leaf Validators](#leaf-validators)
+- [Branch Validators](#branch-validators)
 
 ## Usage
 Suppose you have the simple object below
@@ -88,7 +85,7 @@ To create this validator you can choose one of the two approaches described in t
 
 This sample code programmatically creates the validator for the previous rules.
 ```javascript
-const V = require("smart-validator");
+const V = require("@davebaol/hrb-validator");
 
 // Hard-coded validator
 let validator = V.and(              // Rule 1
@@ -131,7 +128,7 @@ To load the validator you can use the sample code below:
 ```javascript
 const fs = require("fs");
 const yaml = require("js-yaml");
-const vUtil = require("smart-validator/util");
+const vUtil = require("@davebaol/hrb-validator/util");
 
 // Load validator from file
 let vObj = yaml.safeLoad(fs.readFileSync("/path/to/validator/file", 'utf8'));

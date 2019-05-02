@@ -1,6 +1,6 @@
 {
-  "name": "smart-validator",
-  "version": "0.9.0",
+  "name": "hrb-validator",
+  "version": "0.1.0",
   "description": "Hierarchical, rule-based, data-driven validator for complex data structures with support for nested scopes and recursion",
   "main": "./lib/index.js",
   "scripts": {
@@ -21,7 +21,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/davebaol/smart-validator.git"
+    "url": "git+https://github.com/davebaol/hrb-validator.git"
   },
   "keywords": [
     "data-driven",
@@ -32,9 +32,9 @@
   "author": "Davide Sessi <davix7@yahoo.it>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/davebaol/smart-validator/issues"
+    "url": "https://github.com/davebaol/hrb-validator/issues"
   },
-  "homepage": "https://github.com/davebaol/smart-validator#readme",
+  "homepage": "https://github.com/davebaol/hrb-validator#readme",
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-eslint": "^10.0.1",
