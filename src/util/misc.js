@@ -19,6 +19,7 @@ function checkUniqueKey(obj) {
   }
   return k0;
 }
+
 function ensureValidator(vld) {
   if (typeof vld === 'function') {
     return vld;
