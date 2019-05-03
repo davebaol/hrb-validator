@@ -20,7 +20,41 @@ class Bridge {
   }
 }
 
+// These funcions are optimizations specialized for certain types.
+// Their use avoids the conversion to and from string.
+const SPECIALIZED_VALIDATORS = {
+  isDivisibleBy(value, number) {
+    return value % number === 0;
+  },
+  isFloat(value, options) {
+    const opt = options || {};
+    return (opt.min === undefined || value >= opt.min)
+      && (opt.max === undefined || value <= opt.max)
+      && (opt.lt === undefined || value < opt.lt)
+      && (opt.gt === undefined || value > opt.gt);
+  },
+  isInt(value, options) {
+    const opt = options || {};
+    return Number.isInteger(value)
+      && (opt.min === undefined || value >= opt.min)
+      && (opt.max === undefined || value <= opt.max)
+      && (opt.lt === undefined || value < opt.lt)
+      && (opt.gt === undefined || value > opt.gt);
+  },
+  isLatLong(value) {
+    return value[0] >= -90 && value[0] <= 90 && value[1] >= -180 && value[1] <= 180;
+  },
+  isPort(value) {
+    return Number.isInteger(value) && value >= 0 && value <= 65535;
+  }
+};
+
 class StringOnly extends Bridge {
+  // eslint-disable-next-line class-methods-use-this
+  isSpecialized(value) { // eslint-disable-line no-unused-vars
+    return false;
+  }
+
   // eslint-disable-next-line class-methods-use-this
   cast(value) {
     return value;
@@ -32,21 +66,35 @@ class StringOnly extends Bridge {
 
   bridge() {
     const original = v[this.name];
+    const specialized = SPECIALIZED_VALIDATORS[this.name];
     return (path, ...args) => {
       const p = ensureArrayPath(path);
       this.argCheckers.forEach((check, index) => check(args[index]));
       return (obj) => {
-        const value = this.cast(get(obj, p));
-        if (typeof value !== 'string') {
-          return this.error(path);
+        let result;
+        let value = get(obj, p);
+        if (specialized !== undefined && this.isSpecialized(value)) {
+          result = specialized(value, ...args);
+        } else {
+          value = this.cast(value);
+          if (typeof value === 'string') {
+            result = original(value, ...args);
+          } else {
+            return this.error(path);
+          }
         }
-        return original(value, ...args) ? undefined : this.error(path, args);
+        return result ? undefined : this.error(path, args);
       };
     };
   }
 }
 
 class StringAndNumber extends StringOnly {
+  // eslint-disable-next-line class-methods-use-this
+  isSpecialized(value) {
+    return typeof value === 'number';
+  }
+
   // eslint-disable-next-line class-methods-use-this
   cast(value) {
     return typeof value === 'number' ? String(value) : value;
@@ -58,6 +106,19 @@ class StringAndNumber extends StringOnly {
 }
 
 class StringAndArray extends StringOnly {
+  constructor(name, length, type, errorFunc, ...argCheckers) {
+    super(name, errorFunc, ...argCheckers);
+    this.length = length;
+    this.type = type;
+  }
+
+  isSpecialized(value) {
+    return Array.isArray(value)
+      && (this.length === undefined || value.length === this.length)
+      // eslint-disable-next-line valid-typeof
+      && (this.type === undefined || value.every(a => typeof a === this.type));
+  }
+
   // eslint-disable-next-line class-methods-use-this
   cast(value) {
     return Array.isArray(value) ? value.join(',') : value;
@@ -68,6 +129,16 @@ class StringAndArray extends StringOnly {
   }
 }
 
+/* istanbul ignore next */
+function checkInteger() {
+  return (a) => {
+    if (!Number.isInteger(a)) {
+      throw new Error('Argument must be an integer number');
+    }
+  };
+}
+
+/* istanbul ignore next */
 function checkOptions(optional) {
   if (optional) {
     return (a) => {
@@ -83,7 +154,7 @@ function checkOptions(optional) {
   };
 }
 
-
+/* istanbul ignore next */
 function checkLocale(optional, arrayToo) {
   if (optional) {
     return (a) => {
@@ -116,7 +187,7 @@ const vInfo = [
   new StringOnly('isCurrency', args => 'representing a valid currency amount'),
   new StringOnly('isDataURI', args => 'in data uri format'),
   // new StringOnly('isDecimal', args => `equal to the value '${args[0]}'`),
-  new StringAndNumber('isDivisibleBy', args => `that's divisible by ${args[0]}`),
+  new StringAndNumber('isDivisibleBy', args => `that's divisible by ${args[0]}`, checkInteger()),
   new StringOnly('isEmail', args => 'representing an email address', checkOptions(true)),
   new StringOnly('isEmpty', args => 'having a length of zero', checkOptions(true)),
   new StringAndNumber('isFloat', args => 'that\'s a float falling in the specified range', checkOptions(true)),
@@ -140,7 +211,7 @@ const vInfo = [
   new StringOnly('isISSN', args => 'matching to an ISSN', checkOptions(true)),
   new StringOnly('isJSON', args => 'matching to a valid JSON'),
   new StringOnly('isJWT', args => 'matching to a valid JWT token'),
-  new StringAndArray('isLatLong', args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'"),
+  new StringAndArray('isLatLong', 2, 'number', args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'"),
   // new StringOnly('isLength', args => 'whose length falls in the specified range'),
   new StringOnly('isLowercase', args => 'in lowercase'),
   new StringOnly('isMACAddress', args => 'in MAC address format'),

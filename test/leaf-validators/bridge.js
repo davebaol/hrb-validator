@@ -47,14 +47,39 @@ describe('Test bridged leaf validators.', () => {
     assert(isInt('a')({ a: true }) !== undefined, ':(');
   });
 
+  const { isFloat } = bv;
+  testOwnerClass(isFloat, 'StringAndNumber');
+  shouldThrowErrorOnBadPath('isFloat');
+  it('Bridged leaf validator isFloat accepts string', () => {
+    assert(isFloat('a')({ a: '3' }) === undefined, ':(');
+  });
+  it('Bridged leaf validator isFloat accepts number', () => {
+    assert(isFloat('a')({ a: 3 }) === undefined, ':(');
+  });
+  it('Bridged leaf validator isFloat rejects anything other than string or number', () => {
+    assert(isFloat('a')({ a: true }) !== undefined, ':(');
+  });
+
   const { isLatLong } = bv;
   testOwnerClass(isLatLong, 'StringAndArray');
   shouldThrowErrorOnBadPath('isLatLong');
   it('Bridged leaf validator isLatLong accepts string', () => {
     assert(isLatLong('a')({ a: '+90.0, -127.554334' }) === undefined, ':(');
   });
-  it('Bridged leaf validator isLatLong accepts array', () => {
+  it('Bridged leaf validator isLatLong accepts array of two numbers', () => {
     assert(isLatLong('a')({ a: [+90.0, -127.554334] }) === undefined, ':(');
+  });
+  it('Bridged leaf validator isLatLong accepts array of two strings', () => {
+    assert(isLatLong('a')({ a: ['+90.0', '-127.554334'] }) === undefined, ':(');
+  });
+  it('Bridged leaf validator isLatLong accepts mixed array of a string and a number', () => {
+    assert(isLatLong('a')({ a: ['+90.0', -127.554334] }) === undefined, ':(');
+  });
+  it('Bridged leaf validator isLatLong rejects array not having exactly 2 elements', () => {
+    assert(isLatLong('a')({ a: ['+90.0'] }) !== undefined, ':(');
+  });
+  it('Bridged leaf validator isLatLong rejects array with 2 elements that are not string or number', () => {
+    assert(isLatLong('a')({ a: ['+90.0', true] }) !== undefined, ':(');
   });
   it('Bridged leaf validator isLatLong rejects anything other than string or array', () => {
     assert(isLatLong('a')({ a: true }) !== undefined, ':(');
