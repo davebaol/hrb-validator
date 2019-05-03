@@ -43,14 +43,14 @@ call:
 
     ARG_PATH:
       or:
-        - isType: ["", [string, number]]
-        - isArrayOf: ["", [string, number]]
+        - isType: ['', [string, number]]
+        - isArrayOf: ['', [string, number]]
 
     ARG_SCOPE:
       and:
-        - isType: ["", object]
+        - isType: ['', object]
         - every:
-          - ""
+          - ''
           - call: [value, VALIDATOR]
 
     ARG_PATH_STRING_AND_SCOPE:

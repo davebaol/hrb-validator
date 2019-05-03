@@ -8,7 +8,8 @@ const getValueOptions = {
 
 module.exports = {
   get(obj, path) {
-    return path == null ? obj : getValue(obj, path, getValueOptions);
+    const noPath = path == null || (path.length === 0 && (typeof path === 'string' || Array.isArray(path)));
+    return noPath ? obj : getValue(obj, path, getValueOptions);
   },
 
   ensureStringPath(path) {
@@ -32,6 +33,6 @@ module.exports = {
     if (Array.isArray(path)) {
       return path;
     }
-    throw new Error(`${validatorName}: the path must be a string, an array, a number or null`);
+    throw new Error(`${validatorName}: the path must be a string, a number, an array of the two previous types, or null`);
   }
 };
