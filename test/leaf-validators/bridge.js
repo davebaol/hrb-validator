@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { shouldThrowErrorOnBadPath } from '../test-utils';
+import { shouldThrowErrorOnBad, shouldThrowErrorOnBadPath } from '../test-utils';
 import bridge from '../../src/leaf-validators/bridge';
 
 function testOwnerClass(v, className) {
@@ -27,6 +27,7 @@ describe('Test bridged leaf validators.', () => {
   const { contains } = bv;
   testOwnerClass(contains, 'StringOnly');
   shouldThrowErrorOnBadPath('contains');
+  shouldThrowErrorOnBad('string', 'contains', ['a'], 1);
   it('Bridged leaf validator contains accepts string', () => {
     assert(contains('a', '')({ a: 'string' }) === undefined, ':(');
   });
@@ -34,9 +35,24 @@ describe('Test bridged leaf validators.', () => {
     assert(contains('a', '')({ a: 3 }) !== undefined, ':(');
   });
 
+  const { isDivisibleBy } = bv;
+  testOwnerClass(isDivisibleBy, 'StringAndNumber');
+  shouldThrowErrorOnBadPath('isDivisibleBy');
+  shouldThrowErrorOnBad('integer', 'isDivisibleBy', ['a'], 1);
+  it('Bridged leaf validator isDivisibleBy accepts string', () => {
+    assert(isDivisibleBy('a', 2)({ a: '24' }) === undefined, ':(');
+  });
+  it('Bridged leaf validator isDivisibleBy accepts number', () => {
+    assert(isDivisibleBy('a', 2)({ a: 24 }) === undefined, ':(');
+  });
+  it('Bridged leaf validator isDivisibleBy rejects anything other than string or number', () => {
+    assert(isDivisibleBy('a', 2)({ a: true }) !== undefined, ':(');
+  });
+
   const { isInt } = bv;
   testOwnerClass(isInt, 'StringAndNumber');
   shouldThrowErrorOnBadPath('isInt');
+  shouldThrowErrorOnBad('object', 'isInt', ['a'], 1);
   it('Bridged leaf validator isInt accepts string', () => {
     assert(isInt('a')({ a: '3' }) === undefined, ':(');
   });
@@ -50,6 +66,7 @@ describe('Test bridged leaf validators.', () => {
   const { isFloat } = bv;
   testOwnerClass(isFloat, 'StringAndNumber');
   shouldThrowErrorOnBadPath('isFloat');
+  shouldThrowErrorOnBad('object', 'isFloat', ['a'], 1);
   it('Bridged leaf validator isFloat accepts string', () => {
     assert(isFloat('a')({ a: '3' }) === undefined, ':(');
   });

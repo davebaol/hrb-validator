@@ -22,8 +22,11 @@ function shouldThrowErrorOnMissingArg(validatorName, args, index, errorLike) {
 const badValues = {
   array: "I'm a bad array!",
   child: "I'm a bad child!",
+  integer: "I'm a bad integer number!",
+  number: "I'm a bad number!",
   object: "I'm a bad object!",
-  path: { badPath: true }
+  path: { badPath: true },
+  string: { badString: true }
 };
 
 function shouldThrowErrorOnBad(type, validatorName, args, index, errorLike) {
