@@ -2,6 +2,9 @@ const { get, ensureArrayPath } = require('./util/path');
 const { ensureValidator, ensureValidators, ensureScope } = require('./util/misc');
 const Context = require('./util/context');
 const createShortcuts = require('./util/create-shortcuts');
+const ensureArg = require('./util/ensure-arg');
+
+const { REF } = ensureArg;
 
 //
 // BRANCH VALIDATORS
@@ -10,21 +13,28 @@ const createShortcuts = require('./util/create-shortcuts');
 
 const branchValidators = {
   call(path, childName, scope) {
-    const p = ensureArrayPath(path);
-    if (!childName || typeof childName !== 'string') {
+    let p = ensureArg.path(path);
+    let cn = ensureArg.string(childName);
+    if (!cn) {
       throw new Error('call: validator name must be a non empty string');
     }
     if (scope !== undefined) {
       ensureScope(scope);
     }
     return (obj, context) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+      }
+      if (cn === REF) {
+        try { cn = ensureArg.stringRef(obj, childName); } catch (e) { return e.message; }
+      }
       // eslint-disable-next-line no-param-reassign
       context = context || new Context();
       if (scope) {
         context.push(scope);
       }
-      const child = context.find(childName);
-      const result = child ? child(get(obj, p), context) : `call: validator with name '${childName}' not found`;
+      const child = context.find(cn);
+      const result = child ? child(get(obj, p), context) : `call: validator with name '${cn}' not found`;
       if (scope) {
         context.pop();
       }

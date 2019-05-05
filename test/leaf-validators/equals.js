@@ -15,8 +15,20 @@ function check(pair, shouldSucceed) {
   });
 }
 
+function checkRef(pair, shouldSucceed) {
+  const obj = { a: pair[0], referenced: pair[1] };
+  const comparison = { ref: 'referenced' };
+  it(`equals("a", ${JSON.stringify(comparison)}) should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
+    const v = V.equals('a', comparison);
+    const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;
+    assert(result, ':(');
+  });
+}
+
 describe('Test leaf validator equals.', () => {
   shouldThrowErrorOnBadPath('equals');
   successExpected.forEach(obj => check(obj, true));
   failureExpected.forEach(obj => check(obj, false));
+  successExpected.forEach(obj => checkRef(obj, true));
+  failureExpected.forEach(obj => checkRef(obj, false));
 });

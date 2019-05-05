@@ -2,8 +2,10 @@ const isPlainObject = require('is-plain-object');
 const lengthOf = require('@davebaol/length-of');
 const bridge = require('./bridge');
 const { get, ensureArrayPath } = require('../util/path');
-const { ensureOptions } = require('../util/misc');
+const ensureArg = require('../util/ensure-arg');
 const createShortcuts = require('../util/create-shortcuts');
+
+const { REF } = ensureArg;
 
 const primitiveTypeCheckers = {
   boolean: arg => typeof arg === 'boolean',
@@ -29,31 +31,61 @@ function getType(value) {
 //
 const leafValidators = {
   equals(path, value) {
-    const p = ensureArrayPath(path);
-    return obj => (get(obj, p) === value ? undefined : `equals: the value at path '${path}' must be equal to ${value}`);
+    let p = ensureArg.path(path);
+    let v = ensureArg.any(value);
+    return (obj) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+      }
+      if (v === REF) {
+        try { v = ensureArg.anyRef(obj, value); } catch (e) { return e.message; }
+      }
+      return get(obj, p) === v ? undefined : `equals: the value at path '${path}' must be equal to ${v}`;
+    };
   },
   isLength(path, options) {
-    const p = ensureArrayPath(path);
-    const opts = ensureOptions(options, { min: 0, max: undefined });
+    let p = ensureArg.path(path);
+    let opts = ensureArg.options(options);
     return (obj) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+      }
+      if (opts === REF) {
+        try { opts = ensureArg.optionsRef(obj, options); } catch (e) { return e.message; }
+      }
+      const min = opts.min || 0;
+      const max = opts.max; // eslint-disable-line prefer-destructuring
       const len = lengthOf(get(obj, p));
       if (len === undefined) {
         return `isLength: the value at path '${path}' must be a string, an array or an object`;
       }
-      return len >= opts.min && (opts.max === undefined || len <= opts.max) ? undefined : `isLength: the value at path '${path}' must have a length between ${opts.min} and ${opts.max}`;
+      return len >= min && (max === undefined || len <= max) ? undefined : `isLength: the value at path '${path}' must have a length between ${opts.min} and ${opts.max}`;
     };
   },
   isSet(path) {
-    const p = ensureArrayPath(path);
-    return obj => (get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`);
+    let p = ensureArg.path(path);
+    return (obj) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+      }
+      return get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`;
+    };
   },
   isType(path, type) {
-    const p = ensureArrayPath(path);
+    let p = ensureArg.path(path);
     if (typeof type === 'string' && typeCheckers[type]) {
-      return obj => (typeCheckers[type](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${type}'; found '${getType(get(obj, p)) || 'unknown'}' instead`);
+      return (obj) => {
+        if (p === REF) {
+          try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        }
+        return typeCheckers[type](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${type}'; found '${getType(get(obj, p)) || 'unknown'}' instead`;
+      };
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
       return (obj) => {
+        if (p === REF) {
+          try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        }
         const value = get(obj, p);
         return (type.some(t => typeCheckers[t](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${type.join(', ')}'; found '${getType(value) || 'unknown'}' instead`);
       };
@@ -61,11 +93,17 @@ const leafValidators = {
     throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
   },
   isOneOf(path, values) {
-    const p = ensureArrayPath(path);
-    if (!Array.isArray(values)) {
-      throw new Error('isOneOf: argument \'values\' must be an array');
-    }
-    return obj => (values.includes(get(obj, p)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${values}`);
+    let p = ensureArg.path(path);
+    let a = ensureArg.array(values);
+    return (obj) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+      }
+      if (a === REF) {
+        try { a = ensureArg.arrayRef(obj, values); } catch (e) { return e.message; }
+      }
+      return a.includes(get(obj, p)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${a}`;
+    };
   },
   isDate(path) {
     const p = ensureArrayPath(path);
