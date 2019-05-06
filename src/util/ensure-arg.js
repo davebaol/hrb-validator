@@ -1,9 +1,29 @@
-const { checkUniqueKey } = require('./misc');
+const isPlainObject = require('is-plain-object');
+const V = require('..');
 const { BAD_PATH, get, ensureArrayPath2 } = require('./path');
 
 const REF = Object.freeze({});
 
 // const REF_KEYS = { $path: true, $var: true, $val: true };
+
+const hasOwn = Object.prototype.hasOwnProperty;
+
+// This is an optimized version of the following code
+//   let keys = Object.keys(obj);
+//   return keys.length === 1 ? keys[0] : undefined;
+function checkUniqueKey(obj) {
+  let k0;
+  // eslint-disable-next-line no-restricted-syntax
+  for (const k in obj) {
+    if (hasOwn.call(obj, k)) {
+      if (k0 !== undefined) {
+        return undefined;
+      }
+      k0 = k;
+    }
+  }
+  return k0;
+}
 
 function isRef(val) {
   // return typeof val === 'object' && typeof val.ref === 'string' && REF_KEYS[checkUniqueKey(val)];
@@ -43,8 +63,6 @@ function arrayRef(obj, ref) {
   }
   return val;
 }
-
-const hasOwn = Object.prototype.hasOwnProperty;
 
 function options(val) {
   if (val != null) {
@@ -110,6 +128,45 @@ function stringRef(obj, ref) {
   return val;
 }
 
+function validator(vld) {
+  if (typeof vld === 'function') {
+    return vld;
+  }
+  if (isPlainObject(vld)) {
+    const method = checkUniqueKey(vld);
+    if (!method) {
+      throw new Error('Error: A plain object validator must have exactly one property where the key is its name and the value is the array of its arguments');
+    }
+    const validate = V[method];
+    if (!validate) {
+      throw new Error(`Error: Unknown validator '${method}'`);
+    }
+    return validate(...vld[method]);
+  }
+  throw new Error(`Expected a validator as either a function or a plain object; found a ${typeof vld} instead`);
+}
+
+function scope(obj) {
+  if (!isPlainObject(obj)) {
+    throw new Error('The scope must be an object');
+  }
+  // eslint-disable-next-line no-restricted-syntax
+  for (const k in obj) {
+    if (hasOwn.call(obj, k)) {
+      // eslint-disable-next-line no-param-reassign
+      obj[k] = validator(obj[k]);
+    }
+  }
+  return obj;
+}
+
+function validators(vlds) {
+  vlds.forEach((vld, idx) => {
+    // eslint-disable-next-line no-param-reassign
+    vlds[idx] = validator(vld);
+  });
+  return vlds;
+}
 module.exports = {
   REF,
   isRef,
@@ -121,6 +178,12 @@ module.exports = {
   optionsRef,
   path,
   pathRef,
+  scope,
+  // scopeRef,
   string,
-  stringRef
+  stringRef,
+  validator,
+  // validatorRef,
+  validators
+  // validatorsRef
 };

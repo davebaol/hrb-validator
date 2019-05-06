@@ -1,5 +1,4 @@
 const { get, ensureArrayPath } = require('./util/path');
-const { ensureValidator, ensureValidators, ensureScope } = require('./util/misc');
 const Context = require('./util/context');
 const createShortcuts = require('./util/create-shortcuts');
 const ensureArg = require('./util/ensure-arg');
@@ -19,7 +18,7 @@ const branchValidators = {
       throw new Error('call: validator name must be a non empty string');
     }
     if (scope !== undefined) {
-      ensureScope(scope);
+      ensureArg.scope(scope);
     }
     return (obj, context) => {
       if (p === REF) {
@@ -42,11 +41,11 @@ const branchValidators = {
     };
   },
   not(child) {
-    const c = ensureValidator(child);
+    const c = ensureArg.validator(child);
     return (obj, context) => (c(obj, context) ? undefined : 'not: the child validator must fail');
   },
   and(...children) {
-    ensureValidators(children);
+    ensureArg.validators(children);
     return (obj, context) => {
       let error;
       const invalidChild = children.find((child) => {
@@ -57,7 +56,7 @@ const branchValidators = {
     };
   },
   or(...children) {
-    ensureValidators(children);
+    ensureArg.validators(children);
     return (obj, context) => {
       let error;
       const validChild = children.find((child) => {
@@ -68,7 +67,7 @@ const branchValidators = {
     };
   },
   xor(...children) {
-    ensureValidators(children);
+    ensureArg.validators(children);
     return (obj, context) => {
       let count = 0;
       children.find((child) => {
@@ -81,15 +80,15 @@ const branchValidators = {
   },
   if(condChild, thenChild, elseChild) {
     if (elseChild) {
-      const [cc, tc, ec] = ensureValidators([condChild, thenChild, elseChild]);
+      const [cc, tc, ec] = ensureArg.validators([condChild, thenChild, elseChild]);
       return (obj, context) => ((cc(obj, context) ? ec : tc)(obj, context));
     }
-    const [cc, tc] = ensureValidators([condChild, thenChild]);
+    const [cc, tc] = ensureArg.validators([condChild, thenChild]);
     return (obj, context) => (cc(obj, context) ? undefined : tc(obj, context));
   },
   every(path, child) {
     const p = ensureArrayPath(path);
-    const c = ensureValidator(child);
+    const c = ensureArg.validator(child);
     return (obj, context) => {
       const value = get(obj, p);
       if (Array.isArray(value)) {
@@ -126,7 +125,7 @@ const branchValidators = {
   },
   some(path, child) {
     const p = ensureArrayPath(path);
-    const c = ensureValidator(child);
+    const c = ensureArg.validator(child);
     return (obj, context) => {
       const value = get(obj, p);
       if (Array.isArray(value)) {
@@ -162,17 +161,17 @@ const branchValidators = {
     };
   },
   alter(child, resultOnSuccess, resultOnError) {
-    const c = ensureValidator(child);
+    const c = ensureArg.validator(child);
     return (obj, context) => (c(obj, context) ? resultOnError : resultOnSuccess);
   },
   onError(error, child) {
-    const c = ensureValidator(child);
+    const c = ensureArg.validator(child);
     return (obj, context) => (c(obj, context) ? error : undefined);
   },
   while(path, condChild, doChild) {
     const p = ensureArrayPath(path);
-    const cc = ensureValidator(condChild);
-    const dc = ensureValidator(doChild);
+    const cc = ensureArg.validator(condChild);
+    const dc = ensureArg.validator(doChild);
     return (obj, context) => {
       const value = get(obj, p);
       const status = { succeeded: 0, failed: 0, original: obj };
