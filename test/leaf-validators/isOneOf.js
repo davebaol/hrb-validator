@@ -17,7 +17,7 @@ function check(val, shouldSucceed) {
 
 function checkRef(val, shouldSucceed) {
   const obj = { a: val, referenced: successValues };
-  const values = { ref: 'referenced' };
+  const values = { $path: 'referenced' };
   it(`isOneOf("a", ${JSON.stringify(values)}) should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
     const v = V.isOneOf('a', values);
     const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;

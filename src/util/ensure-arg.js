@@ -4,7 +4,11 @@ const { BAD_PATH, get, ensureArrayPath2 } = require('./path');
 
 const REF = Object.freeze({});
 
-// const REF_KEYS = { $path: true, $var: true, $val: true };
+const REF_VALID_KEYS = {
+  $path: true,
+  $var: true,
+  $val: true
+};
 
 const hasOwn = Object.prototype.hasOwnProperty;
 
@@ -26,12 +30,31 @@ function checkUniqueKey(obj) {
 }
 
 function isRef(val) {
-  // return typeof val === 'object' && typeof val.ref === 'string' && REF_KEYS[checkUniqueKey(val)];
-  return typeof val === 'object' && typeof val.ref === 'string' && checkUniqueKey(val) === 'ref';
+  return typeof val === 'object' && REF_VALID_KEYS[checkUniqueKey(val)];
 }
 
-function resolveRef(obj, ref) {
-  return get(obj, ref.ref);
+function resolveValueRef(obj, ref) {
+  if (ref.$path) {
+    return get(obj, ref.$path);
+  }
+  if (ref.$var) {
+    throw new Error('Sorry, variable reference is not implemented yet.');
+  }
+  if (ref.$val) {
+    throw new Error('Expected a value reference; found a validator reference instead.');
+  }
+  throw new Error('Illegal value reference');
+}
+
+// eslint-disable-next-line no-unused-vars
+function resolveValidatorRef(obj, ref) {
+  if (ref.$val) {
+    throw new Error('Sorry, validator reference is not implemented yet.');
+  }
+  if (ref.$path || ref.$var) {
+    throw new Error('Expected a validator reference; found a value reference instead.');
+  }
+  throw new Error('Illegal validator reference');
 }
 
 function any(val) {
@@ -39,7 +62,7 @@ function any(val) {
 }
 
 function anyRef(obj, ref) {
-  const val = any(resolveRef(obj, ref));
+  const val = any(resolveValueRef(obj, ref));
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }
@@ -57,7 +80,7 @@ function array(val) {
 }
 
 function arrayRef(obj, ref) {
-  const val = array(resolveRef(obj, ref));
+  const val = array(resolveValueRef(obj, ref));
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }
@@ -103,7 +126,7 @@ function path(val, validatorName) {
 }
 
 function pathRef(obj, ref, validatorName) {
-  const val = path(resolveRef(obj, ref), validatorName);
+  const val = path(resolveValueRef(obj, ref), validatorName);
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }
@@ -121,7 +144,7 @@ function string(val) {
 }
 
 function stringRef(obj, ref) {
-  const val = string(resolveRef(obj, ref));
+  const val = string(resolveValueRef(obj, ref));
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }

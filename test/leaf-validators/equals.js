@@ -17,7 +17,7 @@ function check(pair, shouldSucceed) {
 
 function checkRef(pair, shouldSucceed) {
   const obj = { a: pair[0], referenced: pair[1] };
-  const comparison = { ref: 'referenced' };
+  const comparison = { $path: 'referenced' };
   it(`equals("a", ${JSON.stringify(comparison)}) should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
     const v = V.equals('a', comparison);
     const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;

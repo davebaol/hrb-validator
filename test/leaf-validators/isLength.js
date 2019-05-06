@@ -16,7 +16,7 @@ function check(val, shouldSucceed) {
 
 function checkRef(val, shouldSucceed) {
   const obj = { a: val, referenced: 3 };
-  const options = { min: { ref: 'referenced' }, max: 3 };
+  const options = { min: { $path: 'referenced' }, max: 3 };
   it(`isLength("a", ${JSON.stringify(options)}) should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
     const v = V.isLength('a', options);
     const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;
