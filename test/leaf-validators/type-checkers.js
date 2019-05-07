@@ -1,16 +1,10 @@
 import { assert } from 'chai';
-import { shouldThrowErrorOnBadPath } from '../test-utils';
+import { shouldThrowErrorOnBad, shouldThrowErrorOnBadPath } from '../test-utils';
 import V from '../../src';
 
-function shouldThrowErrorOnBadType(validatorName, errorLike) {
-  it('Should throw immediately an error on bad type', () => {
-    assert.throws(() => V[validatorName]('', 'bad_type'), errorLike || Error);
-  });
-}
-
 describe('Test leaf validator isType.', () => {
-  shouldThrowErrorOnBadPath('isType');
-  shouldThrowErrorOnBadType('isType');
+  shouldThrowErrorOnBadPath('isType', ['', 'string'], 0);
+  shouldThrowErrorOnBad('type', 'isType', ['', ''], 1);
   it('Empty path: isType("", "object") should succeed for {a: ""}', () => {
     const v = V.isType('', 'object');
     assert(v({ a: '' }) === undefined, ':(');
@@ -42,8 +36,8 @@ describe('Test leaf validator isType.', () => {
 });
 
 describe('Test leaf validator isArrayOf.', () => {
-  shouldThrowErrorOnBadPath('isArrayOf');
-  shouldThrowErrorOnBadType('isArrayOf');
+  shouldThrowErrorOnBadPath('isArrayOf', ['', 'string'], 0);
+  shouldThrowErrorOnBad('type', 'isArrayOf', ['', ''], 1);
   it('Empty path: isArrayOf("", "boolean") should succeed for [false]', () => {
     const v = V.isArrayOf('', 'boolean');
     assert(v([false]) === undefined, ':(');

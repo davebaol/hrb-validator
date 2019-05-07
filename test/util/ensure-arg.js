@@ -27,9 +27,6 @@ describe('Test utility ensureArg.validator(v).', () => {
 });
 
 describe('Test utility ensureArg.validators(array).', () => {
-  // it('Should throw an error for anything other than a plain object', () => {
-  //   assert.throws(() => ensureArg.validators(['This is not a scope']), Error);
-  // });
   it('Should return the same array specified in input if all its validators are hard-coded', () => {
     const vlds = [V.isSet('a'), V.isSet('b')];
     assert(ensureArg.validators(vlds) === vlds, ':(');

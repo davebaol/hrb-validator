@@ -1,4 +1,4 @@
-const { get, ensureArrayPath } = require('./util/path');
+const { get } = require('./util/path');
 const Context = require('./util/context');
 const createShortcuts = require('./util/create-shortcuts');
 const ensureArg = require('./util/ensure-arg');
@@ -110,9 +110,15 @@ const branchValidators = {
     return (obj, context) => (cc(obj, context) ? undefined : tc(obj, context));
   },
   every(path, child) {
-    const p = ensureArrayPath(path);
-    const c = ensureArg.validator(child);
+    let p = ensureArg.path(path);
+    let c = ensureArg.validator(child);
     return (obj, context) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+      }
+      if (c === REF) {
+        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
+      }
       const value = get(obj, p);
       if (Array.isArray(value)) {
         let error;
@@ -147,9 +153,15 @@ const branchValidators = {
     };
   },
   some(path, child) {
-    const p = ensureArrayPath(path);
-    const c = ensureArg.validator(child);
+    let p = ensureArg.path(path);
+    let c = ensureArg.validator(child);
     return (obj, context) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+      }
+      if (c === REF) {
+        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
+      }
       const value = get(obj, p);
       if (Array.isArray(value)) {
         let error;
@@ -192,10 +204,19 @@ const branchValidators = {
     return (obj, context) => (c(obj, context) ? error : undefined);
   },
   while(path, condChild, doChild) {
-    const p = ensureArrayPath(path);
-    const cc = ensureArg.validator(condChild);
-    const dc = ensureArg.validator(doChild);
+    let p = ensureArg.path(path);
+    let cc = ensureArg.validator(condChild);
+    let dc = ensureArg.validator(doChild);
     return (obj, context) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+      }
+      if (cc === REF) {
+        try { cc = ensureArg.validatorRef(condChild, context); } catch (e) { return e.message; }
+      }
+      if (dc === REF) {
+        try { dc = ensureArg.validatorRef(doChild, context); } catch (e) { return e.message; }
+      }
       const value = get(obj, p);
       const status = { succeeded: 0, failed: 0, original: obj };
       if (Array.isArray(value)) {

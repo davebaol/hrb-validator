@@ -26,7 +26,7 @@ function checkRef(val, shouldSucceed) {
 }
 
 describe('Test leaf validator isOneOf.', () => {
-  shouldThrowErrorOnBadPath('isOneOf');
+  shouldThrowErrorOnBadPath('isOneOf', ['', ['']], 0);
   shouldThrowErrorOnBad('array', 'isOneOf', [''], 1);
   successExpected.forEach(obj => check(obj, true));
   failureExpected.forEach(obj => check(obj, false));

@@ -15,7 +15,7 @@ function testEveryOrSome(name) {
   const successForEvery = () => (isEvery ? undefined : 'error');
   const failureForEvery = () => (isEvery ? 'error' : undefined);
   describe(`Test branch validator ${name}.`, () => {
-    shouldThrowErrorOnBadPath(name);
+    shouldThrowErrorOnBadPath(name, ['a', V.isSet('')], 0);
     shouldThrowErrorOnBadChild(name, ['a'], 1);
     testKeys.forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'fail at first invalid' : 'succeed at first valid'} iteration`, () => {
       let count = 0;
@@ -66,7 +66,7 @@ testEveryOrSome('some');
 
 describe('Test branch validator while.', () => {
   const success = () => undefined;
-  shouldThrowErrorOnBadPath('while');
+  shouldThrowErrorOnBadPath('while', ['a', success, success], 0);
   shouldThrowErrorOnBadChild('while', ['a', success, success], 1);
   shouldThrowErrorOnBadChild('while', ['a', success, success], 2);
 

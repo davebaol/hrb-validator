@@ -3,7 +3,7 @@ import { shouldThrowErrorOnBadPath, shouldThrowErrorOnBadChild } from '../test-u
 import V from '../../src';
 
 describe('Test branch validator call.', () => {
-  shouldThrowErrorOnBadPath('call');
+  shouldThrowErrorOnBadPath('call', ['', V.isSet('a')], 0);
   shouldThrowErrorOnBadChild('call', [''], 1);
   it('call("a", {isType: ["", "number"]}) should succeed for {a: -3.14}', () => {
     const v = V.call('a', { isType: ['', 'number'] });

@@ -1,5 +1,8 @@
 const v = require('validator');
-const { get, ensureArrayPath } = require('../util/path');
+const { get } = require('../util/path');
+const ensureArg = require('../util/ensure-arg');
+
+const { REF } = ensureArg;
 
 class Bridge {
   constructor(name, errorFunc, ...argCheckers) {
@@ -68,11 +71,14 @@ class StringOnly extends Bridge {
     const original = v[this.name];
     const specialized = SPECIALIZED_VALIDATORS[this.name];
     return (path, ...args) => {
-      const p = ensureArrayPath(path);
+      let p = ensureArg.path(path);
       this.argCheckers.forEach((check, index) => check(args[index]));
       return (obj) => {
-        let result;
+        if (p === REF) {
+          try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        }
         let value = get(obj, p);
+        let result;
         if (specialized !== undefined && this.isSpecialized(value)) {
           result = specialized(value, ...args);
         } else {

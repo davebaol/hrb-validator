@@ -1,7 +1,7 @@
 const isPlainObject = require('is-plain-object');
 const lengthOf = require('@davebaol/length-of');
 const bridge = require('./bridge');
-const { get, ensureArrayPath } = require('../util/path');
+const { get } = require('../util/path');
 const ensureArg = require('../util/ensure-arg');
 const createShortcuts = require('../util/create-shortcuts');
 
@@ -106,13 +106,21 @@ const leafValidators = {
     };
   },
   isDate(path) {
-    const p = ensureArrayPath(path);
-    return obj => (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, p)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
+    let p = ensureArg.path(path);
+    return (obj) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+      }
+      return (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, p)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
+    };
   },
   isArrayOf(path, type) {
-    const p = ensureArrayPath(path);
+    let p = ensureArg.path(path);
     if (typeof type === 'string' && typeCheckers[type]) {
       return (obj) => {
+        if (p === REF) {
+          try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        }
         const value = get(obj, p);
         if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array; found '${getType(value) || 'unknown'}' instead`;
         const flag = value.every(e => typeCheckers[type](e));
@@ -121,6 +129,9 @@ const leafValidators = {
     }
     if (Array.isArray(type) && type.every(t => typeof t === 'string' && typeCheckers[t])) {
       return (obj) => {
+        if (p === REF) {
+          try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        }
         const value = get(obj, p);
         if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be a 'array'; found '${getType(value)}' instead`;
         const flag = value.every(e => type.some(t => typeCheckers[t](e)));
