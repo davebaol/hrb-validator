@@ -9,7 +9,6 @@ script:
 branches:
   only:
     - master
-    - ref
 before_install:
   - pip install --user codecov
 after_success:
