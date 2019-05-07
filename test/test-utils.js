@@ -67,10 +67,6 @@ function shouldThrowErrorOnBad(kind, validatorName, args, index, errorLike) {
   }
 }
 
-function shouldThrowErrorOnBadPath(validatorName, args = [], index = 0, errorLike) {
-  shouldThrowErrorOnBad('path', validatorName, args, index, errorLike);
-}
-
 function shouldThrowErrorOnBadChild(validatorName, args, index, errorLike) {
   shouldThrowErrorOnBad('child', validatorName, args, index, errorLike);
 }
@@ -78,6 +74,5 @@ function shouldThrowErrorOnBadChild(validatorName, args, index, errorLike) {
 export {
   shouldThrowErrorOnMissingArg,
   shouldThrowErrorOnBad,
-  shouldThrowErrorOnBadPath,
   shouldThrowErrorOnBadChild
 };

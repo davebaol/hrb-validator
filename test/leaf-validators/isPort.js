@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { shouldThrowErrorOnBadPath } from '../test-utils';
+import { shouldThrowErrorOnBad } from '../test-utils';
 import V from '../../src';
 
 const successExpected = [8080, '8080', 0, '0', 65535, '65535'].map(v => ({ a: v }));
@@ -14,7 +14,7 @@ function check(obj, shouldSucceed) {
 }
 
 describe('Test leaf validator isPort.', () => {
-  shouldThrowErrorOnBadPath('isPort');
+  shouldThrowErrorOnBad('path', 'isPort', ['2'], 0);
   successExpected.forEach(obj => check(obj, true));
   failureExpected.forEach(obj => check(obj, false));
   check({}, false);

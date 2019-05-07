@@ -1,10 +1,11 @@
 import { assert } from 'chai';
-import { shouldThrowErrorOnBad, shouldThrowErrorOnBadPath } from '../test-utils';
+import { shouldThrowErrorOnBad } from '../test-utils';
 import V from '../../src';
 
 describe('Test leaf validator isType.', () => {
-  shouldThrowErrorOnBadPath('isType', ['', 'string'], 0);
-  shouldThrowErrorOnBad('type', 'isType', ['', ''], 1);
+  const args = ['', 'string'];
+  shouldThrowErrorOnBad('path', 'isType', args, 0);
+  shouldThrowErrorOnBad('type', 'isType', args, 1);
   it('Empty path: isType("", "object") should succeed for {a: ""}', () => {
     const v = V.isType('', 'object');
     assert(v({ a: '' }) === undefined, ':(');
@@ -36,8 +37,9 @@ describe('Test leaf validator isType.', () => {
 });
 
 describe('Test leaf validator isArrayOf.', () => {
-  shouldThrowErrorOnBadPath('isArrayOf', ['', 'string'], 0);
-  shouldThrowErrorOnBad('type', 'isArrayOf', ['', ''], 1);
+  const args = ['', 'string'];
+  shouldThrowErrorOnBad('path', 'isArrayOf', args, 0);
+  shouldThrowErrorOnBad('type', 'isArrayOf', args, 1);
   it('Empty path: isArrayOf("", "boolean") should succeed for [false]', () => {
     const v = V.isArrayOf('', 'boolean');
     assert(v([false]) === undefined, ':(');

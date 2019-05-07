@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { shouldThrowErrorOnBad, shouldThrowErrorOnBadPath } from '../test-utils';
+import { shouldThrowErrorOnBad } from '../test-utils';
 import bridge from '../../src/leaf-validators/bridge';
 
 function testOwnerClass(v, className) {
@@ -24,10 +24,13 @@ describe('Test bridged leaf validators.', () => {
     assert.hasAllKeys(result, owners, ':(');
   });
 
+  let args;
+
   const { contains } = bv;
   testOwnerClass(contains, 'StringOnly');
-  shouldThrowErrorOnBadPath('contains');
-  shouldThrowErrorOnBad('string', 'contains', ['a'], 1);
+  args = ['a', 'seed'];
+  shouldThrowErrorOnBad('path', 'contains', args, 0);
+  shouldThrowErrorOnBad('string', 'contains', args, 1);
   it('Bridged leaf validator contains accepts string', () => {
     assert(contains('a', '')({ a: 'string' }) === undefined, ':(');
   });
@@ -37,8 +40,9 @@ describe('Test bridged leaf validators.', () => {
 
   const { isDivisibleBy } = bv;
   testOwnerClass(isDivisibleBy, 'StringAndNumber');
-  shouldThrowErrorOnBadPath('isDivisibleBy');
-  shouldThrowErrorOnBad('integer', 'isDivisibleBy', ['a'], 1);
+  args = ['a', 2];
+  shouldThrowErrorOnBad('path', 'isDivisibleBy', args, 0);
+  shouldThrowErrorOnBad('integer', 'isDivisibleBy', args, 1);
   it('Bridged leaf validator isDivisibleBy accepts string', () => {
     assert(isDivisibleBy('a', 2)({ a: '24' }) === undefined, ':(');
   });
@@ -51,8 +55,9 @@ describe('Test bridged leaf validators.', () => {
 
   const { isInt } = bv;
   testOwnerClass(isInt, 'StringAndNumber');
-  shouldThrowErrorOnBadPath('isInt');
-  shouldThrowErrorOnBad('object', 'isInt', ['a'], 1);
+  args = ['a', {}];
+  shouldThrowErrorOnBad('path', 'isInt', args, 0);
+  shouldThrowErrorOnBad('object', 'isInt', args, 1);
   it('Bridged leaf validator isInt accepts string', () => {
     assert(isInt('a')({ a: '3' }) === undefined, ':(');
   });
@@ -65,8 +70,9 @@ describe('Test bridged leaf validators.', () => {
 
   const { isFloat } = bv;
   testOwnerClass(isFloat, 'StringAndNumber');
-  shouldThrowErrorOnBadPath('isFloat');
-  shouldThrowErrorOnBad('object', 'isFloat', ['a'], 1);
+  args = ['a', {}];
+  shouldThrowErrorOnBad('path', 'isFloat', args, 0);
+  shouldThrowErrorOnBad('object', 'isFloat', args, 1);
   it('Bridged leaf validator isFloat accepts string', () => {
     assert(isFloat('a')({ a: '3' }) === undefined, ':(');
   });
@@ -79,7 +85,7 @@ describe('Test bridged leaf validators.', () => {
 
   const { isLatLong } = bv;
   testOwnerClass(isLatLong, 'StringAndArray');
-  shouldThrowErrorOnBadPath('isLatLong');
+  shouldThrowErrorOnBad('path', 'isLatLong', [''], 0);
   it('Bridged leaf validator isLatLong accepts string', () => {
     assert(isLatLong('a')({ a: '+90.0, -127.554334' }) === undefined, ':(');
   });
