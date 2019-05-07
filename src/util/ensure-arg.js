@@ -33,7 +33,7 @@ function isRef(val) {
   return typeof val === 'object' && REF_VALID_KEYS[checkUniqueKey(val)];
 }
 
-function resolveValueRef(obj, ref) {
+function resolveValueRef(ref, obj) {
   if (ref.$path) {
     return get(obj, ref.$path);
   }
@@ -43,18 +43,21 @@ function resolveValueRef(obj, ref) {
   if (ref.$val) {
     throw new Error('Expected a value reference; found a validator reference instead.');
   }
-  throw new Error('Illegal value reference');
+  throw new Error('Expected value reference');
 }
 
-// eslint-disable-next-line no-unused-vars
-function resolveValidatorRef(obj, ref) {
+function resolveValidatorRef(ref, context) {
   if (ref.$val) {
-    throw new Error('Sorry, validator reference is not implemented yet.');
+    const v = context.find(ref.$val);
+    if (!v) {
+      throw new Error(`Unresolved validator reference to '${ref.$val}'`);
+    }
+    return v;
   }
   if (ref.$path || ref.$var) {
     throw new Error('Expected a validator reference; found a value reference instead.');
   }
-  throw new Error('Illegal validator reference');
+  throw new Error('Expected validator reference');
 }
 
 function any(val) {
@@ -62,7 +65,7 @@ function any(val) {
 }
 
 function anyRef(obj, ref) {
-  const val = any(resolveValueRef(obj, ref));
+  const val = any(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }
@@ -80,7 +83,7 @@ function array(val) {
 }
 
 function arrayRef(obj, ref) {
-  const val = array(resolveValueRef(obj, ref));
+  const val = array(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }
@@ -126,7 +129,7 @@ function path(val, validatorName) {
 }
 
 function pathRef(obj, ref, validatorName) {
-  const val = path(resolveValueRef(obj, ref), validatorName);
+  const val = path(resolveValueRef(ref, obj), validatorName);
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }
@@ -144,29 +147,40 @@ function string(val) {
 }
 
 function stringRef(obj, ref) {
-  const val = string(resolveValueRef(obj, ref));
+  const val = string(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }
   return val;
 }
 
-function validator(vld) {
-  if (typeof vld === 'function') {
-    return vld;
+function validator(val) {
+  if (typeof val === 'function') {
+    return val;
   }
-  if (isPlainObject(vld)) {
-    const method = checkUniqueKey(vld);
+  if (isPlainObject(val)) {
+    const method = checkUniqueKey(val);
     if (!method) {
       throw new Error('Error: A plain object validator must have exactly one property where the key is its name and the value is the array of its arguments');
+    }
+    if (isRef(val)) {
+      return REF;
     }
     const validate = V[method];
     if (!validate) {
       throw new Error(`Error: Unknown validator '${method}'`);
     }
-    return validate(...vld[method]);
+    return validate(...val[method]);
   }
-  throw new Error(`Expected a validator as either a function or a plain object; found a ${typeof vld} instead`);
+  throw new Error(`Expected a validator as either a function or a plain object; found a ${typeof val} instead`);
+}
+
+function validatorRef(ref, context) {
+  const val = validator(resolveValidatorRef(ref, context));
+  if (val === REF) {
+    throw new Error('XXX: reference to another reference is not allowed');
+  }
+  return val;
 }
 
 function scope(obj) {
@@ -184,12 +198,23 @@ function scope(obj) {
 }
 
 function validators(vlds) {
-  vlds.forEach((vld, idx) => {
-    // eslint-disable-next-line no-param-reassign
-    vlds[idx] = validator(vld);
-  });
-  return vlds;
+  let result = vlds; // the original array is returned by default
+  for (let i = 0; i < result.length; i += 1) {
+    const vld = result[i];
+    const v = validator(vld);
+    if (v !== vld) {
+      if (result === vlds) {
+        // Lazy policy: current validator has changes
+        // so let's make a shallow copy of vlds
+        // before updating the array we return
+        result = Array.from(vlds);
+      }
+      result[i] = v;
+    }
+  }
+  return result;
 }
+
 module.exports = {
   REF,
   isRef,
@@ -206,7 +231,7 @@ module.exports = {
   string,
   stringRef,
   validator,
-  // validatorRef,
+  validatorRef,
   validators
   // validatorsRef
 };

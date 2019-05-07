@@ -1,13 +1,15 @@
-call:
-  - ''
-  - VALIDATOR
+# TODO
+# Add support for value references $path and $var
+def:
+  - null
   - VALIDATOR: 
       and:
         - isType: ['', object]
         - isLength: ['', {min: 1, max: 1}]
         - xor:
-          - call: ['', LEAF_VALIDATOR]
-          - call: ['', BRANCH_VALIDATOR]
+          - isType: [$val, string] # Validator reference
+          - $val: LEAF_VALIDATOR
+          - $val: BRANCH_VALIDATOR
 
     LEAF_VALIDATOR:
       every:
@@ -15,29 +17,30 @@ call:
         - and:
           - isOneOf: [key, [contains, equals, isAfter, isAlpha, isAlphanumeric, isArrayOf, isAscii, isBase64, isAfter, isBefore, isBoolean, isByteLength, isCreditCard, isAfter, isDataURI, isDate, isDecimal, isDivisibleBy, isEmail, isEmpty, isFloat, isFQDN, isFullWidth, isHalfWidth, isHash, isHexadecimal, isHexColor, isIdentityCard, isIn, isInt, isIP, isIPRange, isISBN, isISIN, isISO31661Alpha2, isISO31661Alpha3, isISO8601, isISRC, isISSN, isJSON, isJWT, isLatLong, isLength, isLowercase, isMACAddress, isMagnetURI, isMD5, isMimeType, isMobilePhone, isMongoId, isMultibyte, isNumeric, isOneOf, isPort, isPostalCode, isRFC3339, isSet, isSurrogatePair, isType, isUppercase, isURL, isUUID, isVariableWidth, isWhitelisted, matches, optContains, optEquals, optIsAfter, optIsAlpha, optIsAlphanumeric, optIsArrayOf, optIsAscii, optIsBase64, optIsAfter, optIsBefore, optIsBoolean, optIsByteLength, optIsCreditCard, optIsAfter, optIsDataUri, optIsDate, optIsDecimal, optIsDivisibleBy, optIsEmail, optIsEmpty, optIsFloat, optIsFqdn, optIsFullWidth, optIsHalfWidth, optIsHash, optIsHexadecimal, optIsHexColor, optIsIdentityCard, optIsIn, optIsInt, optIsIp, optIsIpRange, optIsIsbn, optIsIsin, optIsIso31661Alpha2, optIsIso31661Alpha3, optIsIso8601, optIsIsrc, optIsIssn, optIsJson, optIsJwt, optIsLatLong, optIsLength, optIsLowercase, optIsMacAddress, optIsMagnetUri, optIsMd5, optIsMimeType, optIsMobilePhone, optIsMongoId, optIsMultibyte, optIsNumeric, optIsOneOf, optIsPort, optIsPostalCode, optIsRfc3339, optIsSet, optIsSurrogatePair, optIsType, optIsUppercase, optIsUrl, optIsUuid, optIsVariableWidth, optIsWhitelisted, optMatches]]
           - isType: [value, array]
-          - call: [value.0, ARG_PATH]
+          - call: [value.0, {$val: ARG_PATH}]
     
     BRANCH_VALIDATOR:
       xor:
-        - call: [alter, ARG_ONE_CHILD_AND_TWO_RESULTS]
-        - call: [and, ARG_ZERO_OR_MORE_CHILDREN]
-        - call: [call, ARG_PATH_STRING_AND_SCOPE]
-        - call: [every, ARG_PATH_AND_ONE_CHILD]
-        - call: [if, ARG_TWO_OR_THREE_CHILDREN]
-        - call: [not, ARG_ONE_CHILD]
-        - call: [optCall, ARG_PATH_STRING_AND_SCOPE]
-        - call: [optEvery, ARG_PATH_AND_ONE_CHILD]
-        - call: [optSome, ARG_PATH_AND_ONE_CHILD]
-        - call: [optWhile, ARG_PATH_AND_TWO_CHILDREN]
-        - call: [or, ARG_ZERO_OR_MORE_CHILDREN]
-        - call: [some, ARG_PATH_AND_ONE_CHILD]
-        - call: [while, ARG_PATH_AND_TWO_CHILDREN]
-        - call: [xor, ARG_ZERO_OR_MORE_CHILDREN]
+        - call: [alter, {$val: ARG_ONE_CHILD_AND_TWO_RESULTS}]
+        - call: [and, {$val: ARG_ZERO_OR_MORE_CHILDREN}]
+        - call: [call, {$val: ARG_PATH_AND_ONE_CHILD}]
+        - call: [def, {$val: ARG_OPTVARSCOPE_OPTVALSCOPE_AND_ONE_CHILD}]
+        - call: [every, {$val: ARG_PATH_AND_ONE_CHILD}]
+        - call: [if, {$val: ARG_TWO_OR_THREE_CHILDREN}]
+        - call: [not, {$val: ARG_ONE_CHILD}]
+        - call: [optCall, {$val: ARG_PATH_AND_ONE_CHILD}]
+        - call: [optEvery, {$val: ARG_PATH_AND_ONE_CHILD}]
+        - call: [optSome, {$val: ARG_PATH_AND_ONE_CHILD}]
+        - call: [optWhile, {$val: ARG_PATH_AND_TWO_CHILDREN}]
+        - call: [or, {$val: ARG_ZERO_OR_MORE_CHILDREN}]
+        - call: [some, {$val: ARG_PATH_AND_ONE_CHILD}]
+        - call: [while, {$val: ARG_PATH_AND_TWO_CHILDREN}]
+        - call: [xor, {$val: ARG_ZERO_OR_MORE_CHILDREN}]
     
     ARG_ONE_CHILD_AND_TWO_RESULTS:
       and:
         - isType: ['', array]
-        - call: [0, VALIDATOR]
+        - call: [0, {$val: VALIDATOR}]
         - optIsType: [1, string]
         - optIsType: [2, string]
 
@@ -46,53 +49,55 @@ call:
         - isType: ['', [string, number]]
         - isArrayOf: ['', [string, number]]
 
-    ARG_SCOPE:
+    ARG_VALSCOPE:
       and:
         - isType: ['', object]
         - every:
           - ''
-          - call: [value, VALIDATOR]
+          - call: [value, {$val: VALIDATOR}]
 
-    ARG_PATH_STRING_AND_SCOPE:
+    ARG_OPTVARSCOPE_OPTVALSCOPE_AND_ONE_CHILD:
       and:
         - isType: ['', array]
-        - isLength: ['', {min: 2, max: 3}]
-        - call: [0, ARG_PATH]
-        - isType: [1, string]
-        - optCall: [2, ARG_SCOPE]
-    
+        - isLength: ['', {min: 3, max: 3}]
+        - optIsType: [0, object]
+        - optCall: [1, {$val: ARG_VALSCOPE}]
+        - call: [2, {$val: VALIDATOR}]
+
     ARG_PATH_AND_ONE_CHILD:
       and:
         - isType: ['', array]
         - isLength: ['', {min: 2, max: 2}]
-        - call: [0, ARG_PATH]
-        - call: [1, VALIDATOR]
+        - call: [0, {$val: ARG_PATH}]
+        - call: [1, {$val: VALIDATOR}]
     
     ARG_PATH_AND_TWO_CHILDREN:
       and:
         - isType: ['', array]
         - isLength: ['', {min: 3, max: 3}]
-        - call: [0, ARG_PATH]
-        - call: [1, VALIDATOR]
-        - call: [2, VALIDATOR]
+        - call: [0, {$val: ARG_PATH}]
+        - call: [1, {$val: VALIDATOR}]
+        - call: [2, {$val: VALIDATOR}]
 
     ARG_ZERO_OR_MORE_CHILDREN:
       and:
         - isType: ['', array]
         - every:
           - ''
-          - call: ['value', VALIDATOR]
+          - call: [value, {$val: VALIDATOR}]
     
     ARG_ONE_CHILD:
       and:
         - isType: ['', array]
         - isLength: ['', {min: 1, max: 1}]
-        - call: [0, VALIDATOR]
+        - call: [0, {$val: VALIDATOR}]
     
     ARG_TWO_OR_THREE_CHILDREN:
       and:
         - isType: ['', array]
         - isLength: ['', {min: 2, max: 3}]
-        - call: [0, VALIDATOR]
-        - call: [1, VALIDATOR]
-        - optCall: [2, VALIDATOR]
+        - call: [0, {$val: VALIDATOR}]
+        - call: [1, {$val: VALIDATOR}]
+        - optCall: [2, {$val: VALIDATOR}]
+
+  - $val: VALIDATOR

@@ -11,67 +11,90 @@ const { REF } = ensureArg;
 //
 
 const branchValidators = {
-  call(path, childName, scope) {
+  call(path, child) {
     let p = ensureArg.path(path);
-    let cn = ensureArg.string(childName);
-    if (!cn) {
-      throw new Error('call: validator name must be a non empty string');
-    }
-    if (scope !== undefined) {
-      ensureArg.scope(scope);
-    }
+    let c = ensureArg.validator(child);
     return (obj, context) => {
       if (p === REF) {
         try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
       }
-      if (cn === REF) {
-        try { cn = ensureArg.stringRef(obj, childName); } catch (e) { return e.message; }
+      if (c === REF) {
+        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
       }
+      return c(get(obj, p), context);
+    };
+  },
+  def(variables, validators, child) {
+    // TODO Here we're ensuring options just for convenience;
+    // in fact we're ignoring variables for now.
+    // eslint-disable-next-line no-unused-vars
+    const vars = ensureArg.options(variables);
+    const scope = ensureArg.scope(validators || {});
+    let c = ensureArg.validator(child);
+    return (obj, context) => {
       // eslint-disable-next-line no-param-reassign
       context = context || new Context();
-      if (scope) {
-        context.push(scope);
+      context.push(scope);
+      if (c === REF) {
+        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
       }
-      const child = context.find(cn);
-      const result = child ? child(get(obj, p), context) : `call: validator with name '${cn}' not found`;
-      if (scope) {
-        context.pop();
-      }
+      const result = c(obj, context);
+      context.pop();
       return result;
     };
   },
   not(child) {
-    const c = ensureArg.validator(child);
-    return (obj, context) => (c(obj, context) ? undefined : 'not: the child validator must fail');
+    let c = ensureArg.validator(child);
+    return (obj, context) => {
+      if (c === REF) {
+        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
+      }
+      return c(obj, context) ? undefined : 'not: the child validator must fail';
+    };
   },
   and(...children) {
-    ensureArg.validators(children);
+    const offspring = ensureArg.validators(children);
     return (obj, context) => {
       let error;
-      const invalidChild = children.find((child) => {
-        error = child(obj, context);
+      const invalidChild = offspring.find((child, i) => {
+        let c = child;
+        if (c === REF) {
+          try { c = ensureArg.validatorRef(children[i], context); } catch (e) { return e.message; }
+          offspring[i] = c; // replace the ref with the validator
+        }
+        error = c(obj, context);
         return error;
       });
       return invalidChild ? error : undefined;
     };
   },
   or(...children) {
-    ensureArg.validators(children);
+    const offspring = ensureArg.validators(children);
     return (obj, context) => {
       let error;
-      const validChild = children.find((child) => {
-        error = child(obj, context);
+      const validChild = offspring.find((child, i) => {
+        let c = child;
+        if (c === REF) {
+          try { c = ensureArg.validatorRef(children[i], context); } catch (e) { return e.message; }
+          offspring[i] = c; // replace the ref with the validator
+        }
+        error = c(obj, context);
         return !error;
       });
       return validChild ? undefined : error;
     };
   },
   xor(...children) {
-    ensureArg.validators(children);
+    const offspring = ensureArg.validators(children);
     return (obj, context) => {
       let count = 0;
-      children.find((child) => {
-        const error = child(obj, context);
+      offspring.find((child, i) => {
+        let c = child;
+        if (c === REF) {
+          try { c = ensureArg.validatorRef(children[i], context); } catch (e) { return e.message; }
+          offspring[i] = c; // replace the ref with the validator
+        }
+        const error = c(obj, context);
         count += error ? 0 : 1;
         return count === 2;
       });
