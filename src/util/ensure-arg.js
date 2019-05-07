@@ -1,6 +1,6 @@
 const isPlainObject = require('is-plain-object');
 const V = require('..');
-const { BAD_PATH, get, ensureArrayPath2 } = require('./path');
+const { BAD_PATH, get, ensureArrayPath } = require('./path');
 
 const REF = Object.freeze({});
 
@@ -118,7 +118,7 @@ function optionsRef(obj, ref) {
 }
 
 function path(val, validatorName) {
-  const p = ensureArrayPath2(val);
+  const p = ensureArrayPath(val);
   if (p === BAD_PATH) {
     if (isRef(val)) {
       return REF;
