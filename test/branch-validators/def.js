@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { shouldThrowErrorOnBadChild } from '../test-utils';
+import { testArgument } from '../test-utils';
 import V from '../../src';
 
 describe('Test branch validator def.', () => {
@@ -9,7 +9,7 @@ describe('Test branch validator def.', () => {
   it('Should throw immediately an error on bad validators', () => {
     assert.throws(() => V.def({}, 'Bad validators', { isType: ['', 'number'] }), Error);
   });
-  shouldThrowErrorOnBadChild('def', [{}, {}], 2);
+  testArgument('child', 'def', [{}, {}], 2);
   it('def({}, {}, V.optIsSet("")) should always succeed just like its child', () => {
     const v = V.def({}, {}, V.optIsSet(''));
     assert(v({ a: 123 }) === undefined, ':(');

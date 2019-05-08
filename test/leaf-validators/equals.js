@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { shouldThrowErrorOnBad } from '../test-utils';
+import { testArgument } from '../test-utils';
 import V from '../../src';
 
 const successExpected = [[false, false], [0, 0], ['foo', 'foo']];
@@ -26,7 +26,7 @@ function checkRef(pair, shouldSucceed) {
 }
 
 describe('Test leaf validator equals.', () => {
-  shouldThrowErrorOnBad('path', 'equals', ['', 2], 0);
+  testArgument('path', 'equals', ['', 2], 0);
   successExpected.forEach(obj => check(obj, true));
   failureExpected.forEach(obj => check(obj, false));
   successExpected.forEach(obj => checkRef(obj, true));

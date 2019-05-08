@@ -35,7 +35,7 @@ const argInfo = {
 
 const TEST_REFERENCES = false;
 
-function shouldThrowErrorOnBad(kind, validatorName, args, index, errorLike) {
+function testArgument(kind, validatorName, args, index, errorLike) {
   if (!(kind in argInfo)) {
     throw new Error(`Unknown type argument '${kind}'`);
   }
@@ -67,12 +67,7 @@ function shouldThrowErrorOnBad(kind, validatorName, args, index, errorLike) {
   }
 }
 
-function shouldThrowErrorOnBadChild(validatorName, args, index, errorLike) {
-  shouldThrowErrorOnBad('child', validatorName, args, index, errorLike);
-}
-
 export {
   shouldThrowErrorOnMissingArg,
-  shouldThrowErrorOnBad,
-  shouldThrowErrorOnBadChild
+  testArgument
 };

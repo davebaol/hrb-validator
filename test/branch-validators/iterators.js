@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import lengthOf from '@davebaol/length-of';
-import { shouldThrowErrorOnBad } from '../test-utils';
+import { testArgument } from '../test-utils';
 import V from '../../src';
 
 const test = {
@@ -16,8 +16,8 @@ function testEveryOrSome(name) {
   const failureForEvery = () => (isEvery ? 'error' : undefined);
   describe(`Test branch validator ${name}.`, () => {
     const args = ['a', V.isSet('')];
-    shouldThrowErrorOnBad('path', name, args, 0);
-    shouldThrowErrorOnBad('child', name, args, 1);
+    testArgument('path', name, args, 0);
+    testArgument('child', name, args, 1);
     testKeys.forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'fail at first invalid' : 'succeed at first valid'} iteration`, () => {
       let count = 0;
       const expected = 2;
@@ -67,9 +67,9 @@ testEveryOrSome('some');
 
 describe('Test branch validator while.', () => {
   const args = ['a', () => undefined, () => undefined];
-  shouldThrowErrorOnBad('path', 'while', args, 0);
-  shouldThrowErrorOnBad('child', 'while', args, 1);
-  shouldThrowErrorOnBad('child', 'while', args, 2);
+  testArgument('path', 'while', args, 0);
+  testArgument('child', 'while', args, 1);
+  testArgument('child', 'while', args, 2);
 
   testKeys.forEach(t => it(`For ${t}s while should fail when the condition fails`, () => {
     const vCond = V.isInt('failed', { min: 0, max: 1 }); // fails on 2nd failure of vDo

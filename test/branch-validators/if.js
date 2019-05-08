@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { shouldThrowErrorOnBadChild } from '../test-utils';
+import { testArgument } from '../test-utils';
 import V from '../../src';
 
 describe('Test branch validator if.', () => {
@@ -8,7 +8,7 @@ describe('Test branch validator if.', () => {
   const vThen = () => 'then';
   const vElse = () => 'else';
   const args = [success, vThen, vElse];
-  args.forEach((a, i) => shouldThrowErrorOnBadChild('if', args, i));
+  args.forEach((a, i) => testArgument('child', 'if', args, i));
   it('if(success, then, else) should return then validation result', () => {
     const v = V.if(success, vThen, vElse);
     assert(v({}) === 'then', ':(');
