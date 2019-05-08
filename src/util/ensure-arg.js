@@ -154,6 +154,24 @@ function stringRef(obj, ref) {
   return val;
 }
 
+function type(val) {
+  if (typeof val !== 'string' && !Array.isArray(val)) {
+    if (isRef(val)) {
+      return REF;
+    }
+    throw new Error('A type argument must be a string or an array of strings');
+  }
+  return val;
+}
+
+function typeRef(obj, ref) {
+  const val = type(resolveValueRef(ref, obj));
+  if (val === REF) {
+    throw new Error('XXX: reference to another reference is not allowed');
+  }
+  return val;
+}
+
 function validator(val) {
   if (typeof val === 'function') {
     return val;
@@ -198,15 +216,16 @@ function scope(obj) {
 }
 
 function validators(vlds) {
-  let result = vlds; // the original array is returned by default
+  let result = vlds; // The original array is returned by default
   for (let i = 0; i < result.length; i += 1) {
     const vld = result[i];
     const v = validator(vld);
     if (v !== vld) {
       if (result === vlds) {
-        // Lazy policy: current validator has changes
-        // so let's make a shallow copy of vlds
-        // before updating the array we return
+        // Lazy shallow copy of the original array is made only when we know
+        // for sure that at least one item has to be replaced for some reason.
+        // From here on we can safely update items into the copied array, which
+        // of course is the one that will be returned.
         result = Array.from(vlds);
       }
       result[i] = v;
@@ -230,6 +249,8 @@ module.exports = {
   // scopeRef,
   string,
   stringRef,
+  type,
+  typeRef,
   validator,
   validatorRef,
   validators
