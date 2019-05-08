@@ -13,13 +13,13 @@ const { REF } = ensureArg;
 const branchValidators = {
   call(path, child) {
     let p = ensureArg.path(path);
-    let c = ensureArg.validator(child);
+    let c = ensureArg.child(child);
     return (obj, context) => {
       if (p === REF) {
         try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
       }
       if (c === REF) {
-        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
+        try { c = ensureArg.childRef(child, context); } catch (e) { return e.message; }
       }
       return c(get(obj, p), context);
     };
@@ -30,13 +30,13 @@ const branchValidators = {
     // eslint-disable-next-line no-unused-vars
     const vars = ensureArg.options(variables);
     const scope = ensureArg.scope(validators || {});
-    let c = ensureArg.validator(child);
+    let c = ensureArg.child(child);
     return (obj, context) => {
       // eslint-disable-next-line no-param-reassign
       context = context || new Context();
       context.push(scope);
       if (c === REF) {
-        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
+        try { c = ensureArg.childRef(child, context); } catch (e) { return e.message; }
       }
       const result = c(obj, context);
       context.pop();
@@ -44,22 +44,22 @@ const branchValidators = {
     };
   },
   not(child) {
-    let c = ensureArg.validator(child);
+    let c = ensureArg.child(child);
     return (obj, context) => {
       if (c === REF) {
-        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
+        try { c = ensureArg.childRef(child, context); } catch (e) { return e.message; }
       }
       return c(obj, context) ? undefined : 'not: the child validator must fail';
     };
   },
   and(...children) {
-    const offspring = ensureArg.validators(children);
+    const offspring = ensureArg.children(children);
     return (obj, context) => {
       let error;
       const invalidChild = offspring.find((child, i) => {
         let c = child;
         if (c === REF) {
-          try { c = ensureArg.validatorRef(children[i], context); } catch (e) { return e.message; }
+          try { c = ensureArg.childRef(children[i], context); } catch (e) { return e.message; }
           offspring[i] = c; // replace the ref with the validator
         }
         error = c(obj, context);
@@ -69,13 +69,13 @@ const branchValidators = {
     };
   },
   or(...children) {
-    const offspring = ensureArg.validators(children);
+    const offspring = ensureArg.children(children);
     return (obj, context) => {
       let error;
       const validChild = offspring.find((child, i) => {
         let c = child;
         if (c === REF) {
-          try { c = ensureArg.validatorRef(children[i], context); } catch (e) { return e.message; }
+          try { c = ensureArg.childRef(children[i], context); } catch (e) { return e.message; }
           offspring[i] = c; // replace the ref with the validator
         }
         error = c(obj, context);
@@ -85,13 +85,13 @@ const branchValidators = {
     };
   },
   xor(...children) {
-    const offspring = ensureArg.validators(children);
+    const offspring = ensureArg.children(children);
     return (obj, context) => {
       let count = 0;
       offspring.find((child, i) => {
         let c = child;
         if (c === REF) {
-          try { c = ensureArg.validatorRef(children[i], context); } catch (e) { return e.message; }
+          try { c = ensureArg.childRef(children[i], context); } catch (e) { return e.message; }
           offspring[i] = c; // replace the ref with the validator
         }
         const error = c(obj, context);
@@ -103,21 +103,21 @@ const branchValidators = {
   },
   if(condChild, thenChild, elseChild) {
     if (elseChild) {
-      const [cc, tc, ec] = ensureArg.validators([condChild, thenChild, elseChild]);
+      const [cc, tc, ec] = ensureArg.children([condChild, thenChild, elseChild]);
       return (obj, context) => ((cc(obj, context) ? ec : tc)(obj, context));
     }
-    const [cc, tc] = ensureArg.validators([condChild, thenChild]);
+    const [cc, tc] = ensureArg.children([condChild, thenChild]);
     return (obj, context) => (cc(obj, context) ? undefined : tc(obj, context));
   },
   every(path, child) {
     let p = ensureArg.path(path);
-    let c = ensureArg.validator(child);
+    let c = ensureArg.child(child);
     return (obj, context) => {
       if (p === REF) {
         try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
       }
       if (c === REF) {
-        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
+        try { c = ensureArg.childRef(child, context); } catch (e) { return e.message; }
       }
       const value = get(obj, p);
       if (Array.isArray(value)) {
@@ -154,13 +154,13 @@ const branchValidators = {
   },
   some(path, child) {
     let p = ensureArg.path(path);
-    let c = ensureArg.validator(child);
+    let c = ensureArg.child(child);
     return (obj, context) => {
       if (p === REF) {
         try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
       }
       if (c === REF) {
-        try { c = ensureArg.validatorRef(child, context); } catch (e) { return e.message; }
+        try { c = ensureArg.childRef(child, context); } catch (e) { return e.message; }
       }
       const value = get(obj, p);
       if (Array.isArray(value)) {
@@ -196,26 +196,26 @@ const branchValidators = {
     };
   },
   alter(child, resultOnSuccess, resultOnError) {
-    const c = ensureArg.validator(child);
+    const c = ensureArg.child(child);
     return (obj, context) => (c(obj, context) ? resultOnError : resultOnSuccess);
   },
   onError(error, child) {
-    const c = ensureArg.validator(child);
+    const c = ensureArg.child(child);
     return (obj, context) => (c(obj, context) ? error : undefined);
   },
   while(path, condChild, doChild) {
     let p = ensureArg.path(path);
-    let cc = ensureArg.validator(condChild);
-    let dc = ensureArg.validator(doChild);
+    let cc = ensureArg.child(condChild);
+    let dc = ensureArg.child(doChild);
     return (obj, context) => {
       if (p === REF) {
         try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
       }
       if (cc === REF) {
-        try { cc = ensureArg.validatorRef(condChild, context); } catch (e) { return e.message; }
+        try { cc = ensureArg.childRef(condChild, context); } catch (e) { return e.message; }
       }
       if (dc === REF) {
-        try { dc = ensureArg.validatorRef(doChild, context); } catch (e) { return e.message; }
+        try { dc = ensureArg.childRef(doChild, context); } catch (e) { return e.message; }
       }
       const value = get(obj, p);
       const status = { succeeded: 0, failed: 0, original: obj };

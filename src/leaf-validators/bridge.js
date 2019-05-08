@@ -9,7 +9,7 @@ class Bridge {
     this.name = name;
     this.errorFunc = errorFunc;
     this.argDescriptors = argDescriptors.map((d) => {
-      const p = d.trim().split(':');
+      const p = d.trim().split(':'); // argName:type? where '?' means optional
       const argName = p[0].trim();
       const optional = p[1].endsWith('?');
       const type = (optional ? p[1].substring(0, p[1].length - 1) : p[1]).trim();
@@ -80,16 +80,18 @@ class StringOnly extends Bridge {
     for (let i = 0; i < result.length; i += 1) {
       const arg = result[i];
       const ad = this.argDescriptors[i];
-      const ea = ensureArg[ad.type](args[i], ad.name);
-      if (ea !== arg) {
-        if (result === args) {
-          // Lazy shallow copy of the original array is made only when we know
-          // for sure that at least one item has to be replaced for some reason.
-          // From here on we can safely update items into the copied array, which
-          // of course is the one that will be returned.
-          result = Array.from(args);
+      if (arg != null || !ad.optional) { // don't ensure a void argument if it's optional
+        const ea = ensureArg[ad.type](args[i], ad.name);
+        if (ea !== arg) {
+          if (result === args) {
+            // Lazy shallow copy of the original array is made only when we know
+            // for sure that at least one item has to be replaced for some reason.
+            // From here on we can safely update items into the copied array, which
+            // of course is the one that will be returned.
+            result = Array.from(args);
+          }
+          result[i] = ea;
         }
-        result[i] = ea;
       }
     }
     return result;

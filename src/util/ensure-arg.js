@@ -126,6 +126,8 @@ function numberRef(obj, ref) {
   return val;
 }
 
+// Contrary to options, an object can only be referenced as a whole.
+// Its properties cannot be referenced individually.
 function object(val) {
   if (isRef(val)) {
     return REF;
@@ -144,6 +146,8 @@ function objectRef(obj, ref) {
   return val;
 }
 
+// Unlike object, options cannot be referenced as a whole.
+// However first level properties can be referenced individually.
 function options(val) {
   if (val != null) {
     if (typeof val !== 'object') {
@@ -226,7 +230,7 @@ function stringOrArrayRef(obj, ref) {
   return val;
 }
 
-function validator(val) {
+function child(val) {
   if (typeof val === 'function') {
     return val;
   }
@@ -247,8 +251,8 @@ function validator(val) {
   throw new Error(`Expected a validator as either a function or a plain object; found a ${typeof val} instead`);
 }
 
-function validatorRef(ref, context) {
-  const val = validator(resolveValidatorRef(ref, context));
+function childRef(ref, context) {
+  const val = child(resolveValidatorRef(ref, context));
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }
@@ -263,17 +267,17 @@ function scope(obj) {
   for (const k in obj) {
     if (hasOwn.call(obj, k)) {
       // eslint-disable-next-line no-param-reassign
-      obj[k] = validator(obj[k]);
+      obj[k] = child(obj[k]);
     }
   }
   return obj;
 }
 
-function validators(vlds) {
+function children(vlds) {
   let result = vlds; // The original array is returned by default
   for (let i = 0; i < result.length; i += 1) {
     const vld = result[i];
-    const v = validator(vld);
+    const v = child(vld);
     if (v !== vld) {
       if (result === vlds) {
         // Lazy shallow copy of the original array is made only when we know
@@ -313,8 +317,8 @@ module.exports = {
   stringOrArrayRef,
   type: stringOrArray, // TODO: specialize this to check valid types, see util/type.js
   typeRef: stringOrArrayRef,
-  validator,
-  validatorRef,
-  validators
+  child,
+  childRef,
+  children
   // validatorsRef
 };

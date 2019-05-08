@@ -1,1 +1,1 @@
-module.exports = require('./util/ensure-arg').validator;
+module.exports = require('./util/ensure-arg').child;
