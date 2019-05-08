@@ -90,6 +90,60 @@ function arrayRef(obj, ref) {
   return val;
 }
 
+function integer(val) {
+  if (!Number.isInteger(val)) {
+    if (isRef(val)) {
+      return REF;
+    }
+    throw new Error('Argument must be an integer number');
+  }
+  return val;
+}
+
+function integerRef(obj, ref) {
+  const val = integer(resolveValueRef(ref, obj));
+  if (val === REF) {
+    throw new Error('XXX: reference to another reference is not allowed');
+  }
+  return val;
+}
+
+function number(val) {
+  if (typeof val !== 'number') {
+    if (isRef(val)) {
+      return REF;
+    }
+    throw new Error('Argument must be a number');
+  }
+  return val;
+}
+
+function numberRef(obj, ref) {
+  const val = number(resolveValueRef(ref, obj));
+  if (val === REF) {
+    throw new Error('XXX: reference to another reference is not allowed');
+  }
+  return val;
+}
+
+function object(val) {
+  if (isRef(val)) {
+    return REF;
+  }
+  if (val == null || typeof val !== 'object') {
+    throw new Error('Argument must be an object');
+  }
+  return val;
+}
+
+function objectRef(obj, ref) {
+  const val = object(resolveValueRef(ref, obj));
+  if (val === REF) {
+    throw new Error('XXX: reference to another reference is not allowed');
+  }
+  return val;
+}
+
 function options(val) {
   if (val != null) {
     if (typeof val !== 'object') {
@@ -154,7 +208,7 @@ function stringRef(obj, ref) {
   return val;
 }
 
-function type(val) {
+function stringOrArray(val) {
   if (typeof val !== 'string' && !Array.isArray(val)) {
     if (isRef(val)) {
       return REF;
@@ -164,8 +218,8 @@ function type(val) {
   return val;
 }
 
-function typeRef(obj, ref) {
-  const val = type(resolveValueRef(ref, obj));
+function stringOrArrayRef(obj, ref) {
+  const val = stringOrArray(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: reference to another reference is not allowed');
   }
@@ -241,6 +295,12 @@ module.exports = {
   anyRef,
   array,
   arrayRef,
+  integer,
+  integerRef,
+  number,
+  numberRef,
+  object,
+  objectRef,
   options,
   optionsRef,
   path,
@@ -249,8 +309,10 @@ module.exports = {
   // scopeRef,
   string,
   stringRef,
-  type,
-  typeRef,
+  stringOrArray,
+  stringOrArrayRef,
+  type: stringOrArray, // TODO: specialize this to check valid types, see util/type.js
+  typeRef: stringOrArrayRef,
   validator,
   validatorRef,
   validators

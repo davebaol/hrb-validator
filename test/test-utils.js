@@ -1,6 +1,20 @@
 import { assert } from 'chai';
 import V from '../src';
 
+const VALIDATOR_REF = 'vaidatorRef';
+const VALUE_REF = 'valueRef';
+
+const argInfo = {
+  array: { badValue: 'Bad array!', refType: VALUE_REF },
+  child: { badValue: 'Bad child!', refType: VALIDATOR_REF, unknownRefShouldPassCreation: false },
+  integer: { badValue: 'Bad integer!', refType: VALUE_REF },
+  number: { badValue: 'Bad number!', refType: VALUE_REF },
+  object: { badValue: 'Bad object!', refType: VALUE_REF, unknownRefShouldPassCreation: true },
+  path: { badValue: {}, refType: VALUE_REF },
+  string: { badValue: [], refType: VALUE_REF },
+  stringOrArray: { badValue: {}, refType: VALUE_REF },
+  type: { badValue: {}, refType: VALUE_REF }
+};
 
 function ordinal(n) {
   switch (n) {
@@ -18,20 +32,6 @@ function shouldThrowErrorOnMissingArg(validatorName, args, index, errorLike) {
     assert.throws(() => V[validatorName](...badArgs), errorLike || Error);
   });
 }
-
-const VALIDATOR_REF = 'vaidatorRef';
-const VALUE_REF = 'valueRef';
-
-const argInfo = {
-  array: { badValue: 'Bad array!', refType: VALUE_REF },
-  child: { badValue: 'Bad child!', refType: VALIDATOR_REF, unknownRefShouldPassCreation: false },
-  integer: { badValue: 'Bad integer!', refType: VALUE_REF },
-  number: { badValue: 'Bad number!', refType: VALUE_REF },
-  object: { badValue: 'Bad object!', refType: VALUE_REF, unknownRefShouldPassCreation: true },
-  path: { badValue: {}, refType: VALUE_REF },
-  string: { badValue: [], refType: VALUE_REF },
-  type: { badValue: 'Bad type!', refType: VALUE_REF }
-};
 
 const TEST_REFERENCES = false;
 
