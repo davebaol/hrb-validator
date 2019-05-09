@@ -2,44 +2,55 @@ import { assert } from 'chai';
 import V from '../src';
 import ensureArg from '../src/util/ensure-arg';
 
-const NO_BAD_VALUE = {};
 const VALIDATOR_REF = 'vaidatorRef';
 const VALUE_REF = 'valueRef';
 
-const argInfo = {
-  any: { badValue: NO_BAD_VALUE, refType: VALUE_REF },
-  array: { badValue: 'Bad array!', refType: VALUE_REF },
-  child: { badValue: 'Bad child!', refType: VALIDATOR_REF, unknownRefShouldPassCreation: false },
-  integer: { badValue: 'Bad integer!', refType: VALUE_REF },
-  number: { badValue: 'Bad number!', refType: VALUE_REF },
-  object: { badValue: 'Bad object!', refType: VALUE_REF, unknownRefShouldPassCreation: true },
-  options: { badValue: 'Bad options!', refType: VALUE_REF, unknownRefShouldPassCreation: true },
-  path: { badValue: {}, refType: VALUE_REF },
-  string: { badValue: [], refType: VALUE_REF },
-  stringOrArray: { badValue: {}, refType: VALUE_REF },
-  type: { badValue: {}, refType: VALUE_REF }
-};
+class ArgTestInfo {
+  constructor(name, refType, goodValue, unknownRefShouldPassCreation) {
+    this.name = name;
+    this.refType = refType;
+    this.goodValue = goodValue;
+    this.badValue = refType === VALIDATOR_REF ? 'Bad validator!' : () => {};
+    this.unknownRefShouldPassCreation = !!unknownRefShouldPassCreation;
+  }
+
+  acceptValueRef() {
+    return this.refType === VALUE_REF;
+  }
+
+  acceptValidatorRef() {
+    return this.refType === VALIDATOR_REF;
+  }
+
+  value(good) {
+    return good ? this.goodValue : this.badValue;
+  }
+}
+
+const argInfo = [
+  new ArgTestInfo('any', VALUE_REF, 1),
+  new ArgTestInfo('array', VALUE_REF, []),
+  new ArgTestInfo('child', VALIDATOR_REF, V.isSet(''), false),
+  new ArgTestInfo('integer', VALUE_REF, 1),
+  new ArgTestInfo('number', VALUE_REF, 1.2),
+  new ArgTestInfo('object', VALUE_REF, {}, true),
+  new ArgTestInfo('options', VALUE_REF, {}, true),
+  new ArgTestInfo('path', VALUE_REF, 'a'),
+  new ArgTestInfo('string', VALUE_REF, 'Hello'),
+  new ArgTestInfo('stringOrArray', VALUE_REF, []),
+  new ArgTestInfo('type', VALUE_REF, 'string')
+].reduce((acc, e) => {
+  acc[e.name] = e;
+  return acc;
+}, {});
 
 // Make sure all arg kinds have been taken into account for the tests
-const inconsistentKinds = Object.keys(ensureArg).reduce((acc, k) => {
-  if (k.endsWith('Ref') && typeof ensureArg[k] === 'function') {
-    const kind = k.substring(0, k.length - 3);
-    if (!argInfo[kind] && typeof ensureArg[kind] === 'function') {
-      acc.push(kind);
-    }
-  }
-  return acc;
-}, []);
+let inconsistentKinds = ensureArg.kinds.filter(k => !argInfo[k]);
 if (inconsistentKinds.length > 0) {
   throw new Error(`Some argument kinds have not been taken into account for the tests: ${inconsistentKinds.join(', ')}`);
 }
 // Make sure all arg kinds used for the tests are known
-Object.keys(argInfo).reduce((acc, k) => {
-  if (typeof ensureArg[k] !== 'function') {
-    acc.push(k);
-  }
-  return acc;
-}, inconsistentKinds);
+inconsistentKinds = Object.keys(argInfo).filter(k => !ensureArg.kinds.includes(k));
 if (inconsistentKinds.length > 0) {
   throw new Error(`Some argument kinds used for the tests are unknown: ${inconsistentKinds.join(', ')}`);
 }
@@ -69,12 +80,10 @@ function testArgument(kind, validatorName, args, index, errorLike) {
   const testArgs = Array.from(args);
 
   // Test unexpected value
-  if (argInfo[kind].badValue !== NO_BAD_VALUE) {
-    it(`Should throw immediately an error on bad ${kind} as ${ordinal(index + 1)} argument`, () => {
-      testArgs[index] = argInfo[kind].badValue;
-      assert.throws(() => vld(...testArgs), errorLike || Error);
-    });
-  }
+  it(`Should throw immediately an error on bad ${kind} as ${ordinal(index + 1)} argument`, () => {
+    testArgs[index] = argInfo[kind].badValue;
+    assert.throws(() => vld(...testArgs), errorLike || Error);
+  });
 
   // Test references
   if (argInfo[kind].refType) {
@@ -97,6 +106,7 @@ function testArgument(kind, validatorName, args, index, errorLike) {
 }
 
 export {
+  argInfo,
   shouldThrowErrorOnMissingArg,
   testArgument
 };

@@ -1,8 +1,56 @@
 import { assert } from 'chai';
 import V from '../../src';
 import ensureArg from '../../src/util/ensure-arg';
+import Context from '../../src/util/context';
+import { argInfo } from '../test-utils';
 
 const { REF } = ensureArg;
+
+describe('Test low-level references', () => {
+  ensureArg.kinds.forEach((k) => {
+    const kRef = `${k}Ref`;
+    let testValue;
+    let testChainedReferences;
+    if (argInfo[k].acceptValueRef()) {
+      testValue = (good) => {
+        const obj = { a: argInfo[k].value(good) };
+        const ref = { $path: 'a' };
+        ensureArg[kRef](obj, ref);
+      };
+      testChainedReferences = () => {
+        const obj = { a: { $path: 'b' }, b: 1 };
+        const ref = { $path: 'a' };
+        ensureArg[kRef](obj, ref);
+      };
+    } else if (argInfo[k].acceptValidatorRef()) {
+      testValue = (good) => {
+        const ctx = new Context();
+        ctx.push({ V1: argInfo[k].value(good) });
+        const ref = { $val: 'V1' };
+        ensureArg[kRef](ref, ctx);
+      };
+      testChainedReferences = () => {
+        const ctx = new Context();
+        ctx.push({ V1: { $val: 'V2' }, V2: { isSet: ['a'] } });
+        const ref = { $val: 'V1' };
+        ensureArg[kRef](ref, ctx);
+      };
+    }
+    if (testValue) {
+      it(`${kRef} should not throw an error on a reference to a good value`, () => {
+        assert.doesNotThrow(() => testValue(true), Error);
+      });
+      it(`${kRef} should throw an error on a reference to a bad value`, () => {
+        assert.throws(() => testValue(false), Error);
+      });
+    }
+    if (testChainedReferences) {
+      it(`${kRef} should throw an error on chained references`, () => {
+        assert.throws(testChainedReferences, Error);
+      });
+    }
+  });
+});
 
 describe('Test utility ensureArg.child(v).', () => {
   it('Should throw an error for neither plain object nor function', () => {

@@ -60,14 +60,22 @@ function resolveValidatorRef(ref, context) {
   throw new Error('Expected validator reference');
 }
 
+const ANY = ['boolean', 'number', 'object', 'string', 'undefined'].reduce((acc, k) => {
+  acc[k] = true;
+  return acc;
+}, {});
+
 function any(val) {
-  return isRef(val) ? REF : val;
+  if (ANY[typeof val]) {
+    return isRef(val) ? REF : val;
+  }
+  throw new Error('Argument has unknown type');
 }
 
 function anyRef(obj, ref) {
   const val = any(resolveValueRef(ref, obj));
   if (val === REF) {
-    throw new Error('XXX: reference to another reference is not allowed');
+    throw new Error('XXX: chained references are not allowed');
   }
   return val;
 }
@@ -85,7 +93,7 @@ function array(val) {
 function arrayRef(obj, ref) {
   const val = array(resolveValueRef(ref, obj));
   if (val === REF) {
-    throw new Error('XXX: reference to another reference is not allowed');
+    throw new Error('XXX: chained references are not allowed');
   }
   return val;
 }
@@ -103,7 +111,7 @@ function integer(val) {
 function integerRef(obj, ref) {
   const val = integer(resolveValueRef(ref, obj));
   if (val === REF) {
-    throw new Error('XXX: reference to another reference is not allowed');
+    throw new Error('XXX: chained references are not allowed');
   }
   return val;
 }
@@ -121,7 +129,7 @@ function number(val) {
 function numberRef(obj, ref) {
   const val = number(resolveValueRef(ref, obj));
   if (val === REF) {
-    throw new Error('XXX: reference to another reference is not allowed');
+    throw new Error('XXX: chained references are not allowed');
   }
   return val;
 }
@@ -141,15 +149,18 @@ function object(val) {
 function objectRef(obj, ref) {
   const val = object(resolveValueRef(ref, obj));
   if (val === REF) {
-    throw new Error('XXX: reference to another reference is not allowed');
+    throw new Error('XXX: chained references are not allowed');
   }
   return val;
 }
 
-// Unlike object, options cannot be referenced as a whole.
+// Like object, options can be referenced as a whole.
 // However first level properties can be referenced individually.
 function options(val) {
   if (val != null) {
+    if (isRef(val)) {
+      return REF;
+    }
     if (typeof val !== 'object') {
       throw new Error('optional argument \'options\' must be an object (if specified)');
     }
@@ -165,6 +176,13 @@ function options(val) {
 
 function optionsRef(obj, ref) {
   const opts = {};
+  if (isRef(ref)) {
+    const val = options(resolveValueRef(ref, obj));
+    if (val === REF) {
+      throw new Error('XXX: chained references are not allowed');
+    }
+    return val;
+  }
   // eslint-disable-next-line no-restricted-syntax
   for (const k in ref) { // Resolve any 1st level key that is a reference
     if (hasOwn.call(ref, k)) {
@@ -189,7 +207,7 @@ function path(val, validatorName) {
 function pathRef(obj, ref, validatorName) {
   const val = path(resolveValueRef(ref, obj), validatorName);
   if (val === REF) {
-    throw new Error('XXX: reference to another reference is not allowed');
+    throw new Error('XXX: chained references are not allowed');
   }
   return val;
 }
@@ -207,7 +225,7 @@ function string(val) {
 function stringRef(obj, ref) {
   const val = string(resolveValueRef(ref, obj));
   if (val === REF) {
-    throw new Error('XXX: reference to another reference is not allowed');
+    throw new Error('XXX: chained references are not allowed');
   }
   return val;
 }
@@ -225,7 +243,7 @@ function stringOrArray(val) {
 function stringOrArrayRef(obj, ref) {
   const val = stringOrArray(resolveValueRef(ref, obj));
   if (val === REF) {
-    throw new Error('XXX: reference to another reference is not allowed');
+    throw new Error('XXX: chained references are not allowed');
   }
   return val;
 }
@@ -254,7 +272,7 @@ function child(val) {
 function childRef(ref, context) {
   const val = child(resolveValidatorRef(ref, context));
   if (val === REF) {
-    throw new Error('XXX: reference to another reference is not allowed');
+    throw new Error('XXX: chained references are not allowed');
   }
   return val;
 }
@@ -322,3 +340,5 @@ module.exports = {
   children
   // validatorsRef
 };
+
+module.exports.kinds = Object.keys(module.exports).filter(k => typeof module.exports[k] === 'function' && typeof module.exports[`${k}Ref`] === 'function');

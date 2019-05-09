@@ -8,6 +8,14 @@ function testOwnerClass(v, className) {
   });
 }
 
+function testAllArguments(v, args) {
+  const vName = v.owner.name;
+  testArgument('path', vName, args, 0);
+  v.owner.argDescriptors.forEach((ad, i) => {
+    testArgument(ad.type, vName, args, i + 1);
+  });
+}
+
 describe('Test bridged leaf validators.', () => {
   const bv = bridge({});
 
@@ -24,13 +32,9 @@ describe('Test bridged leaf validators.', () => {
     assert.hasAllKeys(result, owners, ':(');
   });
 
-  let args;
-
   const { contains } = bv;
   testOwnerClass(contains, 'StringOnly');
-  args = ['a', 'seed'];
-  testArgument('path', 'contains', args, 0);
-  testArgument('string', 'contains', args, 1);
+  testAllArguments(contains, ['a', 'seed']);
   it('Bridged leaf validator contains accepts string', () => {
     assert(contains('a', '')({ a: 'string' }) === undefined, ':(');
   });
@@ -40,9 +44,7 @@ describe('Test bridged leaf validators.', () => {
 
   const { isDivisibleBy } = bv;
   testOwnerClass(isDivisibleBy, 'StringAndNumber');
-  args = ['a', 2];
-  testArgument('path', 'isDivisibleBy', args, 0);
-  testArgument('integer', 'isDivisibleBy', args, 1);
+  testAllArguments(isDivisibleBy, ['a', 2]);
   it('Bridged leaf validator isDivisibleBy accepts string', () => {
     assert(isDivisibleBy('a', 2)({ a: '24' }) === undefined, ':(');
   });
@@ -55,9 +57,7 @@ describe('Test bridged leaf validators.', () => {
 
   const { isInt } = bv;
   testOwnerClass(isInt, 'StringAndNumber');
-  args = ['a', {}];
-  testArgument('path', 'isInt', args, 0);
-  testArgument('object', 'isInt', args, 1);
+  testAllArguments(isInt, ['a', {}]);
   it('Bridged leaf validator isInt accepts string', () => {
     assert(isInt('a')({ a: '3' }) === undefined, ':(');
   });
@@ -70,9 +70,7 @@ describe('Test bridged leaf validators.', () => {
 
   const { isFloat } = bv;
   testOwnerClass(isFloat, 'StringAndNumber');
-  args = ['a', {}];
-  testArgument('path', 'isFloat', args, 0);
-  testArgument('object', 'isFloat', args, 1);
+  testAllArguments(isFloat, ['a', {}]);
   it('Bridged leaf validator isFloat accepts string', () => {
     assert(isFloat('a')({ a: '3' }) === undefined, ':(');
   });
@@ -85,7 +83,7 @@ describe('Test bridged leaf validators.', () => {
 
   const { isLatLong } = bv;
   testOwnerClass(isLatLong, 'StringAndArray');
-  testArgument('path', 'isLatLong', [''], 0);
+  testAllArguments(isLatLong, ['']);
   it('Bridged leaf validator isLatLong accepts string', () => {
     assert(isLatLong('a')({ a: '+90.0, -127.554334' }) === undefined, ':(');
   });
