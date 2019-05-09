@@ -6,24 +6,30 @@ import { argInfo } from '../test-utils';
 
 const { REF } = ensureArg;
 
-describe('Test low-level references', () => {
+describe('Test references for all kinds of arguments', () => {
+  function testMismatchedReferences(kindRef, refKey) {
+    return () => ensureArg[kindRef]({ [refKey]: 'a' }, {});
+  }
+
   ensureArg.kinds.forEach((k) => {
     const kRef = `${k}Ref`;
-    let testValue;
+    let testRefToValue;
     let testChainedReferences;
+    let mismatchedReferences;
     if (argInfo[k].acceptValueRef()) {
-      testValue = (good) => {
+      testRefToValue = (good) => {
         const obj = { a: argInfo[k].value(good) };
         const ref = { $path: 'a' };
-        ensureArg[kRef](obj, ref);
+        ensureArg[kRef](ref, obj);
       };
       testChainedReferences = () => {
         const obj = { a: { $path: 'b' }, b: 1 };
         const ref = { $path: 'a' };
-        ensureArg[kRef](obj, ref);
+        ensureArg[kRef](ref, obj);
       };
+      mismatchedReferences = ['$val'];
     } else if (argInfo[k].acceptValidatorRef()) {
-      testValue = (good) => {
+      testRefToValue = (good) => {
         const ctx = new Context();
         ctx.push({ V1: argInfo[k].value(good) });
         const ref = { $val: 'V1' };
@@ -35,13 +41,14 @@ describe('Test low-level references', () => {
         const ref = { $val: 'V1' };
         ensureArg[kRef](ref, ctx);
       };
+      mismatchedReferences = ['$path', '$var'];
     }
-    if (testValue) {
+    if (testRefToValue) {
       it(`${kRef} should not throw an error on a reference to a good value`, () => {
-        assert.doesNotThrow(() => testValue(true), Error);
+        assert.doesNotThrow(() => testRefToValue(true), Error);
       });
       it(`${kRef} should throw an error on a reference to a bad value`, () => {
-        assert.throws(() => testValue(false), Error);
+        assert.throws(() => testRefToValue(false), Error);
       });
     }
     if (testChainedReferences) {
@@ -49,6 +56,16 @@ describe('Test low-level references', () => {
         assert.throws(testChainedReferences, Error);
       });
     }
+
+    if (Array.isArray(mismatchedReferences)) {
+      mismatchedReferences.forEach(refKey => it(`${kRef} should throw an error on mismatched ref ${refKey}`, () => {
+        assert.throws(testMismatchedReferences(kRef, refKey), Error);
+      }));
+    }
+
+    it(`${kRef} should throw an error on unknown ref`, () => {
+      assert.throws(() => ensureArg[kRef]({ $unknown: 'unknown' }, {}), Error);
+    });
   });
 });
 

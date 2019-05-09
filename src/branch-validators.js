@@ -16,7 +16,7 @@ const branchValidators = {
     let c = ensureArg.child(child);
     return (obj, context) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       if (c === REF) {
         try { c = ensureArg.childRef(child, context); } catch (e) { return e.message; }
@@ -114,7 +114,7 @@ const branchValidators = {
     let c = ensureArg.child(child);
     return (obj, context) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       if (c === REF) {
         try { c = ensureArg.childRef(child, context); } catch (e) { return e.message; }
@@ -157,7 +157,7 @@ const branchValidators = {
     let c = ensureArg.child(child);
     return (obj, context) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       if (c === REF) {
         try { c = ensureArg.childRef(child, context); } catch (e) { return e.message; }
@@ -209,7 +209,7 @@ const branchValidators = {
     let dc = ensureArg.child(doChild);
     return (obj, context) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       if (cc === REF) {
         try { cc = ensureArg.childRef(condChild, context); } catch (e) { return e.message; }

@@ -72,7 +72,7 @@ function any(val) {
   throw new Error('Argument has unknown type');
 }
 
-function anyRef(obj, ref) {
+function anyRef(ref, obj) {
   const val = any(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
@@ -90,7 +90,7 @@ function array(val) {
   return val;
 }
 
-function arrayRef(obj, ref) {
+function arrayRef(ref, obj) {
   const val = array(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
@@ -108,7 +108,7 @@ function integer(val) {
   return val;
 }
 
-function integerRef(obj, ref) {
+function integerRef(ref, obj) {
   const val = integer(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
@@ -126,7 +126,7 @@ function number(val) {
   return val;
 }
 
-function numberRef(obj, ref) {
+function numberRef(ref, obj) {
   const val = number(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
@@ -146,7 +146,7 @@ function object(val) {
   return val;
 }
 
-function objectRef(obj, ref) {
+function objectRef(ref, obj) {
   const val = object(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
@@ -174,8 +174,7 @@ function options(val) {
   return val || {};
 }
 
-function optionsRef(obj, ref) {
-  const opts = {};
+function optionsRef(ref, obj) {
   if (isRef(ref)) {
     const val = options(resolveValueRef(ref, obj));
     if (val === REF) {
@@ -183,12 +182,27 @@ function optionsRef(obj, ref) {
     }
     return val;
   }
+  // There must be at least one 1st level key that's a reference to resolve
+  let opts = ref;
   // eslint-disable-next-line no-restricted-syntax
-  for (const k in ref) { // Resolve any 1st level key that is a reference
+  for (const k in ref) {
     if (hasOwn.call(ref, k)) {
       const opt = any(ref[k]);
-      opts[k] = opt === REF ? anyRef(obj, ref[k]) : opt;
+      if (opt === REF) {
+        if (opts === ref) {
+          // Lazy shallow copy of the original object is made only when we know
+          // for sure that at least one property has to be replaced for some reason.
+          // From here on we can safely update items into the copied object, which
+          // of course is the one that will be returned.
+          opts = Object.assign({}, ref);
+        }
+        opts[k] = anyRef(ref[k], obj);
+      }
     }
+  }
+  if (opts === ref) {
+    // No 1st level key is a reference
+    throw new Error('Expected value reference');
   }
   return opts;
 }
@@ -204,7 +218,7 @@ function path(val, validatorName) {
   return p;
 }
 
-function pathRef(obj, ref, validatorName) {
+function pathRef(ref, obj, validatorName) {
   const val = path(resolveValueRef(ref, obj), validatorName);
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
@@ -222,7 +236,7 @@ function string(val) {
   return val;
 }
 
-function stringRef(obj, ref) {
+function stringRef(ref, obj) {
   const val = string(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
@@ -240,7 +254,7 @@ function stringOrArray(val) {
   return val;
 }
 
-function stringOrArrayRef(obj, ref) {
+function stringOrArrayRef(ref, obj) {
   const val = stringOrArray(resolveValueRef(ref, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');

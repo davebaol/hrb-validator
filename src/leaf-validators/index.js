@@ -17,10 +17,10 @@ const leafValidators = {
     let v = ensureArg.any(value);
     return (obj) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       if (v === REF) {
-        try { v = ensureArg.anyRef(obj, value); } catch (e) { return e.message; }
+        try { v = ensureArg.anyRef(value, obj); } catch (e) { return e.message; }
       }
       return get(obj, p) === v ? undefined : `equals: the value at path '${path}' must be equal to ${v}`;
     };
@@ -30,10 +30,10 @@ const leafValidators = {
     let opts = ensureArg.options(options);
     return (obj) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       if (opts === REF) {
-        try { opts = ensureArg.optionsRef(obj, options); } catch (e) { return e.message; }
+        try { opts = ensureArg.optionsRef(options, obj); } catch (e) { return e.message; }
       }
       const min = opts.min || 0;
       const max = opts.max; // eslint-disable-line prefer-destructuring
@@ -48,7 +48,7 @@ const leafValidators = {
     let p = ensureArg.path(path);
     return (obj) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       return get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`;
     };
@@ -63,10 +63,10 @@ const leafValidators = {
     }
     return (obj) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       if (t === REF) {
-        try { t = ensureArg.typeRef(obj, type); } catch (e) { return e.message; }
+        try { t = ensureArg.typeRef(type, obj); } catch (e) { return e.message; }
       }
       if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
         return typeCheckers[t](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${t}'; found '${getType(get(obj, p)) || 'unknown'}' instead`;
@@ -83,10 +83,10 @@ const leafValidators = {
     let a = ensureArg.array(values);
     return (obj) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       if (a === REF) {
-        try { a = ensureArg.arrayRef(obj, values); } catch (e) { return e.message; }
+        try { a = ensureArg.arrayRef(values, obj); } catch (e) { return e.message; }
       }
       return a.includes(get(obj, p)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${a}`;
     };
@@ -95,7 +95,7 @@ const leafValidators = {
     let p = ensureArg.path(path);
     return (obj) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       return (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, p)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
     };
@@ -110,10 +110,10 @@ const leafValidators = {
     }
     return (obj) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(obj, path); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
       }
       if (t === REF) {
-        try { t = ensureArg.typeRef(obj, type); } catch (e) { return e.message; }
+        try { t = ensureArg.typeRef(type, obj); } catch (e) { return e.message; }
       }
       if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
         const value = get(obj, p);
