@@ -15,6 +15,7 @@ describe('Test references for all kinds of arguments', () => {
     const kRef = `${k}Ref`;
     let testRefToValue;
     let testChainedReferences;
+    let testUnresolvedReference;
     let mismatchedReferences;
     if (argInfo[k].acceptValueRef()) {
       testRefToValue = (good) => {
@@ -26,6 +27,10 @@ describe('Test references for all kinds of arguments', () => {
         const obj = { a: { $path: 'b' }, b: 1 };
         const ref = { $path: 'a' };
         ensureArg[kRef](ref, obj);
+      };
+      testUnresolvedReference = () => {
+        const ref = { $var: 'V1' };
+        ensureArg[kRef](ref, {}, new Context());
       };
       mismatchedReferences = ['$val'];
     } else if (argInfo[k].acceptValidatorRef()) {
@@ -41,6 +46,11 @@ describe('Test references for all kinds of arguments', () => {
         const ref = { $val: 'V1' };
         ensureArg[kRef](ref, ctx);
       };
+      testUnresolvedReference = () => {
+        // For now this fails as expected just because variable reference is not implemented yet
+        const ref = { $val: 'V1' };
+        ensureArg[kRef](ref, new Context());
+      };
       mismatchedReferences = ['$path', '$var'];
     }
     if (testRefToValue) {
@@ -49,6 +59,11 @@ describe('Test references for all kinds of arguments', () => {
       });
       it(`${kRef} should throw an error on a reference to a bad value`, () => {
         assert.throws(() => testRefToValue(false), Error);
+      });
+    }
+    if (testUnresolvedReference) {
+      it(`${kRef} should throw an error on unresolved reference`, () => {
+        assert.throws(testUnresolvedReference, Error);
       });
     }
     if (testChainedReferences) {
