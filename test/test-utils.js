@@ -109,9 +109,11 @@ function testArgument(kind, validatorName, args, index, errorLike) {
   }
 }
 
-function testValidation(successExpected, obj, vName, ...args) {
+function testValidation(successExpected, obj, vld, ...args) {
+  const vFunc = typeof vld === 'function' ? vld : V[vld];
+  const vName = typeof vld === 'function' ? vld.owner.name : vld;
   it(`${vName}(${args.map(a => JSON.stringify(a)).join(', ')}) should ${successExpected ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
-    const v = V[vName](...args);
+    const v = vFunc(...args);
     assert(successExpected ? v(obj) === undefined : v(obj) !== undefined, ':(');
   });
 
@@ -122,7 +124,7 @@ function testValidation(successExpected, obj, vName, ...args) {
   }, {});
   const varArgs = args.map((a, i) => ({ $var: `v${i}` }));
   it(`${vName}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${successExpected ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
-    const v = V.def(scope, V[vName](...varArgs));
+    const v = V.def(scope, vFunc(...varArgs));
     assert(successExpected ? v(obj) === undefined : v(obj) !== undefined, ':(');
   });
 
@@ -133,7 +135,7 @@ function testValidation(successExpected, obj, vName, ...args) {
   }, clone(obj));
   const pathArgs = args.map((a, i) => ({ $path: `_${i}` }));
   it(`${vName}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${successExpected ? 'succeed' : 'fail'} for ${JSON.stringify(obj2)}`, () => {
-    const v = V[vName](...pathArgs);
+    const v = vFunc(...pathArgs);
     assert(successExpected ? v(obj2) === undefined : v(obj2) !== undefined, ':(');
   });
 }

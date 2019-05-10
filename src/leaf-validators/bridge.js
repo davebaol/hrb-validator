@@ -21,6 +21,7 @@ class Bridge {
 
   /* eslint-disable-next-line class-methods-use-this */
   bridge() {
+    /* istanbul ignore next */
     throw new Error('Inherited classes have to implement the method brige!');
   }
 

@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { testArgument } from '../test-utils';
+import { testArgument, testValidation } from '../test-utils';
 import bridge from '../../src/leaf-validators/bridge';
 
 function testOwnerClass(v, className) {
@@ -35,74 +35,38 @@ describe('Test bridged leaf validators.', () => {
   const { contains } = bv;
   testOwnerClass(contains, 'StringOnly');
   testAllArguments(contains, ['a', 'seed']);
-  it('Bridged leaf validator contains accepts string', () => {
-    assert(contains('a', '')({ a: 'string' }) === undefined, ':(');
-  });
-  it('Bridged leaf validator contains rejects any non-string', () => {
-    assert(contains('a', '')({ a: 3 }) !== undefined, ':(');
-  });
+  testValidation(true, { a: 'string' }, contains, 'a', '');
+  testValidation(false, { a: 3 }, contains, 'a', '');
 
   const { isDivisibleBy } = bv;
   testOwnerClass(isDivisibleBy, 'StringAndNumber');
   testAllArguments(isDivisibleBy, ['a', 2]);
-  it('Bridged leaf validator isDivisibleBy accepts string', () => {
-    assert(isDivisibleBy('a', 2)({ a: '24' }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isDivisibleBy accepts number', () => {
-    assert(isDivisibleBy('a', 2)({ a: 24 }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isDivisibleBy rejects anything other than string or number', () => {
-    assert(isDivisibleBy('a', 2)({ a: true }) !== undefined, ':(');
-  });
+  testValidation(true, { a: '24' }, isDivisibleBy, 'a', 2);
+  testValidation(true, { a: 24 }, isDivisibleBy, 'a', 2);
+  testValidation(false, { a: true }, isDivisibleBy, 'a', 2);
 
   const { isInt } = bv;
   testOwnerClass(isInt, 'StringAndNumber');
   testAllArguments(isInt, ['a', {}]);
-  it('Bridged leaf validator isInt accepts string', () => {
-    assert(isInt('a')({ a: '3' }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isInt accepts number', () => {
-    assert(isInt('a')({ a: 3 }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isInt rejects anything other than string or number', () => {
-    assert(isInt('a')({ a: true }) !== undefined, ':(');
-  });
+  testValidation(true, { a: '3' }, isInt, 'a');
+  testValidation(true, { a: 3 }, isInt, 'a');
+  testValidation(false, { a: true }, isInt, 'a');
 
   const { isFloat } = bv;
   testOwnerClass(isFloat, 'StringAndNumber');
   testAllArguments(isFloat, ['a', {}]);
-  it('Bridged leaf validator isFloat accepts string', () => {
-    assert(isFloat('a')({ a: '3' }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isFloat accepts number', () => {
-    assert(isFloat('a')({ a: 3 }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isFloat rejects anything other than string or number', () => {
-    assert(isFloat('a')({ a: true }) !== undefined, ':(');
-  });
+  testValidation(true, { a: '3' }, isFloat, 'a');
+  testValidation(true, { a: 3 }, isFloat, 'a');
+  testValidation(false, { a: true }, isFloat, 'a');
 
   const { isLatLong } = bv;
   testOwnerClass(isLatLong, 'StringAndArray');
   testAllArguments(isLatLong, ['']);
-  it('Bridged leaf validator isLatLong accepts string', () => {
-    assert(isLatLong('a')({ a: '+90.0, -127.554334' }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isLatLong accepts array of two numbers', () => {
-    assert(isLatLong('a')({ a: [+90.0, -127.554334] }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isLatLong accepts array of two strings', () => {
-    assert(isLatLong('a')({ a: ['+90.0', '-127.554334'] }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isLatLong accepts mixed array of a string and a number', () => {
-    assert(isLatLong('a')({ a: ['+90.0', -127.554334] }) === undefined, ':(');
-  });
-  it('Bridged leaf validator isLatLong rejects array not having exactly 2 elements', () => {
-    assert(isLatLong('a')({ a: ['+90.0'] }) !== undefined, ':(');
-  });
-  it('Bridged leaf validator isLatLong rejects array with 2 elements that are not string or number', () => {
-    assert(isLatLong('a')({ a: ['+90.0', true] }) !== undefined, ':(');
-  });
-  it('Bridged leaf validator isLatLong rejects anything other than string or array', () => {
-    assert(isLatLong('a')({ a: true }) !== undefined, ':(');
-  });
+  testValidation(true, { a: '+90.0, -127.554334' }, isLatLong, 'a');
+  testValidation(true, { a: [+90.0, -127.554334] }, isLatLong, 'a');
+  testValidation(true, { a: ['+90.0', '-127.554334'] }, isLatLong, 'a');
+  testValidation(true, { a: ['+90.0', -127.554334] }, isLatLong, 'a');
+  testValidation(false, { a: ['+90.0'] }, isLatLong, 'a');
+  testValidation(false, { a: ['+90.0', true] }, isLatLong, 'a');
+  testValidation(false, { a: true }, isLatLong, 'a');
 });
