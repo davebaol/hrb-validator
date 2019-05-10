@@ -15,12 +15,12 @@ const leafValidators = {
   equals(path, value) {
     let p = ensureArg.path(path);
     let v = ensureArg.any(value);
-    return (obj) => {
+    return (obj, ctx) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
       }
       if (v === REF) {
-        try { v = ensureArg.anyRef(value, obj); } catch (e) { return e.message; }
+        try { v = ensureArg.anyRef(value, ctx, obj); } catch (e) { return e.message; }
       }
       return get(obj, p) === v ? undefined : `equals: the value at path '${path}' must be equal to ${v}`;
     };
@@ -28,12 +28,12 @@ const leafValidators = {
   isLength(path, options) {
     let p = ensureArg.path(path);
     let opts = ensureArg.options(options);
-    return (obj) => {
+    return (obj, ctx) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
       }
       if (opts === REF) {
-        try { opts = ensureArg.optionsRef(options, obj); } catch (e) { return e.message; }
+        try { opts = ensureArg.optionsRef(options, ctx, obj); } catch (e) { return e.message; }
       }
       const min = opts.min || 0;
       const max = opts.max; // eslint-disable-line prefer-destructuring
@@ -46,9 +46,9 @@ const leafValidators = {
   },
   isSet(path) {
     let p = ensureArg.path(path);
-    return (obj) => {
+    return (obj, ctx) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
       }
       return get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`;
     };
@@ -61,12 +61,12 @@ const leafValidators = {
     if (t !== REF && !isSingleType && !isArrayOfTypes) {
       throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
     }
-    return (obj) => {
+    return (obj, ctx) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
       }
       if (t === REF) {
-        try { t = ensureArg.typeRef(type, obj); } catch (e) { return e.message; }
+        try { t = ensureArg.typeRef(type, ctx, obj); } catch (e) { return e.message; }
       }
       if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
         return typeCheckers[t](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${t}'; found '${getType(get(obj, p)) || 'unknown'}' instead`;
@@ -81,21 +81,21 @@ const leafValidators = {
   isOneOf(path, values) {
     let p = ensureArg.path(path);
     let a = ensureArg.array(values);
-    return (obj) => {
+    return (obj, ctx) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
       }
       if (a === REF) {
-        try { a = ensureArg.arrayRef(values, obj); } catch (e) { return e.message; }
+        try { a = ensureArg.arrayRef(values, ctx, obj); } catch (e) { return e.message; }
       }
       return a.includes(get(obj, p)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${a}`;
     };
   },
   isDate(path) {
     let p = ensureArg.path(path);
-    return (obj) => {
+    return (obj, ctx) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
       }
       return (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, p)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
     };
@@ -108,12 +108,12 @@ const leafValidators = {
     if (t !== REF && !isSingleType && !isArrayOfTypes) {
       throw new Error(`isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
     }
-    return (obj) => {
+    return (obj, ctx) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
       }
       if (t === REF) {
-        try { t = ensureArg.typeRef(type, obj); } catch (e) { return e.message; }
+        try { t = ensureArg.typeRef(type, ctx, obj); } catch (e) { return e.message; }
       }
       if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
         const value = get(obj, p);

@@ -1,13 +1,13 @@
 const isPlainObject = require('is-plain-object');
 const V = require('..');
+const Context = require('./context');
 const { BAD_PATH, get, ensureArrayPath } = require('./path');
 
 const REF = Object.freeze({});
 
 const REF_VALID_KEYS = {
   $path: true,
-  $var: true,
-  $val: true
+  $var: true
 };
 
 const hasOwn = Object.prototype.hasOwnProperty;
@@ -33,29 +33,36 @@ function isRef(val) {
   return typeof val === 'object' && REF_VALID_KEYS[checkUniqueKey(val)];
 }
 
-function resolveValueRef(ref, obj) {
+function resolveValueRef(ref, context, obj) {
   if (ref.$path) {
     return get(obj, ref.$path);
   }
   if (ref.$var) {
-    throw new Error('Sorry, variable reference is not implemented yet.');
-  }
-  if (ref.$val) {
-    throw new Error('Expected a value reference; found a validator reference instead.');
+    if (ref.$var.startsWith('$')) {
+      throw new Error(`Expected a value reference; found validator reference to '${ref.$var}' instead.`);
+    }
+    const v = context.find(ref.$var);
+    if (v === Context.VAR_NOT_FOUND) {
+      throw new Error(`Unresolved value reference to '${ref.$var}'`);
+    }
+    return v;
   }
   throw new Error('Expected value reference');
 }
 
 function resolveValidatorRef(ref, context) {
-  if (ref.$val) {
-    const v = context.find(ref.$val);
-    if (!v) {
-      throw new Error(`Unresolved validator reference to '${ref.$val}'`);
+  if (ref.$var) {
+    if (ref.$var.startsWith('$')) {
+      const v = context.find(ref.$var);
+      if (v === Context.VAR_NOT_FOUND) {
+        throw new Error(`Unresolved validator reference to '${ref.$var}'`);
+      }
+      return v;
     }
-    return v;
+    throw new Error(`Expected a validator reference; found value reference to '${ref.$var}' instead.`);
   }
-  if (ref.$path || ref.$var) {
-    throw new Error('Expected a validator reference; found a value reference instead.');
+  if (ref.$path) {
+    throw new Error(`Expected a validator reference; found path reference to '${ref.$path}' instead.`);
   }
   throw new Error('Expected validator reference');
 }
@@ -72,8 +79,8 @@ function any(val) {
   throw new Error('Argument has unknown type');
 }
 
-function anyRef(ref, obj) {
-  const val = any(resolveValueRef(ref, obj));
+function anyRef(ref, context, obj) {
+  const val = any(resolveValueRef(ref, context, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
   }
@@ -90,8 +97,8 @@ function array(val) {
   return val;
 }
 
-function arrayRef(ref, obj) {
-  const val = array(resolveValueRef(ref, obj));
+function arrayRef(ref, context, obj) {
+  const val = array(resolveValueRef(ref, context, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
   }
@@ -108,8 +115,8 @@ function integer(val) {
   return val;
 }
 
-function integerRef(ref, obj) {
-  const val = integer(resolveValueRef(ref, obj));
+function integerRef(ref, context, obj) {
+  const val = integer(resolveValueRef(ref, context, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
   }
@@ -126,8 +133,8 @@ function number(val) {
   return val;
 }
 
-function numberRef(ref, obj) {
-  const val = number(resolveValueRef(ref, obj));
+function numberRef(ref, context, obj) {
+  const val = number(resolveValueRef(ref, context, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
   }
@@ -146,8 +153,8 @@ function object(val) {
   return val;
 }
 
-function objectRef(ref, obj) {
-  const val = object(resolveValueRef(ref, obj));
+function objectRef(ref, context, obj) {
+  const val = object(resolveValueRef(ref, context, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
   }
@@ -174,9 +181,9 @@ function options(val) {
   return val || {};
 }
 
-function optionsRef(ref, obj) {
+function optionsRef(ref, context, obj) {
   if (isRef(ref)) {
-    const val = options(resolveValueRef(ref, obj));
+    const val = options(resolveValueRef(ref, context, obj));
     if (val === REF) {
       throw new Error('XXX: chained references are not allowed');
     }
@@ -196,7 +203,7 @@ function optionsRef(ref, obj) {
           // of course is the one that will be returned.
           opts = Object.assign({}, ref);
         }
-        opts[k] = anyRef(ref[k], obj);
+        opts[k] = anyRef(ref[k], context, obj);
       }
     }
   }
@@ -218,8 +225,8 @@ function path(val, validatorName) {
   return p;
 }
 
-function pathRef(ref, obj, validatorName) {
-  const val = path(resolveValueRef(ref, obj), validatorName);
+function pathRef(ref, context, obj, validatorName) {
+  const val = path(resolveValueRef(ref, context, obj), validatorName);
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
   }
@@ -236,8 +243,8 @@ function string(val) {
   return val;
 }
 
-function stringRef(ref, obj) {
-  const val = string(resolveValueRef(ref, obj));
+function stringRef(ref, context, obj) {
+  const val = string(resolveValueRef(ref, context, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
   }
@@ -254,8 +261,8 @@ function stringOrArray(val) {
   return val;
 }
 
-function stringOrArrayRef(ref, obj) {
-  const val = stringOrArray(resolveValueRef(ref, obj));
+function stringOrArrayRef(ref, context, obj) {
+  const val = stringOrArray(resolveValueRef(ref, context, obj));
   if (val === REF) {
     throw new Error('XXX: chained references are not allowed');
   }
@@ -299,7 +306,7 @@ function scope(obj) {
   for (const k in obj) {
     if (hasOwn.call(obj, k)) {
       // eslint-disable-next-line no-param-reassign
-      obj[k] = child(obj[k]);
+      obj[k] = k.startsWith('$') ? child(obj[k]) : any(obj[k]);
     }
   }
   return obj;

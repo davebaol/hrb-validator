@@ -103,14 +103,14 @@ class StringOnly extends Bridge {
     return (path, ...args) => {
       let p = ensureArg.path(path);
       const ensuredArgs = this.ensuredArgs(args);
-      return (obj) => {
+      return (obj, ctx) => {
         if (p === REF) {
-          try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
+          try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
         }
         for (let i = 0, len = this.argDescriptors; i < len; i += 1) {
           if (ensuredArgs[i] === REF) {
             const ad = this.argDescriptors[i];
-            try { ensuredArgs[i] = ensureArg[`${ad.type}Ref`](args[i], obj); } catch (e) { return e.message; }
+            try { ensuredArgs[i] = ensureArg[`${ad.type}Ref`](args[i], ctx, obj); } catch (e) { return e.message; }
           }
         }
         let value = get(obj, p);
@@ -232,7 +232,7 @@ const vInfo = [
   new StringOnly('isUUID', args => 'matching to a UUID (version 3, 4 or 5)', 'version:integer?'),
   new StringOnly('isVariableWidth', args => 'containing a mixture of full and half-width chars'),
   new StringOnly('isWhitelisted', args => 'whose characters belongs to the whitelist', 'chars:string'),
-  new StringOnly('matches', args => `matching the regex '${args[0]}'`, 'pattern:stringOrRegex', 'modifiers:string?')
+  new StringOnly('matches', args => `matching the regex '${args[0]}'`, 'pattern:string', 'modifiers:string?')
 ];
 /* eslint-enable no-unused-vars */
 

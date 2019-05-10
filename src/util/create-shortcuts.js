@@ -7,11 +7,11 @@ const { REF } = ensureArg;
 function optShortcutOf(validator) {
   return (path, ...args) => {
     let p = ensureArg.path(path);
-    return (obj, context) => {
+    return (obj, ctx) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(path, obj); } catch (e) { return e.message; }
+        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
       }
-      return (get(obj, p) ? validator(p, ...args)(obj, context) : undefined);
+      return (get(obj, p) ? validator(p, ...args)(obj, ctx) : undefined);
     };
   };
 }

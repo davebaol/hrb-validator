@@ -7,58 +7,73 @@ import { argInfo } from '../test-utils';
 const { REF } = ensureArg;
 
 describe('Test references for all kinds of arguments', () => {
-  function testMismatchedReferences(kindRef, refKey) {
-    return () => ensureArg[kindRef]({ [refKey]: 'a' }, {});
+  function testMismatchedReferences(kindRef, ref) {
+    const ctx = new Context();
+    ctx.push(JSON.parse(JSON.stringify(ref)));
+    return () => ensureArg[kindRef](ref, ctx, {});
   }
 
   ensureArg.kinds.forEach((k) => {
     const kRef = `${k}Ref`;
-    let testRefToValue;
+    let testRefToValues;
     let testChainedReferences;
     let testUnresolvedReference;
     let mismatchedReferences;
     if (argInfo[k].acceptValueRef()) {
-      testRefToValue = (good) => {
-        const obj = { a: argInfo[k].value(good) };
-        const ref = { $path: 'a' };
-        ensureArg[kRef](ref, obj);
-      };
+      testRefToValues = [
+        (good) => {
+          const obj = { a: argInfo[k].value(good) };
+          const ref = { $path: 'a' };
+          ensureArg[kRef](ref, new Context(), obj);
+        },
+        (good) => {
+          const ctx = new Context();
+          ctx.push({ a: argInfo[k].value(good) });
+          const ref = { $var: 'a' };
+          ensureArg[kRef](ref, ctx, {});
+        }
+      ];
       testChainedReferences = () => {
         const obj = { a: { $path: 'b' }, b: 1 };
         const ref = { $path: 'a' };
-        ensureArg[kRef](ref, obj);
+        ensureArg[kRef](ref, new Context(), obj);
       };
       testUnresolvedReference = () => {
         const ref = { $var: 'V1' };
-        ensureArg[kRef](ref, {}, new Context());
+        ensureArg[kRef](ref, new Context(), {});
       };
-      mismatchedReferences = ['$val'];
+      mismatchedReferences = [{ $var: '$VALIDATOR' }];
     } else if (argInfo[k].acceptValidatorRef()) {
-      testRefToValue = (good) => {
-        const ctx = new Context();
-        ctx.push({ V1: argInfo[k].value(good) });
-        const ref = { $val: 'V1' };
-        ensureArg[kRef](ref, ctx);
-      };
+      testRefToValues = [
+        (good) => {
+          const ctx = new Context();
+          ctx.push({ $V1: argInfo[k].value(good) });
+          const ref = { $var: '$V1' };
+          ensureArg[kRef](ref, ctx);
+        }
+      ];
       testChainedReferences = () => {
         const ctx = new Context();
-        ctx.push({ V1: { $val: 'V2' }, V2: { isSet: ['a'] } });
-        const ref = { $val: 'V1' };
+        ctx.push({ $V1: { isSet: ['a'] } });
+        ctx.push({ $V2: { $var: '$V1' } });
+        const ref = { $var: '$V2' };
         ensureArg[kRef](ref, ctx);
       };
       testUnresolvedReference = () => {
         // For now this fails as expected just because variable reference is not implemented yet
-        const ref = { $val: 'V1' };
+        const ref = { $var: '$V1' };
         ensureArg[kRef](ref, new Context());
       };
-      mismatchedReferences = ['$path', '$var'];
+      mismatchedReferences = [{ $path: 'a.b.c' }, { $var: 'VARIABLE' }];
     }
-    if (testRefToValue) {
-      it(`${kRef} should not throw an error on a reference to a good value`, () => {
-        assert.doesNotThrow(() => testRefToValue(true), Error);
-      });
-      it(`${kRef} should throw an error on a reference to a bad value`, () => {
-        assert.throws(() => testRefToValue(false), Error);
+    if (Array.isArray(testRefToValues)) {
+      testRefToValues.forEach((f) => {
+        it(`${kRef} should not throw an error on a reference to a good value`, () => {
+          assert.doesNotThrow(() => f(true), Error);
+        });
+        it(`${kRef} should throw an error on a reference to a bad value`, () => {
+          assert.throws(() => f(false), Error);
+        });
       });
     }
     if (testUnresolvedReference) {
@@ -73,8 +88,8 @@ describe('Test references for all kinds of arguments', () => {
     }
 
     if (Array.isArray(mismatchedReferences)) {
-      mismatchedReferences.forEach(refKey => it(`${kRef} should throw an error on mismatched ref ${refKey}`, () => {
-        assert.throws(testMismatchedReferences(kRef, refKey), Error);
+      mismatchedReferences.forEach(ref => it(`${kRef} should throw an error on mismatched ref ${JSON.stringify(ref)}`, () => {
+        assert.throws(testMismatchedReferences(kRef, ref), Error);
       }));
     }
 
@@ -124,7 +139,7 @@ describe('Test utility ensureArg.children(array).', () => {
   it('Should return a new mixed array made of validators and references at proper index', () => {
     const vlds = [V.isSet('a'), { isSet: ['b'] }];
     const valRefIndex = 1;
-    vlds.splice(valRefIndex, 0, { $val: 'this_is_a_validator_reference' });
+    vlds.splice(valRefIndex, 0, { $var: '$this_is_a_validator_reference' });
     const ensuredValidators = ensureArg.children(vlds);
     assert(ensuredValidators.every((v, i) => (i === valRefIndex ? v === REF : typeof v === 'function')), ':(');
   });
@@ -138,9 +153,9 @@ describe('Test utility ensureArg.scope(s).', () => {
     const scope = {};
     assert(ensureArg.scope(scope) === scope, ':(');
   });
-  it('Should return the same scope where all of its validators are functions', () => {
-    const scope = { TEST_1: { isSet: ['a'] }, TEST_2: { contains: ['a', 'x'] } };
+  it('Should return the same scope where only validators are functions', () => {
+    const scope = { VAR: { isSet: ['a'] }, $VALIDATOR: { contains: ['a', 'x'] } };
     ensureArg.scope(scope);
-    assert(Object.keys(scope).every(k => typeof scope[k] === 'function'), ':(');
+    assert(Object.keys(scope).every(k => (k.startsWith('$') && typeof scope[k] === 'function') || (!k.startsWith('$') && typeof scope[k] !== 'function')), ':(');
   });
 });

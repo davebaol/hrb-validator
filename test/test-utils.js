@@ -98,7 +98,7 @@ function testArgument(kind, validatorName, args, index, errorLike) {
         assert.throws(() => vld(...testArgs), errorLike || Error);
       });
     }
-    ['$path', '$var', '$val'].forEach(refType => it(`Should delay ${refType} reference resolution at validation time for ${kind} as ${ordinal(index + 1)} argument`, () => {
+    ['$path', '$var'].forEach(refType => it(`Should delay ${refType} reference resolution at validation time for ${kind} as ${ordinal(index + 1)} argument`, () => {
       testArgs[index] = { [refType]: 'something' };
       assert(typeof vld(...testArgs) === 'function', ':(');
     }));
