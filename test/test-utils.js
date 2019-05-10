@@ -55,6 +55,10 @@ if (inconsistentKinds.length > 0) {
   throw new Error(`Some argument kinds used for the tests are unknown: ${inconsistentKinds.join(', ')}`);
 }
 
+function clone(data) {
+  return JSON.parse(JSON.stringify(data));
+}
+
 function ordinal(n) {
   switch (n) {
     case 1: return '1st';
@@ -105,8 +109,39 @@ function testArgument(kind, validatorName, args, index, errorLike) {
   }
 }
 
+function testValidation(successExpected, obj, vName, ...args) {
+  it(`${vName}(${args.map(a => JSON.stringify(a)).join(', ')}) should ${successExpected ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
+    const v = V[vName](...args);
+    assert(successExpected ? v(obj) === undefined : v(obj) !== undefined, ':(');
+  });
+
+  // Test $var references
+  const scope = args.reduce((acc, a, i) => {
+    acc[`v${i}`] = a;
+    return acc;
+  }, {});
+  const varArgs = args.map((a, i) => ({ $var: `v${i}` }));
+  it(`${vName}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${successExpected ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
+    const v = V.def(scope, V[vName](...varArgs));
+    assert(successExpected ? v(obj) === undefined : v(obj) !== undefined, ':(');
+  });
+
+  // Test $path references
+  const obj2 = args.reduce((acc, a, i) => {
+    acc[`_${i}`] = a;
+    return acc;
+  }, clone(obj));
+  const pathArgs = args.map((a, i) => ({ $path: `_${i}` }));
+  it(`${vName}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${successExpected ? 'succeed' : 'fail'} for ${JSON.stringify(obj2)}`, () => {
+    const v = V[vName](...pathArgs);
+    assert(successExpected ? v(obj2) === undefined : v(obj2) !== undefined, ':(');
+  });
+}
+
 export {
   argInfo,
+  clone,
   shouldThrowErrorOnMissingArg,
-  testArgument
+  testArgument,
+  testValidation
 };
