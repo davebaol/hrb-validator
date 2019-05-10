@@ -57,7 +57,7 @@ const leafValidators = {
     let p = ensureArg.path(path);
     let t = ensureArg.type(type);
     const isSingleType = t !== REF && typeof t === 'string' && typeCheckers[t];
-    const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && type.every(tt => typeof tt === 'string' && typeCheckers[tt]);
+    const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]);
     if (t !== REF && !isSingleType && !isArrayOfTypes) {
       throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
     }
@@ -71,9 +71,9 @@ const leafValidators = {
       if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
         return typeCheckers[t](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${t}'; found '${getType(get(obj, p)) || 'unknown'}' instead`;
       }
-      if (isArrayOfTypes || (Array.isArray(t) && type.every(tt => typeof tt === 'string' && typeCheckers[tt]))) {
+      if (isArrayOfTypes || (Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]))) {
         const value = get(obj, p);
-        return (t.some(tt => typeCheckers[tt](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${type.join(', ')}'; found '${getType(value) || 'unknown'}' instead`);
+        return (t.some(tt => typeCheckers[tt](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${t.join(', ')}'; found '${getType(value) || 'unknown'}' instead`);
       }
       throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
     };
@@ -104,7 +104,7 @@ const leafValidators = {
     let p = ensureArg.path(path);
     let t = ensureArg.type(type);
     const isSingleType = t !== REF && typeof t === 'string' && typeCheckers[t];
-    const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && type.every(tt => typeof tt === 'string' && typeCheckers[tt]);
+    const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]);
     if (t !== REF && !isSingleType && !isArrayOfTypes) {
       throw new Error(`isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
     }
@@ -121,11 +121,11 @@ const leafValidators = {
         const flag = value.every(e => typeCheckers[t](e));
         return flag ? undefined : `isArrayOf: the value at path '${path}' must be a 'array of ${type}'; found '${getType(value) || 'unknown'}' instead`;
       }
-      if (isArrayOfTypes || (Array.isArray(t) && type.every(tt => typeof tt === 'string' && typeCheckers[tt]))) {
+      if (isArrayOfTypes || (Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]))) {
         const value = get(obj, p);
         if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be a 'array'; found '${getType(value)}' instead`;
         const flag = value.every(e => t.some(tt => typeCheckers[tt](e)));
-        return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array where each item has a type amongst ${Object.keys(type).join(', ')}'; found '${getType(value)}' instead`;
+        return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array where each item has a type amongst ${Object.keys(t).join(', ')}'; found '${getType(value)}' instead`;
       }
       throw new Error(`isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
     };
