@@ -107,7 +107,7 @@ class StringOnly extends Bridge {
         if (p === REF) {
           try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
         }
-        for (let i = 0, len = this.argDescriptors; i < len; i += 1) {
+        for (let i = 0, len = this.argDescriptors.length; i < len; i += 1) {
           if (ensuredArgs[i] === REF) {
             const ad = this.argDescriptors[i];
             try { ensuredArgs[i] = ensureArg[`${ad.type}Ref`](args[i], ctx, obj); } catch (e) { return e.message; }
