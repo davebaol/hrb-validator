@@ -20,7 +20,7 @@ class Context {
   find(name) {
     for (let i = this.stack.length - 1; i >= 0; i -= 1) {
       const found = this.stack[i][name];
-      if (found) {
+      if (found !== undefined) { // TODO maybe we should use (name in this.stack[i])
         return found;
       }
     }
