@@ -4,7 +4,7 @@ def:
         - isType: ['', object]
         - isLength: ['', {min: 1, max: 1}]
         - xor:
-          - matches: [$var, ^\$.] # Validator variables start with $ followed by at least 1 char
+          - matches: [$var, ^\$.] # Validator variable name starts with $ followed by at least 1 char
           - $var: $LEAF_VALIDATOR
           - $var: $BRANCH_VALIDATOR
 
@@ -34,22 +34,24 @@ def:
         - call: [some, {$var: $ARG_PATH_AND_ONE_CHILD}]
         - call: [while, {$var: $ARG_PATH_AND_TWO_CHILDREN}]
         - call: [xor, {$var: $ARG_ZERO_OR_MORE_CHILDREN}]
+
+    $PATH:
+      or:
+        - isType: ['', [string, number, 'null']]
+        - isArrayOf: ['', [string, number]]
     
     $ARG_REF:
       and:
         - isType: ['', object]
         - isLength: ['', {min: 1, max: 1}]
-        - every:
-          - ''
-          - and:
-            - isOneOf: [key, [$var, $path]]
-            - isType: [value, string]
+        - xor:
+          - matches: [$var, '^[^\$]']   # Non validator variable name cannot start with $
+          - call: [$path, {$var: $PATH}]
 
     $ARG_PATH:
       or:
         - $var: $ARG_REF
-        - isType: ['', [string, number, 'null']]
-        - isArrayOf: ['', [string, number]]
+        - $var: $PATH
 
     $ARG_SCOPE:
       or:
