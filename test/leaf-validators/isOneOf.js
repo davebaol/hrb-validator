@@ -1,22 +1,16 @@
-import { assert } from 'chai';
-import { shouldThrowErrorOnBad, shouldThrowErrorOnBadPath } from '../test-utils';
-import V from '../../src';
+import { testArgument, testValidation, VALIDATION } from '../test-utils';
 
-const successValues = [1, '1', true, null];
-const successExpected = successValues.map(v => ({ a: v }));
-const failureExpected = [2, '2', false, {}, []].map(v => ({ a: v }));
+const { SUCCESS, FAILURE, THROW } = VALIDATION;
 
-function check(obj, shouldSucceed) {
-  it(`isOneOf("a", ${JSON.stringify(successValues)}) should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
-    const v = V.isOneOf('a', successValues);
-    const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;
-    assert(result, ':(');
-  });
-}
+const successExpected = [1, '1', true, null];
+const failureExpected = [2, '2', false, {}, []];
+const successValues = Array.from(successExpected);
 
 describe('Test leaf validator isOneOf.', () => {
-  shouldThrowErrorOnBadPath('isOneOf');
-  shouldThrowErrorOnBad('array', 'isOneOf', [''], 1);
-  successExpected.forEach(obj => check(obj, true));
-  failureExpected.forEach(obj => check(obj, false));
+  const args = ['', ['']];
+  testArgument('path', 'isOneOf', args, 0);
+  testArgument('array', 'isOneOf', args, 1);
+  successExpected.forEach(val => testValidation(SUCCESS, { a: val }, 'isOneOf', 'a', successValues));
+  failureExpected.forEach(val => testValidation(FAILURE, { a: val }, 'isOneOf', 'a', successValues));
+  testValidation([THROW, FAILURE], { a: 'x' }, 'isOneOf', 'a', 'not an array');
 });

@@ -1,20 +1,13 @@
-import { assert } from 'chai';
-import { shouldThrowErrorOnBadPath } from '../test-utils';
-import V from '../../src';
+import { testArgument, testValidation, VALIDATION } from '../test-utils';
 
-const successExpected = [false, true, 0, 1, {}, []].map(v => ({ a: v }));
-const failureExpected = [{ a: null }, {}];
+const { SUCCESS, FAILURE } = VALIDATION;
 
-function check(obj, shouldSucceed) {
-  it(`isSet("a") should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
-    const v = V.isSet('a');
-    const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;
-    assert(result, ':(');
-  });
-}
+const successExpected = [false, true, 0, 1, {}, []];
+const failureExpected = [null];
 
 describe('Test leaf validator isSet.', () => {
-  shouldThrowErrorOnBadPath('isSet');
-  successExpected.forEach(obj => check(obj, true));
-  failureExpected.forEach(obj => check(obj, false));
+  testArgument('path', 'isSet', [''], 0);
+  successExpected.forEach(val => testValidation(SUCCESS, { a: val }, 'isSet', 'a'));
+  failureExpected.forEach(val => testValidation(FAILURE, { a: val }, 'isSet', 'a'));
+  testValidation(FAILURE, {}, 'isSet', 'a');
 });

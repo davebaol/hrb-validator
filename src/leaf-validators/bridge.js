@@ -1,15 +1,27 @@
 const v = require('validator');
-const { get, ensureArrayPath } = require('../util/path');
+const { get } = require('../util/path');
+const ensureArg = require('../util/ensure-arg');
+
+const { REF } = ensureArg;
 
 class Bridge {
-  constructor(name, errorFunc, ...argCheckers) {
+  constructor(name, errorFunc, ...argDescriptors) {
     this.name = name;
     this.errorFunc = errorFunc;
-    this.argCheckers = argCheckers;
+    this.argDescriptors = argDescriptors.map((d) => {
+      const p = d.trim().split(':'); // argName:type? where '?' means optional
+      const argName = p[0].trim();
+      const optional = p[1].endsWith('?');
+      const type = (optional ? p[1].substring(0, p[1].length - 1) : p[1]).trim();
+      return {
+        stringDesc: d, name: argName, type, optional
+      };
+    });
   }
 
   /* eslint-disable-next-line class-methods-use-this */
   bridge() {
+    /* istanbul ignore next */
     throw new Error('Inherited classes have to implement the method brige!');
   }
 
@@ -64,21 +76,52 @@ class StringOnly extends Bridge {
     return `${this.name}: the value at path '${path}' must be a string ${vArgs ? this.errorFunc(vArgs) : ''}`;
   }
 
+  ensuredArgs(args) {
+    let result = args; // The original array is returned by default
+    for (let i = 0; i < result.length; i += 1) {
+      const arg = result[i];
+      const ad = this.argDescriptors[i];
+      if (arg != null || !ad.optional) { // don't ensure a void argument if it's optional
+        const ea = ensureArg[ad.type](args[i], ad.name);
+        if (ea !== arg) {
+          if (result === args) {
+            // Lazy shallow copy of the original array is made only when we know
+            // for sure that at least one item has to be replaced for some reason.
+            // From here on we can safely update items into the copied array, which
+            // of course is the one that will be returned.
+            result = Array.from(args);
+          }
+          result[i] = ea;
+        }
+      }
+    }
+    return result;
+  }
+
   bridge() {
     const original = v[this.name];
     const specialized = SPECIALIZED_VALIDATORS[this.name];
     return (path, ...args) => {
-      const p = ensureArrayPath(path);
-      this.argCheckers.forEach((check, index) => check(args[index]));
-      return (obj) => {
-        let result;
+      let p = ensureArg.path(path);
+      const ensuredArgs = this.ensuredArgs(args);
+      return (obj, ctx) => {
+        if (p === REF) {
+          try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+        }
+        for (let i = 0, len = this.argDescriptors.length; i < len; i += 1) {
+          if (ensuredArgs[i] === REF) {
+            const ad = this.argDescriptors[i];
+            try { ensuredArgs[i] = ensureArg[`${ad.type}Ref`](args[i], ctx, obj); } catch (e) { return e.message; }
+          }
+        }
         let value = get(obj, p);
+        let result;
         if (specialized !== undefined && this.isSpecialized(value)) {
-          result = specialized(value, ...args);
+          result = specialized(value, ...ensuredArgs);
         } else {
           value = this.cast(value);
           if (typeof value === 'string') {
-            result = original(value, ...args);
+            result = original(value, ...ensuredArgs);
           } else {
             return this.error(path);
           }
@@ -106,8 +149,8 @@ class StringAndNumber extends StringOnly {
 }
 
 class StringAndArray extends StringOnly {
-  constructor(name, length, type, errorFunc, ...argCheckers) {
-    super(name, errorFunc, ...argCheckers);
+  constructor(name, length, type, errorFunc, ...argDescriptors) {
+    super(name, errorFunc, ...argDescriptors);
     this.length = length;
     this.type = type;
   }
@@ -129,78 +172,45 @@ class StringAndArray extends StringOnly {
   }
 }
 
-function checkInteger(argName, optional) {
-  return (a) => {
-    if ((!optional || a !== undefined) && !Number.isInteger(a)) {
-      throw new Error(`Argument '${argName}' ${optional ? 'is optional, but if specified ' : ''}must be an integer number`);
-    }
-  };
-}
-
-function checkObject(argName, optional) {
-  return (a) => {
-    if ((!optional || a !== undefined) && typeof a !== 'object') {
-      throw new Error(`Argument '${argName}' ${optional ? 'is optional, but if specified ' : ''}must be an object`);
-    }
-  };
-}
-
-function checkString(argName, optional) {
-  return (a) => {
-    if ((!optional || a !== undefined) && typeof a !== 'string') {
-      throw new Error(`Argument '${argName}' ${optional ? 'is optional, but if specified ' : ''}must be a string`);
-    }
-  };
-}
-
-/* istanbul ignore next */
-function checkLocale(argName, optional, arrayToo) {
-  return (a) => {
-    if ((!optional || a !== undefined) && (typeof a !== 'string' || (arrayToo && !Array.isArray(a)))) {
-      throw new Error(`Argument '${argName}' ${optional ? 'is optional, but if specified ' : ''}must be a string ${arrayToo ? 'or an array of strings ' : ''}`);
-    }
-  };
-}
-
 /* eslint-disable no-unused-vars */
 /* istanbul ignore next */
 const vInfo = [
-  new StringOnly('contains', args => `containing the value '${args[0]}'`, checkString('seed')),
+  new StringOnly('contains', args => `containing the value '${args[0]}'`, 'seed:string'),
   // new StringOnly('equals', args => `equal to the value '${args[0]}'`),
   // new StringOnly('isAfter', args => `equal to the value '${args[0]}'`),
-  new StringOnly('isAlpha', args => 'containing only letters (a-zA-Z)', checkLocale('locale', true, false)),
-  new StringOnly('isAlphanumeric', args => 'containing only letters and numbers', checkLocale('locale', true, false)),
+  new StringOnly('isAlpha', args => 'containing only letters (a-zA-Z)', 'locale:string?'),
+  new StringOnly('isAlphanumeric', args => 'containing only letters and numbers', 'locale:string?'),
   new StringOnly('isAscii', args => 'containing ASCII chars only'),
   new StringOnly('isBase64', args => 'base64 encoded'),
   // new StringOnly('isBefore', args => `equal to the value '${args[0]}'`),
   // new StringOnly('isBoolean', args => `equal to the value '${args[0]}'`),
-  new StringOnly('isByteLength', args => 'whose length (in UTF-8 bytes) falls in the specified range', checkObject('options', true)),
+  new StringOnly('isByteLength', args => 'whose length (in UTF-8 bytes) falls in the specified range', 'options:object?'),
   new StringOnly('isCreditCard', args => 'representing a credit card'),
-  new StringOnly('isCurrency', args => 'representing a valid currency amount'),
+  new StringOnly('isCurrency', args => 'representing a valid currency amount', 'options:object?'),
   new StringOnly('isDataURI', args => 'in data uri format'),
   // new StringOnly('isDecimal', args => `equal to the value '${args[0]}'`),
-  new StringAndNumber('isDivisibleBy', args => `that's divisible by ${args[0]}`, checkInteger('divisor')),
-  new StringOnly('isEmail', args => 'representing an email address', checkObject('options', true)),
-  new StringOnly('isEmpty', args => 'having a length of zero', checkObject('options', true)),
-  new StringAndNumber('isFloat', args => 'that\'s a float falling in the specified range', checkObject('options', true)),
-  new StringOnly('isFQDN', args => 'representing a fully qualified domain name (e.g. domain.com)', checkObject('options', true)),
+  new StringAndNumber('isDivisibleBy', args => `that's divisible by ${args[0]}`, 'divisor:integer'),
+  new StringOnly('isEmail', args => 'representing an email address', 'options:object?'),
+  new StringOnly('isEmpty', args => 'having a length of zero', 'options:object?'),
+  new StringAndNumber('isFloat', args => 'that\'s a float falling in the specified range', 'options:object?'),
+  new StringOnly('isFQDN', args => 'representing a fully qualified domain name (e.g. domain.com)', 'options:object?'),
   new StringOnly('isFullWidth', args => 'containing any full-width chars'),
   new StringOnly('isHalfWidth', args => 'containing any half-width chars'),
-  new StringOnly('isHash', args => `matching to the format of the hash algorithm ${args[0]}`),
+  new StringOnly('isHash', args => `matching to the format of the hash algorithm ${args[0]}`, 'algorithm:string?'),
   new StringOnly('isHexadecimal', args => 'representing a hexadecimal number'),
   new StringOnly('isHexColor', args => 'matching to a hexadecimal color'),
-  new StringOnly('isIdentityCard', args => 'matching to a valid identity card code', checkLocale('locale', true, false)),
+  new StringOnly('isIdentityCard', args => 'matching to a valid identity card code', 'locale:string?'),
   // new StringOnly('isIn', args => `equal to the value '${args[0]}'`),
-  new StringAndNumber('isInt', args => 'that\'s an integer falling in the specified range', checkObject('options', true)),
-  new StringOnly('isIP', args => 'matching to an IP'),
+  new StringAndNumber('isInt', args => 'that\'s an integer falling in the specified range', 'options:object?'),
+  new StringOnly('isIP', args => 'matching to an IP', 'version:integer?'),
   new StringOnly('isIPRange', args => 'matching to an IP Range'),
-  new StringOnly('isISBN', args => 'matching to an ISBN'),
+  new StringOnly('isISBN', args => 'matching to an ISBN', 'version:integer?'),
   new StringOnly('isISIN', args => 'matching to an ISIN'),
   new StringOnly('isISO31661Alpha2', args => 'matching to a valid ISO 3166-1 alpha-2 officially assigned country code'),
   new StringOnly('isISO31661Alpha3', args => 'matching to a valid ISO 3166-1 alpha-3 officially assigned country code'),
   new StringOnly('isISO8601', args => 'matching to a valid ISO 8601 date'),
   new StringOnly('isISRC', args => 'matching to an ISRC'),
-  new StringOnly('isISSN', args => 'matching to an ISSN', checkObject('options', true)),
+  new StringOnly('isISSN', args => 'matching to an ISSN', 'options:object?'),
   new StringOnly('isJSON', args => 'matching to a valid JSON'),
   new StringOnly('isJWT', args => 'matching to a valid JWT token'),
   new StringAndArray('isLatLong', 2, 'number', args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'"),
@@ -210,20 +220,20 @@ const vInfo = [
   new StringOnly('isMagnetURI', args => 'in magnet uri format'),
   new StringOnly('isMD5', args => 'representing a valid MD5 hash'),
   new StringOnly('isMimeType', args => 'matching to a valid MIME type format'),
-  new StringOnly('isMobilePhone', args => 'representing a mobile phone number', checkLocale('locale', true, true), checkObject('options', true)),
+  new StringOnly('isMobilePhone', args => 'representing a mobile phone number', 'locale:stringOrArray?', 'options:object?'),
   new StringOnly('isMongoId', args => 'in the form of a valid hex-encoded representation of a MongoDB ObjectId.'),
   new StringOnly('isMultibyte', args => 'containing one or more multibyte chars'),
-  new StringOnly('isNumeric', args => 'containing only numbers', checkObject('options', true)),
+  new StringOnly('isNumeric', args => 'containing only numbers', 'options:object?'),
   new StringAndNumber('isPort', args => 'representing a valid port'),
-  new StringOnly('isPostalCode', args => 'representing a postal code', checkLocale('locale', false, false)),
+  new StringOnly('isPostalCode', args => 'representing a postal code', 'options:object'),
   new StringOnly('isRFC3339', args => 'matching to a valid RFC 3339 date'),
   new StringOnly('isSurrogatePair', args => 'containing any surrogate pairs chars'),
   new StringOnly('isUppercase', args => 'in uppercase'),
-  new StringOnly('isURL', args => 'representing a valid URL', checkObject('options', true)),
-  new StringOnly('isUUID', args => 'matching to a UUID (version 3, 4 or 5)'),
+  new StringOnly('isURL', args => 'representing a valid URL', 'options:object?'),
+  new StringOnly('isUUID', args => 'matching to a UUID (version 3, 4 or 5)', 'version:integer?'),
   new StringOnly('isVariableWidth', args => 'containing a mixture of full and half-width chars'),
-  new StringOnly('isWhitelisted', args => 'whose characters belongs to the whitelist'),
-  new StringOnly('matches', args => `matching the regex '${args[0]}'`)
+  new StringOnly('isWhitelisted', args => 'whose characters belongs to the whitelist', 'chars:string'),
+  new StringOnly('matches', args => `matching the regex '${args[0]}'`, 'pattern:string', 'modifiers:string?')
 ];
 /* eslint-enable no-unused-vars */
 

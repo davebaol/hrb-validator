@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { get, ensureArrayPath } from '../../src/util/path';
+import { get, ensureArrayPath, BAD_PATH } from '../../src/util/path';
 
 describe('Test utility get(obj, path).', () => {
   const point = { x: 0, y: 1 };
@@ -31,7 +31,7 @@ describe('Test utility ensureArrayPath(path).', () => {
   tests.forEach(t => it(`ensureArrayPath(${JSON.stringify(t.path)}) should return ${JSON.stringify(t.expected)}`, () => {
     assert.deepEqual(ensureArrayPath(t.path), t.expected, ':(');
   }));
-  it('ensureArrayPath(bad_path) should throw an error', () => {
-    assert.throws(() => ensureArrayPath({}), Error);
+  it('ensureArrayPath(bad_path) should return BAD_PATH', () => {
+    assert(ensureArrayPath({}) === BAD_PATH, ':(');
   });
 });

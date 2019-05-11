@@ -1,3 +1,5 @@
+const VAR_NOT_FOUND = {};
+
 class Context {
   constructor() {
     this.stack = [];
@@ -11,14 +13,18 @@ class Context {
     return this.stack.pop();
   }
 
+  static get VAR_NOT_FOUND() {
+    return VAR_NOT_FOUND;
+  }
+
   find(name) {
     for (let i = this.stack.length - 1; i >= 0; i -= 1) {
       const found = this.stack[i][name];
-      if (found) {
+      if (found !== undefined) { // TODO maybe we should use (name in this.stack[i])
         return found;
       }
     }
-    return undefined;
+    return VAR_NOT_FOUND;
   }
 }
 

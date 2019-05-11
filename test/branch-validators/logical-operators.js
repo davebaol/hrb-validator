@@ -1,12 +1,12 @@
 import { assert } from 'chai';
-import { shouldThrowErrorOnBadChild } from '../test-utils';
+import { testArgument } from '../test-utils';
 import V from '../../src';
 
 const success = () => undefined;
 const failure = () => 'failure';
 
 describe('Test branch validator not.', () => {
-  shouldThrowErrorOnBadChild('not', [], 0);
+  testArgument('child', 'not', [], 0);
   it('not(failure) should succeed', () => {
     const v = V.not(failure);
     assert(v({}) === undefined, ':(');
@@ -18,8 +18,8 @@ describe('Test branch validator not.', () => {
 });
 
 describe('Test branch validator and.', () => {
-  shouldThrowErrorOnBadChild('and', [success, success], 0);
-  shouldThrowErrorOnBadChild('and', [success, success], 1);
+  testArgument('child', 'and', [success, success], 0);
+  testArgument('child', 'and', [success, success], 1);
   it('and(success, success) should succeed', () => {
     const v = V.and(success, success);
     assert(v({}) === undefined, ':(');
@@ -39,8 +39,8 @@ describe('Test branch validator and.', () => {
 });
 
 describe('Test branch validator or.', () => {
-  shouldThrowErrorOnBadChild('or', [success, success], 0);
-  shouldThrowErrorOnBadChild('or', [success, success], 1);
+  testArgument('child', 'or', [success, success], 0);
+  testArgument('child', 'or', [success, success], 1);
   it('or(success, success) should succeed', () => {
     const v = V.or(success, success);
     assert(v({}) === undefined, ':(');
@@ -60,8 +60,8 @@ describe('Test branch validator or.', () => {
 });
 
 describe('Test branch validator xor.', () => {
-  shouldThrowErrorOnBadChild('xor', [success, success], 0);
-  shouldThrowErrorOnBadChild('xor', [success, success], 1);
+  testArgument('child', 'xor', [success, success], 0);
+  testArgument('child', 'xor', [success, success], 1);
   it('xor(success, success) should fail', () => {
     const v = V.xor(success, success);
     assert(v({}) !== undefined, ':(');

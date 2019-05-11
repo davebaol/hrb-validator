@@ -1,11 +1,18 @@
 const camelCase = require('camelcase');
-const { get, ensureArrayPath } = require('./path');
+const { get } = require('./path');
+const ensureArg = require('../util/ensure-arg');
+
+const { REF } = ensureArg;
 
 function optShortcutOf(validator) {
   return (path, ...args) => {
-    const p = ensureArrayPath(path);
-    const v = validator(p, ...args);
-    return (obj, ctx) => (get(obj, p) ? v(obj, ctx) : undefined);
+    let p = ensureArg.path(path);
+    return (obj, ctx) => {
+      if (p === REF) {
+        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+      }
+      return (get(obj, p) ? validator(p, ...args)(obj, ctx) : undefined);
+    };
   };
 }
 

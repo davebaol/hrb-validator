@@ -1,5 +1,7 @@
 const getValue = require('get-value');
 
+const BAD_PATH = Object.freeze({});
+
 const getValueOptions = {
   default: undefined,
   separator: '.',
@@ -7,6 +9,8 @@ const getValueOptions = {
 };
 
 module.exports = {
+  BAD_PATH,
+
   get(obj, path) {
     const noPath = path == null || (path.length === 0 && (typeof path === 'string' || Array.isArray(path)));
     return noPath ? obj : getValue(obj, path, getValueOptions);
@@ -19,7 +23,7 @@ module.exports = {
   // Make sure the path is in the form of an array or undefined if empty.
   // This is called during validator creation to make validation faster,
   // since validation can happen multiple times ;)
-  ensureArrayPath(path, validatorName) {
+  ensureArrayPath(path /* , validatorName */) {
     const typeOfPath = typeof path;
     if (path == null || (path.length === 0 && (typeOfPath === 'string' || Array.isArray(path)))) {
       return undefined;
@@ -30,9 +34,6 @@ module.exports = {
     if (typeOfPath === 'number') {
       return String(path).split('.');
     }
-    if (Array.isArray(path)) {
-      return path;
-    }
-    throw new Error(`${validatorName}: the path must be a string, a number, an array of the two previous types, or null`);
+    return Array.isArray(path) ? path : BAD_PATH;
   }
 };

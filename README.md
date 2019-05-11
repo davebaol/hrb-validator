@@ -13,15 +13,23 @@ Hierarchical Rule-Based Validator is a simple yet powerful data validation engin
   - Recursive validation
   - Logical operators
   - Conditional validation
+- Widespread support for property references (for instance, to ensure that maxAge property has a value greater than the value of minAge property)
 
 ### Table of Contents
-- [Usage](#usage)
-  - [Hard-coded Validators](#hard-coded-validators)
-  - [Loading Validators from File](#loading-validators-from-file)
-  - [YAML vs JSON](#yaml-vs-json)
-  - [Shortcut for optional paths](#shortcut-for-optional-paths)
-- [Leaf Validators](#leaf-validators)
-- [Branch Validators](#branch-validators)
+- [HRB Validator](#hrb-validator)
+    - [Major Features](#major-features)
+    - [Table of Contents](#table-of-contents)
+  - [Usage](#usage)
+    - [Hard-coded validators](#hard-coded-validators)
+    - [Loading validators from file](#loading-validators-from-file)
+    - [YAML vs JSON](#yaml-vs-json)
+    - [How to use references](#how-to-use-references)
+      - [Value reference](#value-reference)
+      - [Validator reference](#validator-reference)
+    - [Shortcut for optional paths](#shortcut-for-optional-paths)
+  - [Leaf Validators](#leaf-validators)
+  - [Branch Validators](#branch-validators)
+- [License](#license)
 
 ## Usage
 Suppose you have the simple object below
@@ -155,11 +163,25 @@ When **human-readability** is important for you, it's recommended to use *YAML* 
 	{"isArrayOf": ["a.d", "string"]}
 ]}
 ```
-:astonished: So many braces, double quotes and commas!
-Imagine what would happen for a larger real-world validator.
+So many braces, double quotes and commas! :astonished:
+Imagine what would happen for a larger real-world validator. :dizzy_face:
 
 On the other hand, for **machine to machine communication** *JSON* is likely a  more appropriate format. For instance, think of a REST API centralizing configurations and their validators.
 
+### How to use references
+A reference is an object with exactly one key amongst `$path` and `$var` whose walue is respectively a path and a variable name. Notice that reference keys start with `$` to avoid confusion with built-in validators.
+
+There are 2 types of references:
+
+#### Value reference
+Value references can be used for any validator argument representing a value.
+A value reference is either a path reference or a variable reference.
+- A **path reference** has the form `{"$path": "path.to.property"}` and returns the value at the specified path for the object under validation  
+- A **variable reference** has the form `{"$var": "variable_name"}` and returns the value of the first variable with the specified name found in nested scopes from inner to outer.
+
+#### Validator reference
+Validator references can be used only in branch validators for any argument that is expected to be a validator i.e. a child. 
+A **validator reference** has the form `{"$var": "$validator_name"}` (It's just a variable whose name starts with `$`) and returns the first validator with the specified name found in nested scopes from inner to outer.
 
 ### Shortcut for optional paths
 
@@ -182,94 +204,103 @@ Notice that for a couple of validators the shortcut is somewhat redundant. For i
 
 Here is a list of the leaf validators currently available.
 
-:pushpin: Keep in mind that all leaf validators, without exception, have their [shortcut opt](#shortcut-for-optional-paths) (not reported in the list below).
+:pushpin: All leaf validators, without exception, have their [shortcut opt](#shortcut-for-optional-paths) (not reported in the table below).
+
+:pushpin: All arguments marked with ♦️ allow you to use a [value reference](#value-reference).
+
+:pushpin: All leaf validators marked with :raised_hand: are not implemented yet, but probably will in the near future.
 
 Leaf Validator                       | Expected Type at `path` | Description
 :------------------------------------|:-----------------------:|:--------------------------------------
-*contains(path, seed)*               |string| Check if the value at `path` is a string containing the `seed`.
-*equals(path, value)*                |any   | Check if the value at `path` is equal to the specified `value`. Strict equality is used for comparison.
-*isAfter(path [, date])*:raised_hand: |string| Check if the value at `path` is a string representing a date that's after the specified date (defaults to now).
-*isAlpha(path [, locale])*           |string| Check if the value at `path` is a string containing only letters (a-zA-Z).<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `require('validator').isAlphaLocales`.
-*isAlphanumeric(path [, locale])*    |string| Check if the value at `path` is a string containing only letters and numbers.<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `require('validator').isAlphanumericLocales`.
-*isArrayOf(path, type)*              |array | Check if the value at `path` is an array whose items have either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
-*isAscii(path)*                      |string| Check if the value at `path` is a string containing ASCII chars only.
-*isBase64(path)*                     |string| Check if the value at `path` is a base64 encoded string.
-*isAfter(path [, date])*:raised_hand: |string| Check if the value at `path` is a string representing a date that's after the specified date (defaults to now).
-*isBefore(path [, date])* :raised_hand: |string| Check if the value at `path` is a string a date that's before the specified date.
-*isBoolean(path)* :raised_hand::raised_hand:      |string| Check if a string is a boolean.
-*isByteLength(path [, options])*     |string| Check if the value at `path` is a string whose length (in UTF-8 bytes) falls in the specified range.<br/><br/>`options` is an object which defaults to `{min:0, max: undefined}`.
-*isCreditCard(path)*                 |string| Check if the value at `path` is a string representing a credit card.
-*isAfter(path [, date])*:raised_hand: |string| Check if the value at `path` is a string representing a date that's after the specified date (defaults to now).
-*isDataURI(path)*                    |string| Check if the value at `path` is a string representing a [data uri format](https://developer.mozilla.org/en-US/docs/Web/HTTP/data_URIs).
-*isDate(path)*                       |
-*isDecimal(path [, options])* :raised_hand: |string| Check if the string represents a decimal number, such as 0.1, .3, 1.1, 1.00003, 4.0, etc.<br/><br/>`options` is an object which defaults to `{force_decimal: false, decimal_digits: '1,', locale: 'en-US'}`<br/><br/>`locale` determine the decimal separator and is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`.<br/>*Note:* `decimal_digits` is given as a range like '1,3', a specific value like '3' or min like '1,'.
-*isDivisibleBy(path, divisor)*        |number<br/>string| Check if the value at `path` is a number or a string representing a number that's divisible by the specified `divisor`.
-*isEmail(path [, options])*          |string| Check if the value at `path` is a string representing an email.<br/><br/>`options` is an object which defaults to `{ allow_display_name: false, require_display_name: false, allow_utf8_local_part: true, require_tld: true, allow_ip_domain: false, domain_specific_validation: false }`. If `allow_display_name` is set to true, the validator will also match `Display Name <email-address>`. If `require_display_name` is set to true, the validator will reject strings without the format `Display Name <email-address>`. If `allow_utf8_local_part` is set to false, the validator will not allow any non-English UTF8 character in email address' local part. If `require_tld` is set to false, e-mail addresses without having TLD in their domain will also be matched. If `allow_ip_domain` is set to true, the validator will allow IP addresses in the host part. If `domain_specific_validation` is true, some additional validation will be enabled, e.g. disallowing certain syntactically valid email addresses that are rejected by GMail.
-*isEmpty(path [, options])*          |string| Check if the value at `path` is a string having a length of zero. Contrary to `isLength`, this validator only supports strings.<br/><br/>`options` is an object which defaults to `{ ignore_whitespace:false }`.
-*isFloat(path [, options])*          |number<br/>string| Check if the value at `path` is a number or a string that's a float falling in the specified range.<br/><br/>`options` is an object which can contain the keys `min`, `max`, `gt`, and/or `lt` to validate the float is within boundaries (e.g. `{ min: 7.22, max: 9.55 }`) it also has `locale` as an option.<br/><br/>`min` and `max` are equivalent to 'greater or equal' and 'less or equal', respectively while `gt` and `lt` are their strict counterparts.<br/><br/>`locale` determine the decimal separator and is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`. Locale list is `require('validator').isFloatLocales`.
-*isFQDN(path [, options])*           |string| Check if the value at `path` is a string representing a fully qualified domain name (e.g. domain.com).<br/><br/>`options` is an object which defaults to `{ require_tld: true, allow_underscores: false, allow_trailing_dot: false }`.
-*isFullWidth(path)*                  |string| Check if the value at `path` is a string containing any full-width chars.
-*isHalfWidth(path)*                  |string| Check if the value at `path` is a string containing any half-width chars.
-*isHash(path, algorithm)*            |string| Check if the value at `path` is a string representing a hash of type algorithm.<br/><br/>Algorithm is one of `['md4', 'md5', 'sha1', 'sha256', 'sha384', 'sha512', 'ripemd128', 'ripemd160', 'tiger128', 'tiger160', 'tiger192', 'crc32', 'crc32b']`
-*isHexadecimal(path)*                |string| Check if the value at `path` is string representing a hexadecimal number.
-*isHexColor(path)*                   |string| Check if the value at `path` is a string representing a hexadecimal color.
-*isIdentityCard(path [, locale])*    |string| Check if the value at `path` is a string representing a valid identity card code.<br/><br/>`locale` is one of `['ES']` OR `'any'`. If 'any' is used, function will Check if any of the locals match.<br/><br/>Defaults to 'any'.
-*isInt(path [, options])*            |number<br/>string| Check if the value at `path` is a number or a string that's an integer falling in the specified range.<br/><br/>`options` is an object which can contain the keys `min` and/or `max` to check the integer is within boundaries (e.g. `{ min: 10, max: 99 }`). `options` can also contain the key `allow_leading_zeroes`, which when set to false will disallow integer values with leading zeroes (e.g. `{ allow_leading_zeroes: false }`). Finally, `options` can contain the keys `gt` and/or `lt` which will enforce integers being greater than or less than, respectively, the value provided (e.g. `{gt: 1, lt: 4}` for a number between 1 and 4).
-*isIP(path [, version])*             |string| Check if the value at `path` is a string representing an IP (version 4 or 6).
-*isIPRange(path)*                    |string| Check if the value at `path` is a string representing an IP Range(version 4 only).
-*isISBN(path [, version])*           |string| Check if the value at `path` is a string representing an ISBN (version 10 or 13).
-*isISIN(path)*                       |string| Check if the value at `path` is a string representing an [ISIN][ISIN] (stock/security identifier).
-*isISO31661Alpha2(path)*             |string| Check if the value at `path` is a string representing a valid [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) officially assigned country code.
-*isISO31661Alpha3(path)*             |string| Check if the value at `path` is a string representing a valid [ISO 3166-1 alpha-3](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3) officially assigned country code.
-*isISO8601(path)*                    |string| Check if the value at `path` is a string representing a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) date; for additional checks for valid dates, e.g. invalidates dates like `2009-02-29`, pass `options` object as a second parameter with `options.strict = true`.
-*isISRC(path)*                       |string| Check if the value at `path` is a string representing a [ISRC](https://en.wikipedia.org/wiki/International_Standard_Recording_Code).
-*isISSN(path [, options])*           |string| Check if the value at `path` is a string representing an [ISSN](https://en.wikipedia.org/wiki/International_Standard_Serial_Number).<br/><br/>`options` is an object which defaults to `{ case_sensitive: false, require_hyphen: false }`. If `case_sensitive` is true, ISSNs with a lowercase `'x'` as the check digit are rejected.
-*isJSON(path)*                       |string| Check if the value at `path` is a string representing valid JSON (note: uses JSON.parse).
-*isJWT(path)*                        |string| Check if the value at `path` is a string representing valid JWT token.
-*isLatLong(path)*                    |array<br/>string| Check if the value at `path` represents a valid latitude-longitude coordinate in one of the following formats:<br/>&#8226; *array* -> `[lat, long]` where items can be either a string or a number<br/>&#8226; *string* -> `"lat,long"` or `"lat, long"`
-*isLength(path [, options])*         |object<br/>array<br/>string| Check if the value at `path` is a string, an array or an object whose length falls in the specified range.<br/><br/>`options` is an object which defaults to `{min:0, max: undefined}`.
-*isLowercase(path)*                  |string| Check if the value at `path` is a string in lowercase.
-*isMACAddress(path)*                 |string| Check if the value at `path` is a string representing a MAC address.<br/><br/>`options` is an object which defaults to `{no_colons: false}`. If `no_colons` is true, the validator will allow MAC addresses without the colons.
-*isMagnetURI(path)*                  |string| Check if the value at `path` is a string representing a [magnet uri format](https://en.wikipedia.org/wiki/Magnet_URI_scheme).
-*isMD5(path)*                        |string| Check if the value at `path` is a string representing a MD5 hash.
-*isMimeType(path)*                   |string| Check if the string matches to a valid [MIME type](https://en.wikipedia.org/wiki/Media_type) format
-*isMobilePhone(path [, locale [, options]])* |string| Check if the value at `path` is a string representing a mobile phone number,<br/><br/>(locale is either an array of locales (e.g `['sk-SK', 'sr-RS']`) OR one of `['ar-AE', 'ar-DZ', 'ar-EG', 'ar-IQ', ar-JO', 'ar-KW', 'ar-SA', 'ar-SY', 'ar-TN', 'be-BY', 'bg-BG', 'bn-BD', 'cs-CZ', 'de-DE', 'da-DK', 'el-GR', 'en-AU', 'en-CA', 'en-GB', 'en-GH', 'en-HK', 'en-IE', 'en-IN',  'en-KE', 'en-MU', en-NG', 'en-NZ', 'en-RW', 'en-SG', 'en-UG', 'en-US', 'en-TZ', 'en-ZA', 'en-ZM', 'en-PK', 'es-ES', 'es-MX', 'es-UY', 'et-EE', 'fa-IR', 'fi-FI', 'fr-FR', 'he-IL', 'hu-HU', 'id-ID', 'it-IT', 'ja-JP', 'kk-KZ', 'ko-KR', 'lt-LT', 'ms-MY', 'nb-NO', 'nn-NO', 'pl-PL', 'pt-PT', 'pt-BR', 'ro-RO', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sv-SE', 'th-TH', 'tr-TR', 'uk-UA', 'vi-VN', 'zh-CN', 'zh-HK', 'zh-TW']` OR defaults to 'any'. If 'any' or a falsey value is used, function will Check if any of the locales match).<br/><br/>`options` is an optional object that can be supplied with the following keys: `strictMode`, if this is set to `true`, the mobile phone number must be supplied with the country code and therefore must start with `+`. Locale list is `require('validator').isMobilePhoneLocales`.
-*isMongoId(path)*                    |string| Check if the value at `path` is a string representing a valid hex-encoded representation of a [MongoDB ObjectId][mongoid].
-*isMultibyte(path)*                  |string| Check if the value at `path` is a string containing one or more multibyte chars.
-*isNumeric(path [, options])*        |string| Check if the value at `path` is a string containing only numbers.<br/><br/>`options` is an object which defaults to `{no_symbols: false}`. If `no_symbols` is true, the validator will reject numeric strings that feature a symbol (e.g. `+`, `-`, or `.`).
-*isOneOf(path, values)*              |any   | Check if the value at `path` belongs to the specified array of values. Internally strict equality is used to compare values.
-*isPort(path)*                       |number<br/>string| Check if the value at `path` is either a string or a number representing a valid port.
-*isPostalCode(path, locale)*         |string| Check if the value at `path` is a string representing a postal code,<br/><br/>(locale is one of `[ 'AD', 'AT', 'AU', 'BE', 'BG', 'CA', 'CH', 'CZ', 'DE', 'DK', 'DZ', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IL', 'IN', 'IS', 'IT', 'JP', 'KE', 'LI', 'LT', 'LU', 'LV', 'MX', 'NL', 'NO', 'PL', 'PT', 'RO', 'RU', 'SA', 'SE', 'SI', 'TN', 'TW', 'UA', 'US', 'ZA', 'ZM' ]` OR 'any'. If 'any' is used, function will Check if any of the locals match. Locale list is `require('validator').isPostalCodeLocales`.).
-*isRFC3339(path)*                    |string| Check if the value at `path` is a string representing a valid [RFC 3339](https://tools.ietf.org/html/rfc3339) date.
-*isSet(path)*                        |any   | Check if the value at `path` is a non null value.
-*isSurrogatePair(path)*              |string| Check if the value at `path` is a string containing any surrogate pairs chars.
-*isType(path, type)*                 |any   | Check if the value at `path` has either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
-*isUppercase(path)*                  |string| Check if the value at `path` is a string in uppercase.
-*isURL(path [, options])*            |string| Check if the value at `path` is a string representing an URL.<br/><br/>`options` is an object which defaults to `{ protocols: ['http','https','ftp'], require_tld: true, require_protocol: false, require_host: true, require_valid_protocol: true, allow_underscores: false, host_whitelist: false, host_blacklist: false, allow_trailing_dot: false, allow_protocol_relative_urls: false, disallow_auth: false }`.
-*isUUID(path [, version])*           |string| Check if the value at `path` is a string representing a UUID (version 3, 4 or 5).
-*isVariableWidth(path)*              |string| Check if the value at `path` is a string containing a mixture of full and half-width chars.
-*isWhitelisted(path, chars)*         |string| Checks if the value at `path` is a string containing only the characters in the whitelist.
-*matches(path, pattern [, modifiers])* |string| Check if the value at `path` is a string matching the pattern.<br/><br/>Either `matches('foo', /foo/i)` or `matches('foo', 'foo', 'i')`.
+*contains(path♦️, seed♦️)*             |string| Check if the value at `path` is a string containing the `seed`.
+*equals(path♦️, value♦️)*              |any   | Check if the value at `path` is equal to the specified `value`. Strict equality is used for comparison.
+*isAfter(path♦️ [, date])*:raised_hand:|string| Check if the value at `path` is a string representing a date that's after the specified date (defaults to now).
+*isAlpha(path♦️ [, locale♦️])*         |string| Check if the value at `path` is a string containing only letters (a-zA-Z).<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `require('validator').isAlphaLocales`.
+*isAlphanumeric(path♦️ [, locale♦️])*  |string| Check if the value at `path` is a string containing only letters and numbers.<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `require('validator').isAlphanumericLocales`.
+*isArrayOf(path♦️, type♦️)*            |array | Check if the value at `path` is an array whose items have either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
+*isAscii(path♦️)*                     |string| Check if the value at `path` is a string containing ASCII chars only.
+*isBase64(path♦️)*                    |string| Check if the value at `path` is a base64 encoded string.
+*isAfter(path♦️ [, date])*:raised_hand: |string| Check if the value at `path` is a string representing a date that's after the specified date (defaults to now).
+*isBefore(path♦️ [, date])* :raised_hand: |string| Check if the value at `path` is a string a date that's before the specified date.
+*isBoolean(path♦️)* :raised_hand::raised_hand:      |string| Check if a string is a boolean.
+*isByteLength(path♦️ [, options♦️])*   |string| Check if the value at `path` is a string whose length (in UTF-8 bytes) falls in the specified range.<br/><br/>`options` is an object which defaults to `{min:0, max: undefined}`.
+*isCreditCard(path♦️)*                |string| Check if the value at `path` is a string representing a credit card.
+*isAfter(path♦️ [, date])*:raised_hand: |string| Check if the value at `path` is a string representing a date that's after the specified date (defaults to now).
+*isDataURI(path♦️)*                   |string| Check if the value at `path` is a string representing a [data uri format](https://developer.mozilla.org/en-US/docs/Web/HTTP/data_URIs).
+*isDate(path♦️)*                      |
+*isDecimal(path♦️ [, options♦️])* :raised_hand: |string| Check if the string represents a decimal number, such as 0.1, .3, 1.1, 1.00003, 4.0, etc.<br/><br/>`options` is an object which defaults to `{force_decimal: false, decimal_digits: '1,', locale: 'en-US'}`<br/><br/>`locale` determine the decimal separator and is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`.<br/>*Note:* `decimal_digits` is given as a range like '1,3', a specific value like '3' or min like '1,'.
+*isDivisibleBy(path♦️, divisor♦️)*     |number<br/>string| Check if the value at `path` is a number or a string representing a number that's divisible by the specified `divisor`.
+*isEmail(path♦️ [, options♦️])*        |string| Check if the value at `path` is a string representing an email.<br/><br/>`options` is an object which defaults to `{ allow_display_name: false, require_display_name: false, allow_utf8_local_part: true, require_tld: true, allow_ip_domain: false, domain_specific_validation: false }`. If `allow_display_name` is set to true, the validator will also match `Display Name <email-address>`. If `require_display_name` is set to true, the validator will reject strings without the format `Display Name <email-address>`. If `allow_utf8_local_part` is set to false, the validator will not allow any non-English UTF8 character in email address' local part. If `require_tld` is set to false, e-mail addresses without having TLD in their domain will also be matched. If `allow_ip_domain` is set to true, the validator will allow IP addresses in the host part. If `domain_specific_validation` is true, some additional validation will be enabled, e.g. disallowing certain syntactically valid email addresses that are rejected by GMail.
+*isEmpty(path♦️ [, options♦️])*        |string| Check if the value at `path` is a string having a length of zero. Contrary to `isLength`, this validator only supports strings.<br/><br/>`options` is an object which defaults to `{ ignore_whitespace:false }`.
+*isFloat(path♦️ [, options♦️])*        |number<br/>string| Check if the value at `path` is a number or a string that's a float falling in the specified range.<br/><br/>`options` is an object which can contain the keys `min`, `max`, `gt`, and/or `lt` to validate the float is within boundaries (e.g. `{ min: 7.22, max: 9.55 }`) it also has `locale` as an option.<br/><br/>`min` and `max` are equivalent to 'greater or equal' and 'less or equal', respectively while `gt` and `lt` are their strict counterparts.<br/><br/>`locale` determine the decimal separator and is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`. Locale list is `require('validator').isFloatLocales`.
+*isFQDN(path♦️ [, options♦️])*         |string| Check if the value at `path` is a string representing a fully qualified domain name (e.g. domain.com).<br/><br/>`options` is an object which defaults to `{ require_tld: true, allow_underscores: false, allow_trailing_dot: false }`.
+*isFullWidth(path♦️)*                 |string| Check if the value at `path` is a string containing any full-width chars.
+*isHalfWidth(path♦️)*                 |string| Check if the value at `path` is a string containing any half-width chars.
+*isHash(path♦️, algorithm♦️)*          |string| Check if the value at `path` is a string representing a hash of type algorithm.<br/><br/>Algorithm is one of `['md4', 'md5', 'sha1', 'sha256', 'sha384', 'sha512', 'ripemd128', 'ripemd160', 'tiger128', 'tiger160', 'tiger192', 'crc32', 'crc32b']`
+*isHexadecimal(path♦️)*               |string| Check if the value at `path` is string representing a hexadecimal number.
+*isHexColor(path♦️)*                  |string| Check if the value at `path` is a string representing a hexadecimal color.
+*isIdentityCard(path♦️ [, locale♦️])*  |string| Check if the value at `path` is a string representing a valid identity card code.<br/><br/>`locale` is one of `['ES']` OR `'any'`. If 'any' is used, function will Check if any of the locals match.<br/><br/>Defaults to 'any'.
+*isInt(path♦️ [, options♦️])*          |number<br/>string| Check if the value at `path` is a number or a string that's an integer falling in the specified range.<br/><br/>`options` is an object which can contain the keys `min` and/or `max` to check the integer is within boundaries (e.g. `{ min: 10, max: 99 }`). `options` can also contain the key `allow_leading_zeroes`, which when set to false will disallow integer values with leading zeroes (e.g. `{ allow_leading_zeroes: false }`). Finally, `options` can contain the keys `gt` and/or `lt` which will enforce integers being greater than or less than, respectively, the value provided (e.g. `{gt: 1, lt: 4}` for a number between 1 and 4).
+*isIP(path♦️ [, version♦️])*           |string| Check if the value at `path` is a string representing an IP (version 4 or 6).
+*isIPRange(path♦️)*                   |string| Check if the value at `path` is a string representing an IP Range(version 4 only).
+*isISBN(path♦️ [, version♦️])*         |string| Check if the value at `path` is a string representing an ISBN (version 10 or 13).
+*isISIN(path♦️)*                      |string| Check if the value at `path` is a string representing an [ISIN][ISIN] (stock/security identifier).
+*isISO31661Alpha2(path♦️)*            |string| Check if the value at `path` is a string representing a valid [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) officially assigned country code.
+*isISO31661Alpha3(path♦️)*            |string| Check if the value at `path` is a string representing a valid [ISO 3166-1 alpha-3](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3) officially assigned country code.
+*isISO8601(path♦️)*                   |string| Check if the value at `path` is a string representing a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) date; for additional checks for valid dates, e.g. invalidates dates like `2009-02-29`, pass `options` object as a second parameter with `options.strict = true`.
+*isISRC(path♦️)*                      |string| Check if the value at `path` is a string representing a [ISRC](https://en.wikipedia.org/wiki/International_Standard_Recording_Code).
+*isISSN(path♦️ [, options♦️])*         |string| Check if the value at `path` is a string representing an [ISSN](https://en.wikipedia.org/wiki/International_Standard_Serial_Number).<br/><br/>`options` is an object which defaults to `{ case_sensitive: false, require_hyphen: false }`. If `case_sensitive` is true, ISSNs with a lowercase `'x'` as the check digit are rejected.
+*isJSON(path♦️)*                      |string| Check if the value at `path` is a string representing valid JSON (note: uses JSON.parse).
+*isJWT(path♦️)*                       |string| Check if the value at `path` is a string representing valid JWT token.
+*isLatLong(path♦️)*                   |array<br/>string| Check if the value at `path` represents a valid latitude-longitude coordinate in one of the following formats:<br/>&#8226; *array* -> `[lat, long]` where items can be either a string or a number<br/>&#8226; *string* -> `"lat,long"` or `"lat, long"`
+*isLength(path♦️ [, options♦️])*       |object<br/>array<br/>string| Check if the value at `path` is a string, an array or an object whose length falls in the specified range.<br/><br/>`options` is an object which defaults to `{min:0, max: undefined}`.
+*isLowercase(path♦️)*                 |string| Check if the value at `path` is a string in lowercase.
+*isMACAddress(path♦️)*                |string| Check if the value at `path` is a string representing a MAC address.<br/><br/>`options` is an object which defaults to `{no_colons: false}`. If `no_colons` is true, the validator will allow MAC addresses without the colons.
+*isMagnetURI(path♦️)*                 |string| Check if the value at `path` is a string representing a [magnet uri format](https://en.wikipedia.org/wiki/Magnet_URI_scheme).
+*isMD5(path♦️)*                       |string| Check if the value at `path` is a string representing a MD5 hash.
+*isMimeType(path♦️)*                  |string| Check if the string matches to a valid [MIME type](https://en.wikipedia.org/wiki/Media_type) format
+*isMobilePhone(path♦️ [, locale♦️ [, options♦️]])* |string| Check if the value at `path` is a string representing a mobile phone number,<br/><br/>(locale is either an array of locales (e.g `['sk-SK', 'sr-RS']`) OR one of `['ar-AE', 'ar-DZ', 'ar-EG', 'ar-IQ', ar-JO', 'ar-KW', 'ar-SA', 'ar-SY', 'ar-TN', 'be-BY', 'bg-BG', 'bn-BD', 'cs-CZ', 'de-DE', 'da-DK', 'el-GR', 'en-AU', 'en-CA', 'en-GB', 'en-GH', 'en-HK', 'en-IE', 'en-IN',  'en-KE', 'en-MU', en-NG', 'en-NZ', 'en-RW', 'en-SG', 'en-UG', 'en-US', 'en-TZ', 'en-ZA', 'en-ZM', 'en-PK', 'es-ES', 'es-MX', 'es-UY', 'et-EE', 'fa-IR', 'fi-FI', 'fr-FR', 'he-IL', 'hu-HU', 'id-ID', 'it-IT', 'ja-JP', 'kk-KZ', 'ko-KR', 'lt-LT', 'ms-MY', 'nb-NO', 'nn-NO', 'pl-PL', 'pt-PT', 'pt-BR', 'ro-RO', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sv-SE', 'th-TH', 'tr-TR', 'uk-UA', 'vi-VN', 'zh-CN', 'zh-HK', 'zh-TW']` OR defaults to 'any'. If 'any' or a falsey value is used, function will Check if any of the locales match).<br/><br/>`options` is an optional object that can be supplied with the following keys: `strictMode`, if this is set to `true`, the mobile phone number must be supplied with the country code and therefore must start with `+`. Locale list is `require('validator').isMobilePhoneLocales`.
+*isMongoId(path♦️)*                   |string| Check if the value at `path` is a string representing a valid hex-encoded representation of a [MongoDB ObjectId][mongoid].
+*isMultibyte(path♦️)*                 |string| Check if the value at `path` is a string containing one or more multibyte chars.
+*isNumeric(path♦️ [, options♦️])*      |string| Check if the value at `path` is a string containing only numbers.<br/><br/>`options` is an object which defaults to `{no_symbols: false}`. If `no_symbols` is true, the validator will reject numeric strings that feature a symbol (e.g. `+`, `-`, or `.`).
+*isOneOf(path♦️, values♦️)*            |any   | Check if the value at `path` belongs to the specified array of values. Internally strict equality is used to compare values.
+*isPort(path♦️)*                      |number<br/>string| Check if the value at `path` is either a string or a number representing a valid port.
+*isPostalCode(path♦️, locale♦️)*       |string| Check if the value at `path` is a string representing a postal code,<br/><br/>(locale is one of `[ 'AD', 'AT', 'AU', 'BE', 'BG', 'CA', 'CH', 'CZ', 'DE', 'DK', 'DZ', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IL', 'IN', 'IS', 'IT', 'JP', 'KE', 'LI', 'LT', 'LU', 'LV', 'MX', 'NL', 'NO', 'PL', 'PT', 'RO', 'RU', 'SA', 'SE', 'SI', 'TN', 'TW', 'UA', 'US', 'ZA', 'ZM' ]` OR 'any'. If 'any' is used, function will Check if any of the locals match. Locale list is `require('validator').isPostalCodeLocales`.).
+*isRFC3339(path♦️)*                   |string| Check if the value at `path` is a string representing a valid [RFC 3339](https://tools.ietf.org/html/rfc3339) date.
+*isSet(path♦️)*                       |any   | Check if the value at `path` is a non null value.
+*isSurrogatePair(path♦️)*             |string| Check if the value at `path` is a string containing any surrogate pairs chars.
+*isType(path♦️, type♦️)*               |any   | Check if the value at `path` has either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
+*isUppercase(path♦️)*                 |string| Check if the value at `path` is a string in uppercase.
+*isURL(path♦️ [, options♦️])*          |string| Check if the value at `path` is a string representing an URL.<br/><br/>`options` is an object which defaults to `{ protocols: ['http','https','ftp'], require_tld: true, require_protocol: false, require_host: true, require_valid_protocol: true, allow_underscores: false, host_whitelist: false, host_blacklist: false, allow_trailing_dot: false, allow_protocol_relative_urls: false, disallow_auth: false }`.
+*isUUID(path♦️ [, version♦️])*         |string| Check if the value at `path` is a string representing a UUID (version 3, 4 or 5).
+*isVariableWidth(path♦️)*             |string| Check if the value at `path` is a string containing a mixture of full and half-width chars.
+*isWhitelisted(path♦️, chars♦️)*       |string| Checks if the value at `path` is a string containing only the characters in the whitelist.
+*matches(path♦️, pattern [, modifiers])* |string| Check if the value at `path` is a string matching the pattern.<br/><br/>Either `matches('foo', /foo/i)` or `matches('foo', 'foo', 'i')`.
 
 ## Branch Validators
 
 Here is a list of the branch validators currently available.
 
-:pushpin: Keep in mind that only branch validators taking a `path` as first argument, i.e. the ones not having a :heavy_multiplication_x: in the second column, have a [shortcut opt](#shortcut-for-optional-paths) (not reported in the list below).
+:pushpin: Only branch validators taking a `path` as first argument, i.e. the ones not having a :heavy_multiplication_x: in the second column, have a [shortcut opt](#shortcut-for-optional-paths) (not reported in the table below).
 
-Branch Validator              | Expected Type at `path`| Description
-:-----------------------------|:----------------------:|:------------------------------------
-*alter(child, res1, res2)*    |:heavy_multiplication_x:| If `child` child is valid `res1` is returned; `res2` otherwise.
-*and(...children)*            |:heavy_multiplication_x:| Check if all its children are valid. Validation fails at the first non valid child and succeeds if all children are valid.
-*call(path, name [, scope])*  | any                    | Search nested scopes (from inner to outer) for a validator with the specified name. The validator found is validated against the value at the specified path.
-*every(path, child)*          |object<br/>array<br/>string| Validate `child` for the items of the value at `path`, which must be an array, an object or a string. Validation fails at the first non valid item and succeeds if all items are valid. The object against which `child` is validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
-*if(cond, then [, else])*     |:heavy_multiplication_x:| If `cond` child is valid validates `then` child; `else` child otherwise (if present). It always succeeds when `cond` child is not valid and `else` child is not specified. This validator is useful, for instance, when the value of a property depends on the value of another property.
-*not(child)* <img width=600/> |:heavy_multiplication_x:| Check if the negation of its child is valid.
-*onError(error, child)*       |:heavy_multiplication_x:| Force the specified error if its child is non valid.
-*or(...children)*             |:heavy_multiplication_x:| Check if at least one child is valid. Validation succeeds at the first valid child and fails if all children are non valid.
-*some(path, child)*           |object<br/>array<br/>string| Validate `child` for the items of the value at `path`, which must be either an array or an object. Validation succeeds at the first valid item and fails if all items are non valid. The object aginst with `child` is validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
-*while(path, cond, do)*       |object<br/>array<br/>string| Validate `cond` and `do` children for the items of the value at `path`, which must be an array, an object or a string. Validation fails as soon as the condition fails and succeeds if the condition succeeds for all items. At each iteration `do` child is validated only after `cond` child succeeds. After each `do` validation, either success or failure counter is increased accordingly. The object against which `cond` and `do` children are validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`
-*xor(...children)*            |:heavy_multiplication_x:| Check if exactly one child is valid. Validation fails at the second valid child or when all children are processed an no child was valid. Validation succeeds when all children are processed and exactly one child was valid.
+:pushpin: All arguments marked with ♣️ allow you to use a [validator reference](#validator-reference).
+
+:pushpin: All arguments marked with ♦️ allow you to use a [value reference](#value-reference).
+
+Branch Validator               | Expected Type at `path`| Description
+:------------------------------|:----------------------:|:------------------------------------
+*alter(child♣️, res1, res2)*    |:heavy_multiplication_x:| If `child` child is valid `res1` is returned; `res2` otherwise.
+*and(...children♣️)*            |:heavy_multiplication_x:| Check if all its children are valid. Validation fails at the first non valid child and succeeds if all children are valid.
+*call(path♦️, child️️️♣️)*          | any                    | Validate `child` against the value at the specified path.
+*def(scope️️, child️️️♣️)*           | any                    | Define a scope containing variables and validators (the latter ones having a name that starts with `$`) that the `child` and all his descendants can reach via a `$var` reference. See [How to use references](#how-to-use-references)
+*every(path♦️, child♣️)*         |object<br/>array<br/>string| Validate `child` for the items of the value at `path`, which must be an array, an object or a string. Validation fails at the first non valid item and succeeds if all items are valid. The object against which `child` is validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
+*if(cond♣️, then♣️ [, else♣️])*   |:heavy_multiplication_x:| If `cond` child is valid validates `then` child; `else` child otherwise (if present). It always succeeds when `cond` child is not valid and `else` child is not specified. This validator is useful, for instance, when the value of a property depends on the value of another property.
+*not(child♣️)* <img width=800/> |:heavy_multiplication_x:| Check if the negation of its child is valid.
+*onError(error, child♣️)*       |:heavy_multiplication_x:| Force the specified error if its child is non valid.
+*or(...children♣️)*             |:heavy_multiplication_x:| Check if at least one child is valid. Validation succeeds at the first valid child and fails if all children are non valid.
+*some(path♦️, child♣️)*          |object<br/>array<br/>string| Validate `child` for the items of the value at `path`, which must be either an array or an object. Validation succeeds at the first valid item and fails if all items are non valid. The object aginst with `child` is validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
+*while(path♦️, cond♣️, do♣️)*     |object<br/>array<br/>string| Validate `cond` and `do` children for the items of the value at `path`, which must be an array, an object or a string. Validation fails as soon as the condition fails and succeeds if the condition succeeds for all items. At each iteration `do` child is validated only after `cond` child succeeds. After each `do` validation, either success or failure counter is increased accordingly. The object against which `cond` and `do` children are validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`
+*xor(...children♣️)*            |:heavy_multiplication_x:| Check if exactly one child is valid. Validation fails at the second valid child or when all children are processed an no child was valid. Validation succeeds when all children are processed and exactly one child was valid.
 
 # License
 
