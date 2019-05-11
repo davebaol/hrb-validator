@@ -55,8 +55,14 @@ def:
 
     $ARG_SCOPE:
       or:
-        - $var: $ARG_REF
-        - isType: ['', object]
+        #- $var: $ARG_REF    # Does it make sense to reference a scope?
+        - and:
+          - isType: ['', object]
+          - every:
+            - ''
+            - if:
+              - matches: [key, ^\$.]
+              - call: [value, {$var: $VALIDATOR}]
 
     $ARG_STRING:
       or:
