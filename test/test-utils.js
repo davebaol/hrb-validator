@@ -109,12 +109,46 @@ function testArgument(kind, validatorName, args, index, errorLike) {
   }
 }
 
-function testValidation(successExpected, obj, vld, ...args) {
+const VALIDATION = Object.freeze({
+  SUCCESS: 'success',
+  FAILURE: 'fail',
+  THROW: 'throw an error',
+  DO_NOT_THROW: 'not throw an error'
+});
+
+function testValidationAssert(expectedResult, vCreate, obj) {
+  switch (expectedResult) {
+    case VALIDATION.SUCCESS:
+      assert(vCreate()(obj) === undefined, ':(');
+      break;
+    case VALIDATION.FAILURE:
+      assert(vCreate()(obj) !== undefined, ':(');
+      break;
+    case VALIDATION.THROW:
+      assert.throws(() => vCreate()(obj), Error);
+      break;
+    case VALIDATION.DO_NOT_THROW:
+      assert.doesNotThrow(() => vCreate()(obj), Error);
+      break;
+    default:
+      assert(false, 'Unknown expected result');
+      break;
+  }
+}
+
+function testValidation(expectedResult, obj, vld, ...args) {
   const vFunc = typeof vld === 'function' ? vld : V[vld];
   const vName = typeof vld === 'function' ? vld.owner.name : vld;
-  it(`${vName}(${args.map(a => JSON.stringify(a)).join(', ')}) should ${successExpected ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
-    const v = vFunc(...args);
-    assert(successExpected ? v(obj) === undefined : v(obj) !== undefined, ':(');
+
+  // Accept up to 3 expected results
+  const expected = [].concat(expectedResult);
+  const len = expected.length;
+  expected.length = 3;
+  expected.fill(expected[len - 1], len);
+
+  it(`${vName}(${args.map(a => JSON.stringify(a)).join(', ')}) should ${expected[0]} for ${JSON.stringify(obj)}`, () => {
+    const vCreate = () => vFunc(...args);
+    testValidationAssert(expected[0], vCreate, obj);
   });
 
   // Test $var references
@@ -123,9 +157,9 @@ function testValidation(successExpected, obj, vld, ...args) {
     return acc;
   }, {});
   const varArgs = args.map((a, i) => ({ $var: `v${i}` }));
-  it(`${vName}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${successExpected ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
-    const v = V.def(scope, vFunc(...varArgs));
-    assert(successExpected ? v(obj) === undefined : v(obj) !== undefined, ':(');
+  it(`${vName}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${expected[1]} for ${JSON.stringify(obj)}`, () => {
+    const vCreate = () => V.def(scope, vFunc(...varArgs));
+    testValidationAssert(expected[1], vCreate, obj);
   });
 
   // Test $path references
@@ -134,9 +168,9 @@ function testValidation(successExpected, obj, vld, ...args) {
     return acc;
   }, clone(obj));
   const pathArgs = args.map((a, i) => ({ $path: `_${i}` }));
-  it(`${vName}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${successExpected ? 'succeed' : 'fail'} for ${JSON.stringify(obj2)}`, () => {
-    const v = vFunc(...pathArgs);
-    assert(successExpected ? v(obj2) === undefined : v(obj2) !== undefined, ':(');
+  it(`${vName}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${expected[2]} for ${JSON.stringify(obj2)}`, () => {
+    const vCreate = () => vFunc(...pathArgs);
+    testValidationAssert(expected[2], vCreate, obj2);
   });
 }
 
@@ -145,5 +179,6 @@ export {
   clone,
   shouldThrowErrorOnMissingArg,
   testArgument,
-  testValidation
+  testValidation,
+  VALIDATION
 };

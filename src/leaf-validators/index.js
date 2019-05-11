@@ -75,7 +75,7 @@ const leafValidators = {
         const value = get(obj, p);
         return (t.some(tt => typeCheckers[tt](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${t.join(', ')}'; found '${getType(value) || 'unknown'}' instead`);
       }
-      throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
+      return `isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`;
     };
   },
   isOneOf(path, values) {
@@ -127,7 +127,7 @@ const leafValidators = {
         const flag = value.every(e => t.some(tt => typeCheckers[tt](e)));
         return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array where each item has a type amongst ${Object.keys(t).join(', ')}'; found '${getType(value)}' instead`;
       }
-      throw new Error(`isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
+      return `isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`;
     };
   },
 };

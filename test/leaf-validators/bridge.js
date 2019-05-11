@@ -1,6 +1,8 @@
 import { assert } from 'chai';
-import { testArgument, testValidation } from '../test-utils';
 import bridge from '../../src/leaf-validators/bridge';
+import { testArgument, testValidation, VALIDATION } from '../test-utils';
+
+const { SUCCESS, FAILURE, THROW } = VALIDATION;
 
 function testOwnerClass(v, className) {
   it(`Bridged leaf validator ${v.owner.name} is a representative member of ${className}`, () => {
@@ -35,38 +37,42 @@ describe('Test bridged leaf validators.', () => {
   const { contains } = bv;
   testOwnerClass(contains, 'StringOnly');
   testAllArguments(contains, ['a', 'seed']);
-  testValidation(true, { a: 'string' }, contains, 'a', '');
-  testValidation(false, { a: 3 }, contains, 'a', '');
+  testValidation(SUCCESS, { a: 'string' }, contains, 'a', '');
+  testValidation(FAILURE, { a: 3 }, contains, 'a', '');
+  testValidation([THROW, FAILURE], { a: 3 }, contains, 'a', 123);
 
   const { isDivisibleBy } = bv;
   testOwnerClass(isDivisibleBy, 'StringAndNumber');
   testAllArguments(isDivisibleBy, ['a', 2]);
-  testValidation(true, { a: '24' }, isDivisibleBy, 'a', 2);
-  testValidation(true, { a: 24 }, isDivisibleBy, 'a', 2);
-  testValidation(false, { a: true }, isDivisibleBy, 'a', 2);
+  testValidation(SUCCESS, { a: '24' }, isDivisibleBy, 'a', 2);
+  testValidation(SUCCESS, { a: 24 }, isDivisibleBy, 'a', 2);
+  testValidation(FAILURE, { a: true }, isDivisibleBy, 'a', 2);
+  testValidation([THROW, FAILURE], { a: 3 }, isDivisibleBy, 'a', true);
 
   const { isInt } = bv;
   testOwnerClass(isInt, 'StringAndNumber');
   testAllArguments(isInt, ['a', {}]);
-  testValidation(true, { a: '3' }, isInt, 'a');
-  testValidation(true, { a: 3 }, isInt, 'a');
-  testValidation(false, { a: true }, isInt, 'a');
+  testValidation(SUCCESS, { a: '3' }, isInt, 'a');
+  testValidation(SUCCESS, { a: 3 }, isInt, 'a');
+  testValidation(FAILURE, { a: true }, isInt, 'a');
+  testValidation([THROW, FAILURE], { a: 3 }, isInt, 'a', true);
 
   const { isFloat } = bv;
   testOwnerClass(isFloat, 'StringAndNumber');
   testAllArguments(isFloat, ['a', {}]);
-  testValidation(true, { a: '3' }, isFloat, 'a');
-  testValidation(true, { a: 3 }, isFloat, 'a');
-  testValidation(false, { a: true }, isFloat, 'a');
+  testValidation(SUCCESS, { a: '3' }, isFloat, 'a');
+  testValidation(SUCCESS, { a: 3 }, isFloat, 'a');
+  testValidation(FAILURE, { a: true }, isFloat, 'a');
+  testValidation([THROW, FAILURE], { a: 3 }, isFloat, 'a', true);
 
   const { isLatLong } = bv;
   testOwnerClass(isLatLong, 'StringAndArray');
   testAllArguments(isLatLong, ['']);
-  testValidation(true, { a: '+90.0, -127.554334' }, isLatLong, 'a');
-  testValidation(true, { a: [+90.0, -127.554334] }, isLatLong, 'a');
-  testValidation(true, { a: ['+90.0', '-127.554334'] }, isLatLong, 'a');
-  testValidation(true, { a: ['+90.0', -127.554334] }, isLatLong, 'a');
-  testValidation(false, { a: ['+90.0'] }, isLatLong, 'a');
-  testValidation(false, { a: ['+90.0', true] }, isLatLong, 'a');
-  testValidation(false, { a: true }, isLatLong, 'a');
+  testValidation(SUCCESS, { a: '+90.0, -127.554334' }, isLatLong, 'a');
+  testValidation(SUCCESS, { a: [+90.0, -127.554334] }, isLatLong, 'a');
+  testValidation(SUCCESS, { a: ['+90.0', '-127.554334'] }, isLatLong, 'a');
+  testValidation(SUCCESS, { a: ['+90.0', -127.554334] }, isLatLong, 'a');
+  testValidation(FAILURE, { a: ['+90.0'] }, isLatLong, 'a');
+  testValidation(FAILURE, { a: ['+90.0', true] }, isLatLong, 'a');
+  testValidation(FAILURE, { a: true }, isLatLong, 'a');
 });
