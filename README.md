@@ -23,6 +23,9 @@ Hierarchical Rule-Based Validator is a simple yet powerful data validation engin
     - [Hard-coded validators](#hard-coded-validators)
     - [Loading validators from file](#loading-validators-from-file)
     - [YAML vs JSON](#yaml-vs-json)
+    - [How to use references](#how-to-use-references)
+      - [Value reference](#value-reference)
+      - [Validator reference](#validator-reference)
     - [Shortcut for optional paths](#shortcut-for-optional-paths)
   - [Leaf Validators](#leaf-validators)
   - [Branch Validators](#branch-validators)
@@ -160,11 +163,25 @@ When **human-readability** is important for you, it's recommended to use *YAML* 
 	{"isArrayOf": ["a.d", "string"]}
 ]}
 ```
-:astonished: So many braces, double quotes and commas!
-Imagine what would happen for a larger real-world validator.
+So many braces, double quotes and commas! :astonished:
+Imagine what would happen for a larger real-world validator. :dizzy_face:
 
 On the other hand, for **machine to machine communication** *JSON* is likely a  more appropriate format. For instance, think of a REST API centralizing configurations and their validators.
 
+### How to use references
+A reference is an object with exactly one key amongst `$path` and `$var` whose walue is respectively a path and a variable name. Notice that reference keys start with `$` to avoid confusion with built-in validators.
+
+There are 2 types of references:
+
+#### Value reference
+Value references can be used for any validator argument representing a value.
+A value reference is either a path reference or a variable reference.
+- A **path reference** has the form `{"$path": "path.to.property"}` and returns the value at the specified path for the object under validation  
+- A **variable reference** has the form `{"$var": "variable_name"}` and returns the value of the first variable with the specified name found in nested scopes from inner to outer.
+
+#### Validator reference
+Validator references can be used only in branch validators for any argument that is expected to be a validator i.e. a child. 
+A **validator reference** has the form `{"$var": "$validator_name"}` (It's just a variable whose name starts with `$`) and returns the first validator with the specified name found in nested scopes from inner to outer.
 
 ### Shortcut for optional paths
 
@@ -187,10 +204,11 @@ Notice that for a couple of validators the shortcut is somewhat redundant. For i
 
 Here is a list of the leaf validators currently available.
 
-:pushpin: All leaf validators, without exception, have their [shortcut opt](#shortcut-for-optional-paths) (not reported in the list below).
+:pushpin: All leaf validators, without exception, have their [shortcut opt](#shortcut-for-optional-paths) (not reported in the table below).
 
-:pushpin: All arguments marked with ♦️ allow you to use a property reference of the form `{"ref": "path.to.property"}`.
+:pushpin: All arguments marked with ♦️ allow you to use a [value reference](#value-reference).
 
+:pushpin: All leaf validators marked with :raised_hand: are not implemented yet, but probably will in the near future.
 
 Leaf Validator                       | Expected Type at `path` | Description
 :------------------------------------|:-----------------------:|:--------------------------------------
@@ -199,7 +217,7 @@ Leaf Validator                       | Expected Type at `path` | Description
 *isAfter(path♦️ [, date])*:raised_hand:|string| Check if the value at `path` is a string representing a date that's after the specified date (defaults to now).
 *isAlpha(path♦️ [, locale♦️])*         |string| Check if the value at `path` is a string containing only letters (a-zA-Z).<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `require('validator').isAlphaLocales`.
 *isAlphanumeric(path♦️ [, locale♦️])*  |string| Check if the value at `path` is a string containing only letters and numbers.<br/><br/>Locale is one of `['ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB', 'ar-LY', 'ar-MA', 'ar-QA', 'ar-QM', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN', 'ar-YE', 'bg-BG', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-HK', 'en-IN', 'en-NZ', 'en-US', 'en-ZA', 'en-ZM', 'es-ES', 'fr-FR', 'hu-HU', 'it-IT', 'ku-IQ', 'nb-NO', 'nl-NL', 'nn-NO', 'pl-PL', 'pt-BR', 'pt-PT', 'ru-RU', 'sl-SI', 'sk-SK', 'sr-RS', 'sr-RS@latin', 'sv-SE', 'tr-TR', 'uk-UA']`) and defaults to `en-US`. Locale list is `require('validator').isAlphanumericLocales`.
-*isArrayOf(path♦️, type)*             |array | Check if the value at `path` is an array whose items have either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
+*isArrayOf(path♦️, type♦️)*            |array | Check if the value at `path` is an array whose items have either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
 *isAscii(path♦️)*                     |string| Check if the value at `path` is a string containing ASCII chars only.
 *isBase64(path♦️)*                    |string| Check if the value at `path` is a base64 encoded string.
 *isAfter(path♦️ [, date])*:raised_hand: |string| Check if the value at `path` is a string representing a date that's after the specified date (defaults to now).
@@ -251,7 +269,7 @@ Leaf Validator                       | Expected Type at `path` | Description
 *isRFC3339(path♦️)*                   |string| Check if the value at `path` is a string representing a valid [RFC 3339](https://tools.ietf.org/html/rfc3339) date.
 *isSet(path♦️)*                       |any   | Check if the value at `path` is a non null value.
 *isSurrogatePair(path♦️)*             |string| Check if the value at `path` is a string containing any surrogate pairs chars.
-*isType(path♦️, type)*                |any   | Check if the value at `path` has either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
+*isType(path♦️, type♦️)*               |any   | Check if the value at `path` has either the specified type (if type is a string) or one of the specified types (if type is an array of strings). Supported types are: "array", "boolean", "null", "number", "object", "regex", "string".
 *isUppercase(path♦️)*                 |string| Check if the value at `path` is a string in uppercase.
 *isURL(path♦️ [, options♦️])*          |string| Check if the value at `path` is a string representing an URL.<br/><br/>`options` is an object which defaults to `{ protocols: ['http','https','ftp'], require_tld: true, require_protocol: false, require_host: true, require_valid_protocol: true, allow_underscores: false, host_whitelist: false, host_blacklist: false, allow_trailing_dot: false, allow_protocol_relative_urls: false, disallow_auth: false }`.
 *isUUID(path♦️ [, version♦️])*         |string| Check if the value at `path` is a string representing a UUID (version 3, 4 or 5).
@@ -263,21 +281,26 @@ Leaf Validator                       | Expected Type at `path` | Description
 
 Here is a list of the branch validators currently available.
 
-:pushpin: Keep in mind that only branch validators taking a `path` as first argument, i.e. the ones not having a :heavy_multiplication_x: in the second column, have a [shortcut opt](#shortcut-for-optional-paths) (not reported in the list below).
+:pushpin: Only branch validators taking a `path` as first argument, i.e. the ones not having a :heavy_multiplication_x: in the second column, have a [shortcut opt](#shortcut-for-optional-paths) (not reported in the table below).
 
-Branch Validator              | Expected Type at `path`| Description
-:-----------------------------|:----------------------:|:------------------------------------
-*alter(child, res1, res2)*    |:heavy_multiplication_x:| If `child` child is valid `res1` is returned; `res2` otherwise.
-*and(...children)*            |:heavy_multiplication_x:| Check if all its children are valid. Validation fails at the first non valid child and succeeds if all children are valid.
-*call(path♦️, name♦️ [, scope])*| any                    | Search nested scopes (from inner to outer) for a validator with the specified name. The validator found is validated against the value at the specified path.
-*every(path♦️, child)*         |object<br/>array<br/>string| Validate `child` for the items of the value at `path`, which must be an array, an object or a string. Validation fails at the first non valid item and succeeds if all items are valid. The object against which `child` is validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
-*if(cond, then [, else])*     |:heavy_multiplication_x:| If `cond` child is valid validates `then` child; `else` child otherwise (if present). It always succeeds when `cond` child is not valid and `else` child is not specified. This validator is useful, for instance, when the value of a property depends on the value of another property.
-*not(child)* <img width=600/> |:heavy_multiplication_x:| Check if the negation of its child is valid.
-*onError(error, child)*       |:heavy_multiplication_x:| Force the specified error if its child is non valid.
-*or(...children)*             |:heavy_multiplication_x:| Check if at least one child is valid. Validation succeeds at the first valid child and fails if all children are non valid.
-*some(path♦️, child)*          |object<br/>array<br/>string| Validate `child` for the items of the value at `path`, which must be either an array or an object. Validation succeeds at the first valid item and fails if all items are non valid. The object aginst with `child` is validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
-*while(path♦️, cond, do)*      |object<br/>array<br/>string| Validate `cond` and `do` children for the items of the value at `path`, which must be an array, an object or a string. Validation fails as soon as the condition fails and succeeds if the condition succeeds for all items. At each iteration `do` child is validated only after `cond` child succeeds. After each `do` validation, either success or failure counter is increased accordingly. The object against which `cond` and `do` children are validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`
-*xor(...children)*            |:heavy_multiplication_x:| Check if exactly one child is valid. Validation fails at the second valid child or when all children are processed an no child was valid. Validation succeeds when all children are processed and exactly one child was valid.
+:pushpin: All arguments marked with ♣️ allow you to use a [validator reference](#validator-reference).
+
+:pushpin: All arguments marked with ♦️ allow you to use a [value reference](#value-reference).
+
+Branch Validator               | Expected Type at `path`| Description
+:------------------------------|:----------------------:|:------------------------------------
+*alter(child♣️, res1, res2)*    |:heavy_multiplication_x:| If `child` child is valid `res1` is returned; `res2` otherwise.
+*and(...children♣️)*            |:heavy_multiplication_x:| Check if all its children are valid. Validation fails at the first non valid child and succeeds if all children are valid.
+*call(path♦️, child️️️♣️)*          | any                    | Validate `child` against the value at the specified path.
+*def(scope️️, child️️️♣️)*           | any                    | Define a scope containing variables and validators (the latter ones having a name that starts with `$`) that the `child` and all his descendants can reach via a `$var` reference. See [How to use references](#how-to-use-references)
+*every(path♦️, child♣️)*         |object<br/>array<br/>string| Validate `child` for the items of the value at `path`, which must be an array, an object or a string. Validation fails at the first non valid item and succeeds if all items are valid. The object against which `child` is validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
+*if(cond♣️, then♣️ [, else♣️])*   |:heavy_multiplication_x:| If `cond` child is valid validates `then` child; `else` child otherwise (if present). It always succeeds when `cond` child is not valid and `else` child is not specified. This validator is useful, for instance, when the value of a property depends on the value of another property.
+*not(child♣️)* <img width=800/> |:heavy_multiplication_x:| Check if the negation of its child is valid.
+*onError(error, child♣️)*       |:heavy_multiplication_x:| Force the specified error if its child is non valid.
+*or(...children♣️)*             |:heavy_multiplication_x:| Check if at least one child is valid. Validation succeeds at the first valid child and fails if all children are non valid.
+*some(path♦️, child♣️)*          |object<br/>array<br/>string| Validate `child` for the items of the value at `path`, which must be either an array or an object. Validation succeeds at the first valid item and fails if all items are non valid. The object aginst with `child` is validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, original: <original_object>}`
+*while(path♦️, cond♣️, do♣️)*     |object<br/>array<br/>string| Validate `cond` and `do` children for the items of the value at `path`, which must be an array, an object or a string. Validation fails as soon as the condition fails and succeeds if the condition succeeds for all items. At each iteration `do` child is validated only after `cond` child succeeds. After each `do` validation, either success or failure counter is increased accordingly. The object against which `cond` and `do` children are validated depends on the type of the value at `path`:<br/>&#8226; *array* -> `{index: <iteration_index>, value: <item_at_index>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`<br/>&#8226; *object* -> `{index: <iteration_index>, key: <property_key>, value: <property_value>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`<br/>&#8226; *string* -> `{index: <iteration_index>, value: <char_at_index>, succeeded: <how_many_times_do_succeeded>, failed: <how_many_times_do_failed>, original: <original_object>}`
+*xor(...children♣️)*            |:heavy_multiplication_x:| Check if exactly one child is valid. Validation fails at the second valid child or when all children are processed an no child was valid. Validation succeeds when all children are processed and exactly one child was valid.
 
 # License
 
