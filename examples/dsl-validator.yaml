@@ -1,6 +1,3 @@
-# TODO
-# Currently only validator references are supported.
-# Add support for value references $path and $var.
 def:
   - $VALIDATOR:
       and:
@@ -17,6 +14,7 @@ def:
         - and:
           - isOneOf: [key, [contains, equals, isAfter, isAlpha, isAlphanumeric, isArrayOf, isAscii, isBase64, isAfter, isBefore, isBoolean, isByteLength, isCreditCard, isAfter, isDataURI, isDate, isDecimal, isDivisibleBy, isEmail, isEmpty, isFloat, isFQDN, isFullWidth, isHalfWidth, isHash, isHexadecimal, isHexColor, isIdentityCard, isIn, isInt, isIP, isIPRange, isISBN, isISIN, isISO31661Alpha2, isISO31661Alpha3, isISO8601, isISRC, isISSN, isJSON, isJWT, isLatLong, isLength, isLowercase, isMACAddress, isMagnetURI, isMD5, isMimeType, isMobilePhone, isMongoId, isMultibyte, isNumeric, isOneOf, isPort, isPostalCode, isRFC3339, isSet, isSurrogatePair, isType, isUppercase, isURL, isUUID, isVariableWidth, isWhitelisted, matches, optContains, optEquals, optIsAfter, optIsAlpha, optIsAlphanumeric, optIsArrayOf, optIsAscii, optIsBase64, optIsAfter, optIsBefore, optIsBoolean, optIsByteLength, optIsCreditCard, optIsAfter, optIsDataUri, optIsDate, optIsDecimal, optIsDivisibleBy, optIsEmail, optIsEmpty, optIsFloat, optIsFqdn, optIsFullWidth, optIsHalfWidth, optIsHash, optIsHexadecimal, optIsHexColor, optIsIdentityCard, optIsIn, optIsInt, optIsIp, optIsIpRange, optIsIsbn, optIsIsin, optIsIso31661Alpha2, optIsIso31661Alpha3, optIsIso8601, optIsIsrc, optIsIssn, optIsJson, optIsJwt, optIsLatLong, optIsLength, optIsLowercase, optIsMacAddress, optIsMagnetUri, optIsMd5, optIsMimeType, optIsMobilePhone, optIsMongoId, optIsMultibyte, optIsNumeric, optIsOneOf, optIsPort, optIsPostalCode, optIsRfc3339, optIsSet, optIsSurrogatePair, optIsType, optIsUppercase, optIsUrl, optIsUuid, optIsVariableWidth, optIsWhitelisted, optMatches]]
           - isType: [value, array]
+          - isLength: [value, {min: 1}]
           - call: [value.0, {$var: $ARG_PATH}]
 
     $BRANCH_VALIDATOR:
@@ -37,23 +35,44 @@ def:
         - call: [while, {$var: $ARG_PATH_AND_TWO_CHILDREN}]
         - call: [xor, {$var: $ARG_ZERO_OR_MORE_CHILDREN}]
     
+    $ARG_REF:
+      and:
+        - isType: ['', object]
+        - isLength: ['', {min: 1, max: 1}]
+        - every:
+          - ''
+          - and:
+            - isOneOf: [key, [$var, $path]]
+            - isType: [value, string]
+
+    $ARG_PATH:
+      or:
+        - $var: $ARG_REF
+        - isType: ['', [string, number, 'null']]
+        - isArrayOf: ['', [string, number]]
+
+    $ARG_SCOPE:
+      or:
+        - $var: $ARG_REF
+        - isType: ['', object]
+
+    $ARG_STRING:
+      or:
+        - $var: $ARG_REF
+        - isType: ['', string]
+
     $ARG_ONE_CHILD_AND_TWO_RESULTS:
       and:
         - isType: ['', array]
         - call: [0, {$var: $VALIDATOR}]
-        - optIsType: [1, string]
-        - optIsType: [2, string]
-
-    $ARG_PATH:
-      or:
-        - isType: ['', [string, number]]
-        - isArrayOf: ['', [string, number]]
+        - optCall: [1, {$var: $ARG_STRING}]
+        - optCall: [2, {$var: $ARG_STRING}]
 
     $ARG_SCOPE_AND_ONE_CHILD:
       and:
         - isType: ['', array]
         - isLength: ['', {min: 2, max: 2}]
-        - optIsType: [0, object]
+        - optCall: [0, {$var: $ARG_SCOPE}]
         - call: [1, {$var: $VALIDATOR}]
 
     $ARG_PATH_AND_ONE_CHILD:
