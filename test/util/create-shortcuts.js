@@ -22,10 +22,21 @@ describe('Test shortcut opt.', () => {
     const v = target.optIsSet('a');
     assert(v({}) === undefined, ':(');
   });
-  it('Not Missing path should always match the original validator', () => {
+  it('Not missing path should always match the original validator', () => {
     const target = createShortcuts({}, V, ['isSet']);
     const v1 = target.optIsSet('a');
     const v2 = V.isSet('a');
+    assert(v1({ a: 0 }) === v2({ a: 32 }), ':(');
+  });
+  it('Missing referenced path should always succeed', () => {
+    const target = createShortcuts({}, V, ['isSet']);
+    const v = V.def({ p: 'a' }, target.optIsSet({ $var: 'p' }));
+    assert(v({}) === undefined, ':(');
+  });
+  it('Not missing referenced path should always match the original validator', () => {
+    const target = createShortcuts({}, V, ['isSet']);
+    const v1 = V.def({ p: 'a' }, target.optIsSet({ $var: 'p' }));
+    const v2 = V.def({ p: 'a' }, V.optIsSet({ $var: 'p' }));
     assert(v1({ a: 0 }) === v2({ a: 32 }), ':(');
   });
 });
