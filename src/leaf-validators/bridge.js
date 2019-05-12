@@ -233,7 +233,7 @@ const vInfo = [
   new StringOnly('isUUID', args => 'matching to a UUID (version 3, 4 or 5)', 'version:integer?'),
   new StringOnly('isVariableWidth', args => 'containing a mixture of full and half-width chars'),
   new StringOnly('isWhitelisted', args => 'whose characters belongs to the whitelist', 'chars:string'),
-  new StringOnly('matches', args => `matching the regex '${args[0]}'`, 'pattern:string', 'modifiers:string?')
+  new StringOnly('matches', args => `matching the regex '${args[0]}'`, 'pattern:stringOrRegex', 'modifiers:string?')
 ];
 /* eslint-enable no-unused-vars */
 

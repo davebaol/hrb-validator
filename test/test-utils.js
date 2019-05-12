@@ -38,6 +38,7 @@ const argInfo = [
   new ArgTestInfo('path', VALUE_REF, 'a'),
   new ArgTestInfo('string', VALUE_REF, 'Hello'),
   new ArgTestInfo('stringOrArray', VALUE_REF, []),
+  new ArgTestInfo('stringOrRegex', VALUE_REF, /.?/),
   new ArgTestInfo('type', VALUE_REF, 'string')
 ].reduce((acc, e) => {
   acc[e.name] = e;

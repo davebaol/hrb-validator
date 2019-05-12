@@ -1,4 +1,5 @@
 const isPlainObject = require('is-plain-object');
+const isRegExp = require('is-regexp');
 
 const primitiveTypeCheckers = {
   boolean: arg => typeof arg === 'boolean',
@@ -10,7 +11,7 @@ const primitiveTypeCheckers = {
 const typeCheckers = Object.assign(primitiveTypeCheckers, {
   array: arg => Array.isArray(arg),
   object: arg => isPlainObject(arg),
-  regex: arg => arg instanceof RegExp
+  regex: arg => isRegExp(arg)
 });
 
 const typeCheckerKeys = Object.keys(typeCheckers);

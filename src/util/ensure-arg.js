@@ -1,4 +1,5 @@
 const isPlainObject = require('is-plain-object');
+const isRegExp = require('is-regexp');
 const V = require('..');
 const Context = require('./context');
 const { BAD_PATH, get, ensureArrayPath } = require('./path');
@@ -269,6 +270,24 @@ function stringOrArrayRef(ref, context, obj) {
   return val;
 }
 
+function stringOrRegex(val) {
+  if (typeof val !== 'string' && !isRegExp(val)) {
+    if (isRef(val)) {
+      return REF;
+    }
+    throw new Error('The argument must be a string or a regex');
+  }
+  return val;
+}
+
+function stringOrRegexRef(ref, context, obj) {
+  const val = stringOrRegex(resolveValueRef(ref, context, obj));
+  if (val === REF) {
+    throw new Error('XXX: chained references are not allowed');
+  }
+  return val;
+}
+
 function child(val) {
   if (typeof val === 'function') {
     return val;
@@ -354,6 +373,8 @@ module.exports = {
   stringRef,
   stringOrArray,
   stringOrArrayRef,
+  stringOrRegex,
+  stringOrRegexRef,
   type: stringOrArray, // TODO: specialize this to check valid types, see util/type.js
   typeRef: stringOrArrayRef,
   child,
