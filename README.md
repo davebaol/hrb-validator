@@ -13,11 +13,20 @@ Hierarchical Rule-Based Validator is a simple yet powerful data validation engin
   - Recursive validation
   - Logical operators
   - Conditional validation
-- Widespread support for property references (for instance, to ensure that maxAge property has a value greater than the value of minAge property)
+- Widespread support for references in validator arguments:
+  - Value references allow you to use variables (in fact constants at the current state of the art) and paths (for instance, to ensure that `maxAge` property has a value greater than the value of `minAge` property)
+  - Validator references allow you to reuse user-defined validators, making amongst other things recursion possible 
+
+### Upcoming Features
+- **Read/write variables, not just constants**: with adequate support of special setter validators this will make possible even more in-depth validations. For instance, consider the following two scenarios:
+  - An object representing a person has an array of relatives and each relative has a flag indicating whether he's a parent or not. You want to check if at most two of the relatives are parents.
+  - An object representing an email has an array of attachments and each attachment has a base64 encoded content string. You want to check if the overall size of the attachments is less than a certain thresold.
+- **Validation error reporting improvements**: currently, if a validator does not work as expected it's not easy to identify the actual problem.
 
 ### Table of Contents
 - [HRB Validator](#hrb-validator)
     - [Major Features](#major-features)
+    - [Upcoming Features](#upcoming-features)
     - [Table of Contents](#table-of-contents)
   - [Usage](#usage)
     - [Hard-coded validators](#hard-coded-validators)
