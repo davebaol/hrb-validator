@@ -20,7 +20,7 @@ Hierarchical Rule-Based Validator is a simple yet powerful data validation engin
 ### Upcoming Features
 - **Read/write variables, not just constants**: with adequate support of special setter validators this will make possible even more in-depth validations. For instance, consider the following two scenarios:
   - An object representing a person has an array of relatives and each relative has a flag indicating whether he's a parent or not. You want to check if at most two of the relatives are parents.
-  - An object representing an email has an array of attachments and each attachment has a base64 encoded content string. You want to check if the overall size of the attachments is less than a certain thresold.
+  - An object representing an email has an array of attachments and each attachment has a base64 encoded content string. You want to check if the overall size of the attachments is less than a certain threshold.
 - **Validation error reporting improvements**: currently, if a validator does not work as expected it's not easy to identify the actual problem.
 
 ### Table of Contents
