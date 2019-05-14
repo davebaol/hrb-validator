@@ -1,20 +1,12 @@
 import { assert } from 'chai';
 import bridge from '../../src/leaf-validators/bridge';
-import { testArgument, testValidation, VALIDATION } from '../test-utils';
+import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 
 const { SUCCESS, FAILURE, THROW } = VALIDATION;
 
 function testOwnerClass(v, className) {
   it(`Bridged leaf validator ${v.owner.name} is a representative member of ${className}`, () => {
     assert(v.owner.constructor.name === className, ':(');
-  });
-}
-
-function testAllArguments(v, args) {
-  const vName = v.owner.name;
-  testArgument('path', vName, args, 0);
-  v.owner.argDescriptors.forEach((ad, i) => {
-    testArgument(ad.type, vName, args, i + 1);
   });
 }
 

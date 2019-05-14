@@ -5,13 +5,14 @@ import ensureArg from '../src/util/ensure-arg';
 const VALIDATOR_REF = 'vaidatorRef';
 const VALUE_REF = 'valueRef';
 
+const UNKNOWN_REF = Object.freeze({ $unknownRefType: 'anything' });
+
 class ArgTestInfo {
-  constructor(name, refType, goodValue, unknownRefShouldPassCreation) {
+  constructor(name, refType, goodValue) {
     this.name = name;
     this.refType = refType;
     this.goodValue = goodValue;
     this.badValue = refType === VALIDATOR_REF ? 'Bad validator!' : () => {};
-    this.unknownRefShouldPassCreation = !!unknownRefShouldPassCreation;
   }
 
   acceptValueRef() {
@@ -25,16 +26,31 @@ class ArgTestInfo {
   value(good) {
     return good ? this.goodValue : this.badValue;
   }
+
+  /*
+  * Any argument accepting an object (for instance any, options, object)
+  * considers an unknown ref like a good value, so cannot fail on validator creation
+  */
+  unknownRefShouldPassCreation() {
+    if (this.acceptValueRef()) {
+      try {
+        return ensureArg[this.name](UNKNOWN_REF) === UNKNOWN_REF;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
 }
 
 const argInfo = [
   new ArgTestInfo('any', VALUE_REF, 1),
   new ArgTestInfo('array', VALUE_REF, []),
-  new ArgTestInfo('child', VALIDATOR_REF, V.isSet(''), false),
+  new ArgTestInfo('child', VALIDATOR_REF, V.isSet('')),
   new ArgTestInfo('integer', VALUE_REF, 1),
   new ArgTestInfo('number', VALUE_REF, 1.2),
-  new ArgTestInfo('object', VALUE_REF, {}, true),
-  new ArgTestInfo('options', VALUE_REF, {}, true),
+  new ArgTestInfo('object', VALUE_REF, {}),
+  new ArgTestInfo('options', VALUE_REF, {}),
   new ArgTestInfo('path', VALUE_REF, 'a'),
   new ArgTestInfo('string', VALUE_REF, 'Hello'),
   new ArgTestInfo('stringOrArray', VALUE_REF, []),
@@ -77,11 +93,11 @@ function shouldThrowErrorOnMissingArg(validatorName, args, index, errorLike) {
   });
 }
 
-function testArgument(kind, validatorName, args, index, errorLike) {
+function testArgument0(vld, args, index, errorLike) {
+  const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(index)].type;
   if (!(kind in argInfo)) {
     throw new Error(`Unknown type argument '${kind}'`);
   }
-  const vld = V[validatorName];
   const testArgs = Array.from(args);
 
   // Test unexpected value
@@ -92,14 +108,14 @@ function testArgument(kind, validatorName, args, index, errorLike) {
 
   // Test references
   if (argInfo[kind].refType) {
-    if (argInfo[kind].unknownRefShouldPassCreation) {
+    if (argInfo[kind].unknownRefShouldPassCreation()) {
       it(`Should pass creation on unknown reference type as ${ordinal(index + 1)} argument`, () => {
-        testArgs[index] = { $unknownRefType: 'something' };
+        testArgs[index] = UNKNOWN_REF;
         assert(typeof vld(...testArgs) === 'function', ':(');
       });
     } else {
       it(`Should throw immediately an error on unknown reference type as ${ordinal(index + 1)} argument`, () => {
-        testArgs[index] = { $unknownRefType: 'something' };
+        testArgs[index] = UNKNOWN_REF;
         assert.throws(() => vld(...testArgs), errorLike || Error);
       });
     }
@@ -108,6 +124,11 @@ function testArgument(kind, validatorName, args, index, errorLike) {
       assert(typeof vld(...testArgs) === 'function', ':(');
     }));
   }
+}
+
+function testArgument(kind, validatorName, args, index, errorLike) {
+  const validator = V[validatorName];
+  return testArgument0(validator, args, index, errorLike);
 }
 
 const VALIDATION = Object.freeze({
@@ -137,6 +158,13 @@ function testValidationAssert(expectedResult, vCreate, obj) {
   }
 }
 
+function testAllArguments(v, args) {
+  const len = Math.max(v.owner.argDescriptors.length, args.length);
+  for (let i = 0; i < len; i += 1) {
+    testArgument0(v, args, i);
+  }
+}
+
 function testValidation(expectedResult, obj, vld, ...args) {
   const vFunc = typeof vld === 'function' ? vld : V[vld];
   const vName = typeof vld === 'function' ? vld.owner.name : vld;
@@ -154,10 +182,14 @@ function testValidation(expectedResult, obj, vld, ...args) {
 
   // Test $var references
   const scope = args.reduce((acc, a, i) => {
-    acc[`v${i}`] = a;
+    const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(i)].type;
+    acc[`${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}`] = a;
     return acc;
   }, {});
-  const varArgs = args.map((a, i) => ({ $var: `v${i}` }));
+  const varArgs = args.map((a, i) => {
+    const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(i)].type;
+    return { $var: `${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}` };
+  });
   it(`${vName}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${expected[1]} for ${JSON.stringify(obj)}`, () => {
     const vCreate = () => V.def(scope, vFunc(...varArgs));
     testValidationAssert(expected[1], vCreate, obj);
@@ -165,10 +197,16 @@ function testValidation(expectedResult, obj, vld, ...args) {
 
   // Test $path references
   const obj2 = args.reduce((acc, a, i) => {
-    acc[`_${i}`] = a;
+    const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(i)].type;
+    if (!argInfo[kind].acceptValidatorRef()) {
+      acc[`_${i}`] = a;
+    }
     return acc;
   }, clone(obj));
-  const pathArgs = args.map((a, i) => ({ $path: `_${i}` }));
+  const pathArgs = args.map((a, i) => {
+    const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(i)].type;
+    return argInfo[kind].acceptValidatorRef() ? a : { $path: `_${i}` };
+  });
   it(`${vName}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${expected[2]} for ${JSON.stringify(obj2)}`, () => {
     const vCreate = () => vFunc(...pathArgs);
     testValidationAssert(expected[2], vCreate, obj2);
@@ -180,6 +218,7 @@ export {
   clone,
   shouldThrowErrorOnMissingArg,
   testArgument,
+  testAllArguments,
   testValidation,
   VALIDATION
 };

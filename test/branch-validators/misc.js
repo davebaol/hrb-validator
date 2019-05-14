@@ -1,12 +1,13 @@
 import { assert } from 'chai';
-import { testArgument } from '../test-utils';
+import { testAllArguments } from '../test-utils';
 import V from '../../src';
 
-const success = () => undefined;
-const failure = () => 'failure';
+const success = V.optIsSet('');
+const failure = V.not(success);
 
+// TODO Use testValidation()
 describe('Test branch validator alter.', () => {
-  testArgument('child', 'alter', [success, '', ''], 0);
+  testAllArguments(V.alter, [success, '', '']);
   it('alter(success, "OK", "KO") should return "OK"', () => {
     const v = V.alter(success, 'OK', 'KO');
     assert(v({}) === 'OK', ':(');
@@ -17,8 +18,9 @@ describe('Test branch validator alter.', () => {
   });
 });
 
+// TODO Use testValidation()
 describe('Test branch validator onError.', () => {
-  testArgument('child', 'onError', ['error', success], 1);
+  testAllArguments(V.onError, ['error', success]);
   it('onError("error", success) should succeed', () => {
     const v = V.onError('error', success);
     assert(v({}) === undefined, ':(');

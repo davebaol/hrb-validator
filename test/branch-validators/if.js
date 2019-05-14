@@ -1,14 +1,17 @@
 import { assert } from 'chai';
-import { testArgument } from '../test-utils';
 import V from '../../src';
+import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
+
+const { FAILURE } = VALIDATION;
 
 describe('Test branch validator if.', () => {
-  const success = () => undefined;
-  const failure = () => 'failure';
-  const vThen = () => 'then';
-  const vElse = () => 'else';
+  const success = V.optIsSet('a');
+  const failure = V.alter(V.isSet('a'), 'failure', 'failure');
+  const vThen = V.alter(V.isSet('a'), 'then', 'then');
+  const vElse = V.alter(V.isSet('a'), 'else', 'else');
   const args = [success, vThen, vElse];
-  args.forEach((a, i) => testArgument('child', 'if', args, i));
+  testAllArguments(V.if, args);
+  testValidation(FAILURE, {}, V.if, success, vThen, vElse);
   it('if(success, then, else) should return then validation result', () => {
     const v = V.if(success, vThen, vElse);
     assert(v({}) === 'then', ':(');

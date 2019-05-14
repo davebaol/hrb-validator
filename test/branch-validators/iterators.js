@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import lengthOf from '@davebaol/length-of';
-import { testArgument } from '../test-utils';
+import { testAllArguments } from '../test-utils';
 import V from '../../src';
 
 const test = {
@@ -15,9 +15,9 @@ function testEveryOrSome(name) {
   const successForEvery = () => (isEvery ? undefined : 'error');
   const failureForEvery = () => (isEvery ? 'error' : undefined);
   describe(`Test branch validator ${name}.`, () => {
+    const everyOrSome = V[name];
     const args = ['a', V.isSet('')];
-    testArgument('path', name, args, 0);
-    testArgument('child', name, args, 1);
+    testAllArguments(everyOrSome, args);
     testKeys.forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'fail at first invalid' : 'succeed at first valid'} iteration`, () => {
       let count = 0;
       const expected = 2;
@@ -25,7 +25,7 @@ function testEveryOrSome(name) {
         count += 1;
         return count === expected ? failureForEvery() : successForEvery();
       };
-      const v = V[name](t, vIt);
+      const v = everyOrSome(t, vIt);
       v(test);
       assert(count === expected, ':(');
     }));
@@ -33,7 +33,7 @@ function testEveryOrSome(name) {
       let count = 0;
       const expected = lengthOf(test[t]);
       const vIt = () => { count += 1; return successForEvery(); };
-      const v = V[name](t, vIt);
+      const v = everyOrSome(t, vIt);
       v(test);
       assert(count === expected, ':(');
     }));
@@ -41,7 +41,7 @@ function testEveryOrSome(name) {
       it(`For ${type}s ${name} should generate proper iteration objects`, () => {
         const actual = [];
         const vIt = (m) => { actual.push(m); return successForEvery(); };
-        const v = V[name](type, vIt);
+        const v = everyOrSome(type, vIt);
         v(test);
         assert.deepEqual(actual, expected, ':(');
       });
@@ -55,7 +55,7 @@ function testEveryOrSome(name) {
     const failureExpected = { numbers: 123, booleans: true };
     Object.keys(failureExpected).forEach(k => it(`For ${k} ${name} should fail`, () => {
       const vIt = () => undefined;
-      const v = V[name]('', vIt);
+      const v = everyOrSome('', vIt);
       assert(v(failureExpected[k]) !== undefined, ':(');
     }));
   });
@@ -67,9 +67,7 @@ testEveryOrSome('some');
 
 describe('Test branch validator while.', () => {
   const args = ['a', () => undefined, () => undefined];
-  testArgument('path', 'while', args, 0);
-  testArgument('child', 'while', args, 1);
-  testArgument('child', 'while', args, 2);
+  testAllArguments(V.while, args);
 
   testKeys.forEach(t => it(`For ${t}s while should fail when the condition fails`, () => {
     const vCond = V.isInt('failed', { min: 0, max: 1 }); // fails on 2nd failure of vDo

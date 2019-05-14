@@ -4,7 +4,7 @@ import V from '../../src';
 import createShortcuts from '../../src/util/create-shortcuts';
 
 describe('Test shortcut opt.', () => {
-  const F1 = { x() {}, y() {}, z() {} };
+  const F1 = { x: V.isSet, y: V.isType, z: V.every };
   it('Each function xyz should become optXyz', () => {
     const target = createShortcuts({}, F1);
     assert.deepEqual(Object.keys(F1).map(k => camelcase(`opt ${k}`)), Object.keys(target), ':(');
