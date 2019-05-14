@@ -1,17 +1,28 @@
+const isPlainObject = require('is-plain-object');
 
-function parseArgDescriptors(descriptors) {
-  return descriptors.map((d) => {
+function parseArgDescriptors(vName, descriptors) {
+  return descriptors.map((d, i) => {
+    let freezeMe;
     if (typeof d === 'string') {
-      const p = d.split(':').map(s => s.trim()); // ...name:type? where '?' means optional and ... rest parameters
+      const p = d.split(':').map(s => s.trim()); // ...name:type? where '?' means optional and '...' rest parameters
       const restParams = p[0].startsWith('...');
       const name = restParams ? p[0].substring(3).trim() : p[0];
       const optional = p[1].endsWith('?');
       const type = optional ? p[1].substring(0, p[1].length - 1).trim() : p[1];
-      return {
+      freezeMe = {
         stringDesc: d, restParams, name, type, optional
       };
+    } else if (isPlainObject(d)) {
+      const {
+        restParams, name, type, optional
+      } = d;
+      freezeMe = {
+        stringDesc: `${restParams ? '...' : ''}${name}:${type}${optional ? '?' : ''}`, restParams, name, type, optional
+      };
+    } else {
+      throw new Error(`The argumentDescriptor[${i}] of validator '${vName}' is neither a string or a plain object; found '${typeof d}'`);
     }
-    return d;
+    return Object.freeze(freezeMe);
   });
 }
 
@@ -30,7 +41,7 @@ class Info {
       throw new Error('Expected the function or its name as first argument');
     }
     this.validator.owner = this;
-    this.argDescriptors = parseArgDescriptors(argDescriptors);
+    this.argDescriptors = parseArgDescriptors(this.name, argDescriptors);
   }
 
   // Adjust the index to take into account rest parameters
