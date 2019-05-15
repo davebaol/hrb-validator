@@ -40,7 +40,7 @@ class Info {
     } else {
       throw new Error('Expected the function or its name as first argument');
     }
-    this.validator.owner = this;
+    this.validator.info = this;
     this.argDescriptors = parseArgDescriptors(this.name, argDescriptors);
   }
 

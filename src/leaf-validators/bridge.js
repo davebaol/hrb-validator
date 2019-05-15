@@ -219,13 +219,13 @@ function bridge(target) {
   ];
   /* eslint-enable no-unused-vars */
 
-  vInfo.forEach((b) => {
-    const k = b.name;
+  vInfo.forEach((info) => {
+    const k = info.name;
     // 1. Make sure not to overwrite any function already defined in the target
     // 2. The value from the validator module must be a function (this prevents errors
     //    due to changes in new versions of the module)
     if (!(k in target) && typeof v[k] === 'function') {
-      target[k] = b.validator; // eslint-disable-line no-param-reassign
+      target[k] = info.validator; // eslint-disable-line no-param-reassign
     }
   });
   return target;

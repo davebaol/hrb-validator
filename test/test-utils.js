@@ -94,7 +94,7 @@ function shouldThrowErrorOnMissingArg(validatorName, args, index, errorLike) {
 }
 
 function testArgument0(vld, args, index, errorLike) {
-  const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(index)].type;
+  const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(index)].type;
   if (!(kind in argInfo)) {
     throw new Error(`Unknown type argument '${kind}'`);
   }
@@ -159,7 +159,7 @@ function testValidationAssert(expectedResult, vCreate, obj) {
 }
 
 function testAllArguments(v, args) {
-  const len = Math.max(v.owner.argDescriptors.length, args.length);
+  const len = Math.max(v.info.argDescriptors.length, args.length);
   for (let i = 0; i < len; i += 1) {
     testArgument0(v, args, i);
   }
@@ -167,7 +167,7 @@ function testAllArguments(v, args) {
 
 function testValidation(expectedResult, obj, vld, ...args) {
   const vFunc = typeof vld === 'function' ? vld : V[vld];
-  const vName = typeof vld === 'function' ? vld.owner.name : vld;
+  const vName = typeof vld === 'function' ? vld.info.name : vld;
 
   // Accept up to 3 expected results
   const expected = [].concat(expectedResult);
@@ -182,12 +182,12 @@ function testValidation(expectedResult, obj, vld, ...args) {
 
   // Test $var references
   const scope = args.reduce((acc, a, i) => {
-    const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(i)].type;
+    const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     acc[`${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}`] = a;
     return acc;
   }, {});
   const varArgs = args.map((a, i) => {
-    const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(i)].type;
+    const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     return { $var: `${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}` };
   });
   it(`${vName}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${expected[1]} for ${JSON.stringify(obj)}`, () => {
@@ -197,14 +197,14 @@ function testValidation(expectedResult, obj, vld, ...args) {
 
   // Test $path references
   const obj2 = args.reduce((acc, a, i) => {
-    const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(i)].type;
+    const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     if (!argInfo[kind].acceptValidatorRef()) {
       acc[`_${i}`] = a;
     }
     return acc;
   }, clone(obj));
   const pathArgs = args.map((a, i) => {
-    const kind = vld.owner.argDescriptors[vld.owner.adjustArgDescriptorIndex(i)].type;
+    const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     return argInfo[kind].acceptValidatorRef() ? a : { $path: `_${i}` };
   });
   it(`${vName}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${expected[2]} for ${JSON.stringify(obj2)}`, () => {

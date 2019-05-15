@@ -19,7 +19,7 @@ describe('Test Info class.', () => {
   ];
   const info = new Info(nakedValidator, ...args);
   it('Validator and its info should point each other', () => {
-    assert(nakedValidator.owner === info && nakedValidator === info.validator, ':(');
+    assert(nakedValidator.info === info && nakedValidator === info.validator, ':(');
   });
   it('Check validator\'s name', () => {
     assert(nakedValidator.name === info.name, ':(');

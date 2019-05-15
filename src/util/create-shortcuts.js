@@ -6,7 +6,7 @@ const Info = require('../util/info');
 const { REF } = ensureArg;
 
 function getFirstArgType(validator) {
-  const ads = validator.owner.argDescriptors;
+  const ads = validator.info.argDescriptors;
   return ads.length > 0 ? ads[0].type : undefined;
 }
 
@@ -21,12 +21,12 @@ function optShortcutOf(validator, name) {
     };
   };
   Object.defineProperty(optV, 'name', { value: name, writable: false });
-  return (new Info(optV, ...(validator.owner.argDescriptors.map(ad => ad.stringDesc)))).validator;
+  return (new Info(optV, ...(validator.info.argDescriptors.map(ad => ad.stringDesc)))).validator;
 }
 
 function addShortcutOpt(target, source, key) {
   const newKey = camelCase(`opt ${key}`);
-  if (typeof source[key] !== 'function' || !source[key].owner) {
+  if (typeof source[key] !== 'function' || !source[key].info) {
     throw new Error(`Key '${key}' must be a validator function in order to create its opt shortcut '${newKey}'; found ${typeof source[key]} insead`);
   }
   const firstArgType = getFirstArgType(source[key]);

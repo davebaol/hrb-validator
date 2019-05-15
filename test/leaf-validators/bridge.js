@@ -5,8 +5,8 @@ import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 const { SUCCESS, FAILURE, THROW } = VALIDATION;
 
 function testOwnerClass(v, className) {
-  it(`Bridged leaf validator ${v.owner.name} is a representative member of ${className}`, () => {
-    assert(v.owner.constructor.name === className, ':(');
+  it(`Bridged leaf validator ${v.info.name} is a representative member of ${className}`, () => {
+    assert(v.info.constructor.name === className, ':(');
   });
 }
 
@@ -20,7 +20,7 @@ describe('Test bridged leaf validators.', () => {
   const owners = ['StringOnly', 'StringAndNumber', 'StringAndArray'];
   it(`Bridged leaf validator owners belong all to [${owners.join(', ')}]`, () => {
     const result = Object.keys(bv).reduce((acc, k) => {
-      acc[bv[k].owner.constructor.name] = true;
+      acc[bv[k].info.constructor.name] = true;
       return acc;
     }, {});
     assert.hasAllKeys(result, owners, ':(');
