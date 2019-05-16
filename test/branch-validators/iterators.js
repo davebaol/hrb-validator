@@ -1,7 +1,9 @@
 import { assert } from 'chai';
 import lengthOf from '@davebaol/length-of';
-import { testAllArguments } from '../test-utils';
 import V from '../../src';
+import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
+
+const { SUCCESS, FAILURE } = VALIDATION;
 
 const test = {
   array: [1, 2, 3],
@@ -69,19 +71,19 @@ describe('Test branch validator while.', () => {
   const args = ['a', () => undefined, () => undefined];
   testAllArguments(V.while, args);
 
-  testKeys.forEach(t => it(`For ${t}s while should fail when the condition fails`, () => {
-    const vCond = V.isInt('failed', { min: 0, max: 1 }); // fails on 2nd failure of vDo
-    const vDo = V.not(V.optIsSet('value')); // always fail
-    const v = V.while(t, vCond, vDo);
-    assert(v(test) !== undefined, ':(');
-  }));
+  testKeys.forEach((t) => {
+    // Should fail when the condition fails
+    const vCond = { isInt: ['failed', { min: 0, max: 1 }] }; // fails on 2nd failure of vDo
+    const vDo = { not: [{ optIsSet: ['value'] }] }; // always fails
+    testValidation(FAILURE, test, V.while, t, vCond, vDo);
+  });
 
-  testKeys.forEach(t => it(`For ${t}s while should succeed when the condition never fails`, () => {
-    const vCond = V.isInt('failed', { min: 0, max: 0 }); // fails on 1st failure of vDo
-    const vDo = V.optIsSet('value'); // never fails
-    const v = V.while(t, vCond, vDo);
-    assert(v(test) === undefined, ':(');
-  }));
+  testKeys.forEach((t) => {
+    // Should succeed when the condition never fails`, () => {
+    const vCond = { isInt: ['failed', { min: 0, max: 0 }] }; // fails on 1st failure of vDo
+    const vDo = { optIsSet: ['value'] }; // never fails
+    testValidation(SUCCESS, test, V.while, t, vCond, vDo);
+  });
 
   function iterationChecker(type, expected) {
     it(`For ${type}s while should generate proper iteration objects`, () => {

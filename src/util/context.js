@@ -19,9 +19,8 @@ class Context {
 
   find(name) {
     for (let i = this.stack.length - 1; i >= 0; i -= 1) {
-      const found = this.stack[i][name];
-      if (found !== undefined) { // TODO maybe we should use (name in this.stack[i])
-        return found;
+      if (name in this.stack[i]) {
+        return this.stack[i][name]; // Found!
       }
     }
     return VAR_NOT_FOUND;

@@ -58,41 +58,43 @@ class StringOnly extends Bridge {
   }
 
   ensuredNoPathArgs(args) {
-    let result = args; // The original array is returned by default
-    for (let i = 0; i < result.length; i += 1) {
-      const arg = result[i];
+    let ensured = args; // The original array is returned by default
+    for (let i = 0; i < ensured.length; i += 1) {
+      const arg = ensured[i];
       const ad = this.noPathArgDescriptors[this.adjustArgDescriptorIndex(i)];
-      if (arg != null || !ad.optional) { // don't ensure a void argument if it's optional
-        const ea = ensureArg[ad.type](args[i], ad.name);
-        if (ea !== arg) {
-          if (result === args) {
-            // Lazy shallow copy of the original array is made only when we know
-            // for sure that at least one item has to be replaced for some reason.
-            // From here on we can safely update items into the copied array, which
-            // of course is the one that will be returned.
-            result = Array.from(args);
-          }
-          result[i] = ea;
+      const ea = ad.ensure(args[i]);
+      if (ea !== arg) {
+        if (ensured === args) {
+          // Lazy shallow copy of the original array is made only when we know
+          // for sure that at least one item has to be replaced for some reason.
+          // From here on we can safely update items into the copied array, which
+          // of course is the one that will be returned.
+          ensured = Array.from(args);
         }
+        ensured[i] = ea;
       }
     }
-    return result;
+    return ensured;
   }
 
   link() {
     const original = v[this.name];
     const specialized = SPECIALIZED_VALIDATORS[this.name];
     return (path, ...noPathArgs) => {
-      let p = ensureArg.path(path);
+      let p = this.argDescriptors[0].ensure(path);
       const ensuredNoPathArgs = this.ensuredNoPathArgs(noPathArgs);
       return (obj, ctx) => {
         if (p === REF) {
-          try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+          try {
+            p = this.argDescriptors[0].ensureRef(path, ctx, obj);
+          } catch (e) { return e.message; }
         }
         for (let i = 0, len = this.noPathArgDescriptors.length; i < len; i += 1) {
           if (ensuredNoPathArgs[i] === REF) {
             const ad = this.noPathArgDescriptors[this.adjustArgDescriptorIndex(i + 1) - 1];
-            try { ensuredNoPathArgs[i] = ensureArg[`${ad.type}Ref`](noPathArgs[i], ctx, obj); } catch (e) { return e.message; }
+            try {
+              ensuredNoPathArgs[i] = ad.ensureRef(noPathArgs[i], ctx, obj);
+            } catch (e) { return e.message; }
           }
         }
         let value = get(obj, p);
@@ -220,6 +222,7 @@ function bridge(target) {
   /* eslint-enable no-unused-vars */
 
   vInfo.forEach((info) => {
+    info.consolidate();
     const k = info.name;
     // 1. Make sure not to overwrite any function already defined in the target
     // 2. The value from the validator module must be a function (this prevents errors

@@ -2,6 +2,7 @@ const camelCase = require('camelcase');
 const { get } = require('./path');
 const ensureArg = require('../util/ensure-arg');
 const Info = require('../util/info');
+const Argument = require('../util/argument');
 
 const { REF } = ensureArg;
 
@@ -11,17 +12,21 @@ function getFirstArgType(validator) {
 }
 
 function optShortcutOf(validator, name) {
+  let info;
   const optV = (path, ...args) => {
-    let p = ensureArg.path(path);
+    const argDescriptor0 = info.argDescriptors[0];
+    let p = argDescriptor0.ensure(path);
     return (obj, ctx) => {
       if (p === REF) {
-        try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+        try { p = argDescriptor0.ensureRef(path, ctx, obj); } catch (e) { return e.message; }
       }
       return (get(obj, p) ? validator(p, ...args)(obj, ctx) : undefined);
     };
   };
   Object.defineProperty(optV, 'name', { value: name, writable: false });
-  return (new Info(optV, ...(validator.info.argDescriptors.map(ad => ad.stringDesc)))).validator;
+  info = new Info(optV, ...(validator.info.argDescriptors.map(ad => new Argument(ad))));
+  info.consolidate();
+  return info.validator;
 }
 
 function addShortcutOpt(target, source, key) {

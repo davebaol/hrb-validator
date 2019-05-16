@@ -14,25 +14,27 @@ const { REF } = ensureArg;
 //
 
 function equals(path, value) {
-  let p = ensureArg.path(path);
-  let v = ensureArg.any(value);
+  const infoArgs = equals.info.argDescriptors;
+  let p = infoArgs[0].ensure(path);
+  let v = infoArgs[1].ensure(value);
   return (obj, ctx) => {
     if (p === REF) {
-      try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     if (v === REF) {
-      try { v = ensureArg.anyRef(value, ctx, obj); } catch (e) { return e.message; }
+      try { v = infoArgs[1].ensureRef(value, ctx, obj); } catch (e) { return e.message; }
     }
     return get(obj, p) === v ? undefined : `equals: the value at path '${path}' must be equal to ${v}`;
   };
 }
 
 function isLength(path, options) {
-  let p = ensureArg.path(path);
+  const infoArgs = isLength.info.argDescriptors;
+  let p = infoArgs[0].ensure(path);
   let opts = ensureArg.options(options);
   return (obj, ctx) => {
     if (p === REF) {
-      try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     if (opts === REF) {
       try { opts = ensureArg.optionsRef(options, ctx, obj); } catch (e) { return e.message; }
@@ -48,18 +50,20 @@ function isLength(path, options) {
 }
 
 function isSet(path) {
-  let p = ensureArg.path(path);
+  const infoArgs = isSet.info.argDescriptors;
+  let p = infoArgs[0].ensure(path);
   return (obj, ctx) => {
     if (p === REF) {
-      try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     return get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`;
   };
 }
 
 function isType(path, type) {
-  let p = ensureArg.path(path);
-  let t = ensureArg.type(type);
+  const infoArgs = isType.info.argDescriptors;
+  let p = infoArgs[0].ensure(path);
+  let t = infoArgs[1].ensure(type);
   const isSingleType = t !== REF && typeof t === 'string' && typeCheckers[t];
   const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]);
   if (t !== REF && !isSingleType && !isArrayOfTypes) {
@@ -67,10 +71,10 @@ function isType(path, type) {
   }
   return (obj, ctx) => {
     if (p === REF) {
-      try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     if (t === REF) {
-      try { t = ensureArg.typeRef(type, ctx, obj); } catch (e) { return e.message; }
+      try { t = infoArgs[1].ensureRef(type, ctx, obj); } catch (e) { return e.message; }
     }
     if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
       return typeCheckers[t](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${t}'; found '${getType(get(obj, p)) || 'unknown'}' instead`;
@@ -84,32 +88,35 @@ function isType(path, type) {
 }
 
 function isOneOf(path, values) {
-  let p = ensureArg.path(path);
-  let a = ensureArg.array(values);
+  const infoArgs = isOneOf.info.argDescriptors;
+  let p = infoArgs[0].ensure(path);
+  let a = infoArgs[1].ensure(values);
   return (obj, ctx) => {
     if (p === REF) {
-      try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     if (a === REF) {
-      try { a = ensureArg.arrayRef(values, ctx, obj); } catch (e) { return e.message; }
+      try { a = infoArgs[1].ensureRef(values, ctx, obj); } catch (e) { return e.message; }
     }
     return a.includes(get(obj, p)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${a}`;
   };
 }
 
 function isDate(path) {
-  let p = ensureArg.path(path);
+  const infoArgs = isDate.info.argDescriptors;
+  let p = infoArgs[0].ensure(path);
   return (obj, ctx) => {
     if (p === REF) {
-      try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     return (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, p)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
   };
 }
 
 function isArrayOf(path, type) {
-  let p = ensureArg.path(path);
-  let t = ensureArg.type(type);
+  const infoArgs = isType.info.argDescriptors;
+  let p = infoArgs[0].ensure(path);
+  let t = infoArgs[1].ensure(type);
   const isSingleType = t !== REF && typeof t === 'string' && typeCheckers[t];
   const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]);
   if (t !== REF && !isSingleType && !isArrayOfTypes) {
@@ -117,10 +124,10 @@ function isArrayOf(path, type) {
   }
   return (obj, ctx) => {
     if (p === REF) {
-      try { p = ensureArg.pathRef(path, ctx, obj); } catch (e) { return e.message; }
+      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     if (t === REF) {
-      try { t = ensureArg.typeRef(type, ctx, obj); } catch (e) { return e.message; }
+      try { t = infoArgs[1].ensureRef(type, ctx, obj); } catch (e) { return e.message; }
     }
     if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
       const value = get(obj, p);
@@ -153,6 +160,7 @@ function leafValidators() {
   /* eslint-enable no-unused-vars */
 
   const target = vInfo.reduce((acc, info) => {
+    info.consolidate();
     const k = info.name;
     acc[k] = info.validator; // eslint-disable-line no-param-reassign
     return acc;

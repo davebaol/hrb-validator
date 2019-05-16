@@ -61,13 +61,21 @@ const argInfo = [
   return acc;
 }, {});
 
+// Calculate distinc arg types used by all validators
+const argTypes = Object.keys(V).reduce((acc, k) => {
+  V[k].info.argDescriptors.forEach((ad) => {
+    acc[ad.type] = true;
+  });
+  return acc;
+}, {});
+
 // Make sure all arg kinds have been taken into account for the tests
-let inconsistentKinds = ensureArg.kinds.filter(k => !argInfo[k]);
+let inconsistentKinds = Object.keys(argTypes).filter(k => !argInfo[k]);
 if (inconsistentKinds.length > 0) {
   throw new Error(`Some argument kinds have not been taken into account for the tests: ${inconsistentKinds.join(', ')}`);
 }
 // Make sure all arg kinds used for the tests are known
-inconsistentKinds = Object.keys(argInfo).filter(k => !ensureArg.kinds.includes(k));
+inconsistentKinds = Object.keys(argInfo).filter(k => !(k in ensureArg));
 if (inconsistentKinds.length > 0) {
   throw new Error(`Some argument kinds used for the tests are unknown: ${inconsistentKinds.join(', ')}`);
 }
@@ -94,7 +102,8 @@ function shouldThrowErrorOnMissingArg(validatorName, args, index, errorLike) {
 }
 
 function testArgument0(vld, args, index, errorLike) {
-  const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(index)].type;
+  const argDesc = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(index)];
+  const kind = argDesc.type;
   if (!(kind in argInfo)) {
     throw new Error(`Unknown type argument '${kind}'`);
   }
@@ -105,6 +114,19 @@ function testArgument0(vld, args, index, errorLike) {
     testArgs[index] = argInfo[kind].badValue;
     assert.throws(() => vld(...testArgs), errorLike || Error);
   });
+
+  // Test optional/mandatory argument
+  if (argDesc.optional) {
+    it(`Should accept null being ${kind} optional as ${ordinal(index + 1)} argument`, () => {
+      testArgs[index] = null;
+      assert(typeof vld(...testArgs) === 'function', ':(');
+    });
+  } else {
+    it(`Should throw immediately an error on null being ${kind} mandatory as ${ordinal(index + 1)} argument`, () => {
+      testArgs[index] = null;
+      assert.throws(() => vld(...testArgs), errorLike || Error);
+    });
+  }
 
   // Test references
   if (argInfo[kind].refType) {

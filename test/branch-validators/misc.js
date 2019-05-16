@@ -20,13 +20,13 @@ describe('Test branch validator alter.', () => {
 
 // TODO Use testValidation()
 describe('Test branch validator onError.', () => {
-  testAllArguments(V.onError, ['error', success]);
-  it('onError("error", success) should succeed', () => {
-    const v = V.onError('error', success);
+  testAllArguments(V.onError, [success, 'error']);
+  it('onError("success, error") should succeed', () => {
+    const v = V.onError(success, 'error');
     assert(v({}) === undefined, ':(');
   });
-  it('onError("error", failure) should fail with "error"', () => {
-    const v = V.onError('error', failure);
+  it('onError(failure, "error") should fail with "error"', () => {
+    const v = V.onError(failure, 'error');
     assert(v({}) === 'error', ':(');
   });
 });
