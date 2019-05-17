@@ -102,17 +102,6 @@ function isOneOf(path, values) {
   };
 }
 
-function isDate(path) {
-  const infoArgs = isDate.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
-    }
-    return (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(get(obj, p)) ? undefined : `the value at path '${path}' must be a date in this format YYYY-MM-DD HH:MM:SS`);
-  };
-}
-
 function isArrayOf(path, type) {
   const infoArgs = isType.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
@@ -151,7 +140,6 @@ function leafValidators() {
   const vInfo = [
     new Info(equals, 'path:path', 'value:any'),
     new Info(isArrayOf, 'path:path', 'type:type'),
-    new Info(isDate, 'path:path'),
     new Info(isLength, 'path:path', 'options:object?'),
     new Info(isOneOf, 'path:path', 'values:array'),
     new Info(isSet, 'path:path'),
