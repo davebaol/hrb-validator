@@ -17,6 +17,12 @@ describe('Test shortcut opt.', () => {
   it('Anything other than function should throw an error', () => {
     assert.throws(() => createShortcuts({}, { x: 'not a function' }), Error);
   });
+  it('A function without info should throw an error', () => {
+    assert.throws(() => createShortcuts({}, { x: () => {} }), Error);
+  });
+  it('A function validator not taking a path as first argument should throw an error', () => {
+    assert.throws(() => createShortcuts({}, { x: () => V.and }), Error);
+  });
   it('Missing property at path should always succeed', () => {
     const target = createShortcuts({}, V, ['isSet']);
     const v = target.optIsSet('a');
