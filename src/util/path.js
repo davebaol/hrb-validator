@@ -17,7 +17,7 @@ module.exports = {
   },
 
   ensureStringPath(path) {
-    path.join('.');
+    return path.join('.');
   },
 
   // Make sure the path is in the form of an array or undefined if empty.
