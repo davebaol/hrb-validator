@@ -25,6 +25,9 @@ describe('Test Info class.', () => {
   it('Info constructor should throw an error if 1st argument is neither a named function ora its name', () => {
     assert.throws(() => new Info({}, ...args), Error);
   });
+  it('Info constructor should throw an error if rest parameter is used before the last argument', () => {
+    assert.throws(() => new Info(validator('badRestParam'), '...num:integer', 'tag:string'), Error, 'rest parameter');
+  });
   it('Info created by name should throw an error on consolidate (method link not implemented)', () => {
     const info = new Info('funcName', ...args);
     assert.throws(() => info.consolidate(), Error, 'link');

@@ -1,13 +1,18 @@
 const Argument = require('./argument');
 
 function processArgDescriptors(vName, descriptors) {
+  const last = descriptors.length - 1;
   return descriptors.map((d, i) => {
+    let a = d;
     if (typeof d === 'string') {
-      return Argument.parse(d);
-    } if (d instanceof Argument) {
-      return d;
+      a = Argument.parse(d);
+    } else if (!(a instanceof Argument)) {
+      throw new Error(`The argumentDescriptor[${i}] of validator '${vName}' is neither a string or an instance of Argument; found '${typeof d}'`);
     }
-    throw new Error(`The argumentDescriptor[${i}] of validator '${vName}' is neither a string or an instance of Argument; found '${typeof d}'`);
+    if (i < last && a.restParams) {
+      throw new Error(`The argumentDescriptor[${i}] of validator '${vName}' cannot be a rest parameter because it's not the last`);
+    }
+    return a;
   });
 }
 
