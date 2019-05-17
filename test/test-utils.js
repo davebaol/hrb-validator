@@ -182,22 +182,16 @@ function testAllArguments(v, args) {
   }
 }
 
-function testValidation(expectedResult, obj, vld, ...args) {
-  const vFunc = typeof vld === 'function' ? vld : V[vld];
-  const vName = typeof vld === 'function' ? vld.info.name : vld;
-
-  // Accept up to 3 expected results
-  const expected = [].concat(expectedResult);
-  const len = expected.length;
-  expected.length = 3;
-  expected.fill(expected[len - 1], len);
-
-  it(`${vName}(${args.map(a => JSON.stringify(a)).join(', ')}) should ${expected[0]} for ${JSON.stringify(obj)}`, () => {
-    const vCreate = () => vFunc(...args);
-    testValidationAssert(expected[0], vCreate, obj);
+// All arguments are passed without using references
+function testValidationWithNoRefs(expected, obj, vld, ...args) {
+  it(`${vld.info.name}(${args.map(a => JSON.stringify(a)).join(', ')}) should ${expected[0]} for ${JSON.stringify(obj)}`, () => {
+    const vCreate = () => vld(...args);
+    testValidationAssert(expected, vCreate, obj);
   });
+}
 
-  // Test $var references
+// All referenceable arguments are passed as $var references
+function testValidationWithVarRefs(expected, obj, vld, ...args) {
   const scope = args.reduce((acc, a, i) => {
     const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     acc[`${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}`] = a;
@@ -207,12 +201,14 @@ function testValidation(expectedResult, obj, vld, ...args) {
     const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     return { $var: `${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}` };
   });
-  it(`${vName}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${expected[1]} for ${JSON.stringify(obj)}`, () => {
-    const vCreate = () => V.def(scope, vFunc(...varArgs));
-    testValidationAssert(expected[1], vCreate, obj);
+  it(`${vld.info.name}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${expected[1]} for ${JSON.stringify(obj)}`, () => {
+    const vCreate = () => V.def(scope, vld(...varArgs));
+    testValidationAssert(expected, vCreate, obj);
   });
+}
 
-  // Test $path references
+// All referenceable arguments are passed as $path references
+function testValidationWithPathRefs(expected, obj, vld, ...args) {
   const obj2 = args.reduce((acc, a, i) => {
     const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     if (!argInfo[kind].acceptValidatorRef()) {
@@ -224,10 +220,27 @@ function testValidation(expectedResult, obj, vld, ...args) {
     const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     return argInfo[kind].acceptValidatorRef() ? a : { $path: `_${i}` };
   });
-  it(`${vName}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${expected[2]} for ${JSON.stringify(obj2)}`, () => {
-    const vCreate = () => vFunc(...pathArgs);
-    testValidationAssert(expected[2], vCreate, obj2);
+  it(`${vld.info.name}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${expected[2]} for ${JSON.stringify(obj2)}`, () => {
+    const vCreate = () => vld(...pathArgs);
+    testValidationAssert(expected, vCreate, obj2);
   });
+}
+
+function testValidation(expectedResult, obj, vld, ...args) {
+  // Accept up to 3 expected results. The array is right padded using the last element
+  const expected = [].concat(expectedResult);
+  const len = expected.length;
+  expected.length = 3;
+  expected.fill(expected[len - 1], len);
+
+  // Test no references
+  testValidationWithNoRefs(expected[0], obj, vld, ...args);
+
+  // Test $var references
+  testValidationWithVarRefs(expected[1], obj, vld, ...args);
+
+  // Test $path references
+  testValidationWithPathRefs(expected[2], obj, vld, ...args);
 }
 
 export {
