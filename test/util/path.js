@@ -1,5 +1,7 @@
 import { assert } from 'chai';
-import { get, ensureArrayPath, BAD_PATH } from '../../src/util/path';
+import {
+  get, ensureStringPath, ensureArrayPath, BAD_PATH
+} from '../../src/util/path';
 
 describe('Test utility get(obj, path).', () => {
   const point = { x: 0, y: 1 };
@@ -7,6 +9,8 @@ describe('Test utility get(obj, path).', () => {
   const tests = [
     { args: [point], expected: point },
     { args: [point, ''], expected: point },
+    { args: [point, []], expected: point },
+    { args: [point, null], expected: point },
     { args: [point, 'x'], expected: point.x },
     { args: [list, '1'], expected: list[1] },
     { args: [list, 1], expected: list[1] },
@@ -14,6 +18,16 @@ describe('Test utility get(obj, path).', () => {
   ];
   tests.forEach(t => it(`get(${t.args.map(a => JSON.stringify(a)).join(', ')}) should return ${JSON.stringify(t.expected)}`, () => {
     assert.deepEqual(get(...t.args), t.expected, ':(');
+  }));
+});
+
+describe('Test utility ensureStringPath(arrayPath).', () => {
+  const tests = [
+    { args: [], expected: '' },
+    { args: ['a', 0], expected: 'a.0' }
+  ];
+  tests.forEach(t => it(`ensureStringPath(${JSON.stringify(t.args)}) should return ${JSON.stringify(t.expected)}`, () => {
+    assert(ensureStringPath(t.args) === t.expected, ':(');
   }));
 });
 
