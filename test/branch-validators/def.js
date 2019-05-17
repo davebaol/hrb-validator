@@ -9,7 +9,7 @@ describe('Test branch validator def.', () => {
   it('Should throw immediately an error on bad validators', () => {
     assert.throws(() => V.def({}, 'Bad validators', { isType: ['', 'number'] }), Error);
   });
-  testArgument('child', 'def', [{}], 1);
+  testArgument(V.def, [{}], 1);
   it('def({}, V.optIsSet("")) should always succeed just like its child', () => {
     const v = V.def({}, V.optIsSet(''));
     assert(v({ a: 123 }) === undefined, ':(');

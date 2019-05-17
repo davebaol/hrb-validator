@@ -101,7 +101,7 @@ function shouldThrowErrorOnMissingArg(validatorName, args, index, errorLike) {
   });
 }
 
-function testArgument0(vld, args, index, errorLike) {
+function testArgument(vld, args, index, errorLike) {
   const argDesc = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(index)];
   const kind = argDesc.type;
   if (!(kind in argInfo)) {
@@ -148,11 +148,6 @@ function testArgument0(vld, args, index, errorLike) {
   }
 }
 
-function testArgument(kind, validatorName, args, index, errorLike) {
-  const validator = V[validatorName];
-  return testArgument0(validator, args, index, errorLike);
-}
-
 const VALIDATION = Object.freeze({
   SUCCESS: 'success',
   FAILURE: 'fail',
@@ -183,7 +178,7 @@ function testValidationAssert(expectedResult, vCreate, obj) {
 function testAllArguments(v, args) {
   const len = Math.max(v.info.argDescriptors.length, args.length);
   for (let i = 0; i < len; i += 1) {
-    testArgument0(v, args, i);
+    testArgument(v, args, i);
   }
 }
 
