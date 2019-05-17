@@ -184,7 +184,7 @@ function testAllArguments(v, args) {
 
 // All arguments are passed without using references
 function testValidationWithNoRefs(expected, obj, vld, ...args) {
-  it(`${vld.info.name}(${args.map(a => JSON.stringify(a)).join(', ')}) should ${expected[0]} for ${JSON.stringify(obj)}`, () => {
+  it(`${vld.info.name}(${args.map(a => JSON.stringify(a)).join(', ')}) should ${expected} for ${JSON.stringify(obj)}`, () => {
     const vCreate = () => vld(...args);
     testValidationAssert(expected, vCreate, obj);
   });
@@ -201,7 +201,7 @@ function testValidationWithVarRefs(expected, obj, vld, ...args) {
     const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     return { $var: `${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}` };
   });
-  it(`${vld.info.name}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${expected[1]} for ${JSON.stringify(obj)}`, () => {
+  it(`${vld.info.name}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${expected} for ${JSON.stringify(obj)}`, () => {
     const vCreate = () => V.def(scope, vld(...varArgs));
     testValidationAssert(expected, vCreate, obj);
   });
@@ -220,7 +220,7 @@ function testValidationWithPathRefs(expected, obj, vld, ...args) {
     const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
     return argInfo[kind].acceptValidatorRef() ? a : { $path: `_${i}` };
   });
-  it(`${vld.info.name}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${expected[2]} for ${JSON.stringify(obj2)}`, () => {
+  it(`${vld.info.name}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${expected} for ${JSON.stringify(obj2)}`, () => {
     const vCreate = () => vld(...pathArgs);
     testValidationAssert(expected, vCreate, obj2);
   });

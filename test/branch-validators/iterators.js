@@ -20,6 +20,7 @@ function testEveryOrSome(name) {
     const everyOrSome = V[name];
     const args = ['a', V.isSet('')];
     testAllArguments(everyOrSome, args);
+    testValidation(SUCCESS, test.array, everyOrSome, '', { optIsSet: ['value'] });
     testKeys.forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'fail at first invalid' : 'succeed at first valid'} iteration`, () => {
       let count = 0;
       const expected = 2;

@@ -7,7 +7,7 @@ function processArgDescriptors(vName, descriptors) {
     } if (d instanceof Argument) {
       return d;
     }
-    throw new Error(`The argumentDescriptor[${i}] of validator '${vName}' is neither a string or a plain object; found '${typeof d}'`);
+    throw new Error(`The argumentDescriptor[${i}] of validator '${vName}' is neither a string or an instance of Argument; found '${typeof d}'`);
   });
 }
 
