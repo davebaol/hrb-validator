@@ -81,11 +81,7 @@ function any(val, noReference) {
 }
 
 function anyRef(ref, context, obj) {
-  const val = any(resolveValueRef(ref, context, obj), true);
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
+  return any(resolveValueRef(ref, context, obj), true);
 }
 
 function array(val, noReference) {
@@ -131,11 +127,7 @@ function object(val, noReference) {
 }
 
 function objectRef(ref, context, obj) {
-  const val = object(resolveValueRef(ref, context, obj), true);
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
+  return object(resolveValueRef(ref, context, obj), true);
 }
 
 // Like object, options can be referenced as a whole.
@@ -255,11 +247,7 @@ function child(val, noReference) {
 }
 
 function childRef(ref, context) {
-  const val = child(resolveValidatorRef(ref, context), true);
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
+  return child(resolveValidatorRef(ref, context), true);
 }
 
 function children(vlds) {

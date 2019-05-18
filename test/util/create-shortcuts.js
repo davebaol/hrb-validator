@@ -21,7 +21,7 @@ describe('Test shortcut opt.', () => {
     assert.throws(() => createShortcuts({}, { x: () => {} }), Error);
   });
   it('A function validator not taking a path as first argument should throw an error', () => {
-    assert.throws(() => createShortcuts({}, { x: () => V.and }), Error);
+    assert.throws(() => createShortcuts({}, V, ['and']), Error, 'path as first argument');
   });
   it('Missing property at path should always succeed', () => {
     const target = createShortcuts({}, V, ['isSet']);

@@ -10,7 +10,7 @@ describe('Test leaf validator isType.', () => {
   testValidation(SUCCESS, { a: '' }, V.isType, '', 'object');
   testValidation(SUCCESS, { a: false }, V.isType, 'a', 'boolean');
   testValidation(SUCCESS, { a: true }, V.isType, 'a', 'boolean');
-  testValidation(FAILURE, { a: null }, V.isType, 'a', 'boolean');
+  testValidation(FAILURE, { a: null }, V.isType, 'a', 'regex'); // take the opportunity to test regex type too
   testValidation([THROW, FAILURE], { a: '...' }, V.isType, 'a', 'unknown_type');
   testValidation(SUCCESS, { a: false }, V.isType, 'a', ['boolean', 'array']);
   testValidation(SUCCESS, { a: [] }, V.isType, 'a', ['boolean', 'array']);

@@ -26,12 +26,13 @@ describe('Test bridged leaf validators.', () => {
     assert.hasAllKeys(result, owners, ':(');
   });
 
-  const { contains } = bv;
-  testOwnerClass(contains, 'StringOnly');
-  testAllArguments(contains, ['a', 'seed']);
-  testValidation(SUCCESS, { a: 'string' }, contains, 'a', '');
-  testValidation(FAILURE, { a: 3 }, contains, 'a', '');
-  testValidation([THROW, FAILURE], { a: 3 }, contains, 'a', 123);
+  // Test matches to test regex type too
+  const { matches } = bv;
+  testOwnerClass(matches, 'StringOnly');
+  testAllArguments(matches, ['a', '.*']);
+  testValidation(SUCCESS, { a: 'string' }, matches, 'a', '.*', 'i');
+  testValidation(FAILURE, { a: 3 }, matches, 'a', '.*');
+  testValidation([THROW, FAILURE], { a: 'string' }, matches, 'a', 123);
 
   const { isDivisibleBy } = bv;
   testOwnerClass(isDivisibleBy, 'StringAndNumber');
