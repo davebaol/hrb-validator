@@ -4,13 +4,15 @@ function processArgDescriptors(vName, descriptors) {
   const last = descriptors.length - 1;
   return descriptors.map((d, i) => {
     let a = d;
-    if (typeof d === 'string') {
-      a = Argument.parse(d);
-    } else if (!(a instanceof Argument)) {
-      throw new Error(`The argumentDescriptor[${i}] of validator '${vName}' is neither a string or an instance of Argument; found '${typeof d}'`);
+    if (!(a instanceof Argument)) {
+      try {
+        a = Argument.parse(d);
+      } catch (e) {
+        throw new Error(`Validator '${vName}' argument at index ${i}: ${e.message}'`);
+      }
     }
     if (i < last && a.restParams) {
-      throw new Error(`The argumentDescriptor[${i}] of validator '${vName}' cannot be a rest parameter because it's not the last`);
+      throw new Error(`Validator '${vName}' argument at index ${i}: rest parameter is legal only for the last argument`);
     }
     return a;
   });

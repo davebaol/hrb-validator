@@ -129,7 +129,7 @@ function testArgument(vld, args, index, errorLike) {
   }
 
   // Test references
-  if (argInfo[kind].refType) {
+  if (argDesc.refDepth >= 0 && argInfo[kind].refType) {
     if (argInfo[kind].unknownRefShouldPassCreation()) {
       it(`Should pass creation on unknown reference type as ${ordinal(index + 1)} argument`, () => {
         testArgs[index] = UNKNOWN_REF;
@@ -193,13 +193,20 @@ function testValidationWithNoRefs(expected, obj, vld, ...args) {
 // All referenceable arguments are passed as $var references
 function testValidationWithVarRefs(expected, obj, vld, ...args) {
   const scope = args.reduce((acc, a, i) => {
-    const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
-    acc[`${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}`] = a;
+    const argDef = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)];
+    if (argDef.refDepth >= 0) {
+      const kind = argDef.type;
+      acc[`${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}`] = a;
+    }
     return acc;
   }, {});
   const varArgs = args.map((a, i) => {
-    const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
-    return { $var: `${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}` };
+    const argDef = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)];
+    const kind = argDef.type;
+    if (argDef.refDepth >= 0) {
+      return { $var: `${argInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}` };
+    }
+    return a;
   });
   it(`${vld.info.name}(${varArgs.map(a => JSON.stringify(a)).join(', ')}) in scope ${JSON.stringify(scope)} should ${expected} for ${JSON.stringify(obj)}`, () => {
     const vCreate = () => V.def(scope, vld(...varArgs));
@@ -210,15 +217,22 @@ function testValidationWithVarRefs(expected, obj, vld, ...args) {
 // All referenceable arguments are passed as $path references
 function testValidationWithPathRefs(expected, obj, vld, ...args) {
   const obj2 = args.reduce((acc, a, i) => {
-    const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
-    if (!argInfo[kind].acceptValidatorRef()) {
-      acc[`_${i}`] = a;
+    const argDef = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)];
+    if (argDef.refDepth >= 0) {
+      const kind = argDef.type;
+      if (!argInfo[kind].acceptValidatorRef()) {
+        acc[`_${i}`] = a;
+      }
     }
     return acc;
   }, clone(obj));
   const pathArgs = args.map((a, i) => {
-    const kind = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)].type;
-    return argInfo[kind].acceptValidatorRef() ? a : { $path: `_${i}` };
+    const argDef = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)];
+    const kind = argDef.type;
+    if (argDef.refDepth >= 0) {
+      return argInfo[kind].acceptValidatorRef() ? a : { $path: `_${i}` };
+    }
+    return a;
   });
   it(`${vld.info.name}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${expected} for ${JSON.stringify(obj2)}`, () => {
     const vCreate = () => vld(...pathArgs);

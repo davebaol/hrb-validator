@@ -2,6 +2,7 @@ const { get } = require('./util/path');
 const Context = require('./util/context');
 const createShortcuts = require('./util/create-shortcuts');
 const ensureArg = require('./util/ensure-arg');
+const createScope = require('./util/prepare-scope');
 const Info = require('./util/info');
 
 const { REF } = ensureArg;
@@ -28,15 +29,13 @@ function call(path, child) {
 
 function def(scope, child) {
   const infoArgs = def.info.argDescriptors;
-  let s = ensureArg.scope(scope || {});
+  let s = infoArgs[0].ensure(scope); // The scope is a non referenceable object (refDepth = -1)
   let c = infoArgs[1].ensure(child);
   return (obj, ctx) => {
     // eslint-disable-next-line no-param-reassign
     ctx = ctx || new Context();
-    if (s === REF) {
-      try { s = ensureArg.scopeRef(scope, ctx, obj); } catch (e) { return e.message; }
-    }
-    ctx.push(scope);
+    try { s = createScope(s, ctx, obj); } catch (e) { return e.message; }
+    ctx.push(s);
     if (c === REF) {
       try { c = infoArgs[1].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
     }
@@ -330,7 +329,7 @@ function branchValidators() {
   /* istanbul ignore next */
   const vInfo = [
     new Info(call, 'path:path', 'child:child'),
-    new Info(def, 'scope:object', 'child:child'),
+    new Info(def, { desc: 'scope:object', refDepth: -1 }, 'child:child'),
     new Info(not, 'child:child'),
     new Info(and, '...child:child'),
     new Info(or, '...child:child'),

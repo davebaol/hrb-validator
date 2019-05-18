@@ -262,20 +262,6 @@ function childRef(ref, context) {
   return val;
 }
 
-function scope(obj) {
-  if (!isPlainObject(obj)) {
-    throw new Error('The scope must be an object');
-  }
-  // eslint-disable-next-line no-restricted-syntax
-  for (const k in obj) {
-    if (hasOwn.call(obj, k)) {
-      // eslint-disable-next-line no-param-reassign
-      obj[k] = k.startsWith('$') ? child(obj[k]) : any(obj[k]);
-    }
-  }
-  return obj;
-}
-
 function children(vlds) {
   let result = vlds; // The original array is returned by default
   for (let i = 0; i < result.length; i += 1) {
@@ -308,8 +294,6 @@ module.exports = {
   options,
   optionsRef,
   path,
-  scope,
-  // scopeRef,
   string,
   stringOrArray,
   stringOrRegex,

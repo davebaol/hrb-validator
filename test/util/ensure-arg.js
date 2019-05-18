@@ -129,18 +129,3 @@ describe('Test utility ensureArg.children(array).', () => {
     assert(ensuredValidators.every((v, i) => (i === valRefIndex ? v === REF : typeof v === 'function')), ':(');
   });
 });
-
-describe('Test utility ensureArg.scope(s).', () => {
-  it('Should throw an error for anything other than a plain object', () => {
-    assert.throws(() => ensureArg.scope(['This is not a scope']), Error);
-  });
-  it('Should return the same scope specified in input', () => {
-    const scope = {};
-    assert(ensureArg.scope(scope) === scope, ':(');
-  });
-  it('Should return the same scope where only validators are functions', () => {
-    const scope = { VAR: { isSet: ['a'] }, $VALIDATOR: { contains: ['a', 'x'] } };
-    ensureArg.scope(scope);
-    assert(Object.keys(scope).every(k => (k.startsWith('$') && typeof scope[k] === 'function') || (!k.startsWith('$') && typeof scope[k] !== 'function')), ':(');
-  });
-});
