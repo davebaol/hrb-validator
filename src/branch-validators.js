@@ -57,53 +57,67 @@ function not(child) {
 }
 
 function and(...children) {
-  const offspring = ensureArg.children(children);
+  const { info } = and;
+  const childArg = info.argDescriptors[0];
+  const offspring = info.ensureRestParams(children);
   return (obj, ctx) => {
-    let error;
-    const invalidChild = offspring.find((child, i) => {
-      let c = child;
-      if (c === REF) {
-        try { c = ensureArg.childRef(children[i], ctx); } catch (e) { return e.message; }
-        offspring[i] = c; // replace the ref with the validator
+    for (let i = 0, len = offspring.length; i < len; i += 1) {
+      if (offspring[i] === REF) {
+        try {
+          // replace the ref with the validator
+          offspring[i] = childArg.ensureRef(children[i], ctx, obj);
+        } catch (e) { return e.message; }
       }
-      error = c(obj, ctx);
-      return error;
-    });
-    return invalidChild ? error : undefined;
+      const error = offspring[i](obj, ctx); // Validate child
+      if (error) {
+        return error;
+      }
+    }
+    return undefined;
   };
 }
 
 function or(...children) {
-  const offspring = ensureArg.children(children);
+  const { info } = or;
+  const childArg = info.argDescriptors[0];
+  const offspring = info.ensureRestParams(children);
   return (obj, ctx) => {
     let error;
-    const validChild = offspring.find((child, i) => {
-      let c = child;
-      if (c === REF) {
-        try { c = ensureArg.childRef(children[i], ctx); } catch (e) { return e.message; }
-        offspring[i] = c; // replace the ref with the validator
+    for (let i = 0, len = offspring.length; i < len; i += 1) {
+      if (offspring[i] === REF) {
+        try {
+          // replace the ref with the validator
+          offspring[i] = childArg.ensureRef(children[i], ctx, obj);
+        } catch (e) { return e.message; }
       }
-      error = c(obj, ctx);
-      return !error;
-    });
-    return validChild ? undefined : error;
+      error = offspring[i](obj, ctx); // Validate child
+      if (!error) {
+        return undefined;
+      }
+    }
+    return error;
   };
 }
 
 function xor(...children) {
-  const offspring = ensureArg.children(children);
+  const { info } = xor;
+  const childArg = info.argDescriptors[0];
+  const offspring = info.ensureRestParams(children);
   return (obj, ctx) => {
     let count = 0;
-    offspring.find((child, i) => {
-      let c = child;
-      if (c === REF) {
-        try { c = ensureArg.childRef(children[i], ctx); } catch (e) { return e.message; }
-        offspring[i] = c; // replace the ref with the validator
+    for (let i = 0, len = offspring.length; i < len; i += 1) {
+      if (offspring[i] === REF) {
+        try {
+          // replace the ref with the validator
+          offspring[i] = childArg.ensureRef(children[i], ctx, obj);
+        } catch (e) { return e.message; }
       }
-      const error = c(obj, ctx);
+      const error = offspring[i](obj, ctx); // Validate child
       count += error ? 0 : 1;
-      return count === 2;
-    });
+      if (count === 2) {
+        break;
+      }
+    }
     return count === 1 ? undefined : `xor: expected exactly 1 valid child; found ${count} instead`;
   };
 }

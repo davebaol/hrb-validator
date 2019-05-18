@@ -8,7 +8,6 @@ const { REF } = ensureArg;
 class Bridge extends Info {
   constructor(name, errorFunc, ...noPathArgDescriptors) {
     super(name, ...(['path:path'].concat(noPathArgDescriptors)));
-    this.noPathArgDescriptors = this.argDescriptors.filter((e, i) => i > 0); // remove 1st element
     this.errorFunc = errorFunc;
   }
 }
@@ -57,46 +56,21 @@ class StringOnly extends Bridge {
     return `${this.name}: the value at path '${path}' must be a string ${vArgs ? this.errorFunc(vArgs) : ''}`;
   }
 
-  ensuredNoPathArgs(args) {
-    let ensured = args; // The original array is returned by default
-    for (let i = 0; i < ensured.length; i += 1) {
-      const arg = ensured[i];
-      const ad = this.noPathArgDescriptors[this.adjustArgDescriptorIndex(i)];
-      const ea = ad.ensure(args[i]);
-      if (ea !== arg) {
-        if (ensured === args) {
-          // Lazy shallow copy of the original array is made only when we know
-          // for sure that at least one item has to be replaced for some reason.
-          // From here on we can safely update items into the copied array, which
-          // of course is the one that will be returned.
-          ensured = Array.from(args);
-        }
-        ensured[i] = ea;
-      }
-    }
-    return ensured;
-  }
-
   link() {
     const original = v[this.name];
     const specialized = SPECIALIZED_VALIDATORS[this.name];
     return (path, ...noPathArgs) => {
       let p = this.argDescriptors[0].ensure(path);
-      const ensuredNoPathArgs = this.ensuredNoPathArgs(noPathArgs);
+      const ensuredNoPathArgs = this.ensureRestParams(noPathArgs, 1);
       return (obj, ctx) => {
         if (p === REF) {
           try {
             p = this.argDescriptors[0].ensureRef(path, ctx, obj);
           } catch (e) { return e.message; }
         }
-        for (let i = 0, len = this.noPathArgDescriptors.length; i < len; i += 1) {
-          if (ensuredNoPathArgs[i] === REF) {
-            const ad = this.noPathArgDescriptors[this.adjustArgDescriptorIndex(i + 1) - 1];
-            try {
-              ensuredNoPathArgs[i] = ad.ensureRef(noPathArgs[i], ctx, obj);
-            } catch (e) { return e.message; }
-          }
-        }
+        try {
+          this.ensureRestParamsRef(ensuredNoPathArgs, noPathArgs, 1, ctx, obj);
+        } catch (e) { return e.message; }
         let value = get(obj, p);
         let result;
         if (specialized !== undefined && this.isSpecialized(value)) {
