@@ -46,6 +46,7 @@ class ArgTestInfo {
 const argInfo = [
   new ArgTestInfo('any', VALUE_REF, 1),
   new ArgTestInfo('array', VALUE_REF, []),
+  new ArgTestInfo('boolean', VALUE_REF, true),
   new ArgTestInfo('child', VALIDATOR_REF, V.isSet('')),
   new ArgTestInfo('integer', VALUE_REF, 1),
   new ArgTestInfo('number', VALUE_REF, 1.2),

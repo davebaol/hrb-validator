@@ -58,6 +58,7 @@
   "dependencies": {
     "@davebaol/length-of": "^1.0.0",
     "camelcase": "^5.3.1",
+    "fast-deep-equal": "^2.0.1",
     "get-value": "^3.0.1",
     "is-plain-object": "^3.0.0",
     "is-regexp": "^2.1.0",

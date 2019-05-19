@@ -94,6 +94,16 @@ function array(val, noReference) {
   return val;
 }
 
+function boolean(val, noReference) {
+  if (typeof val !== 'boolean') {
+    if (!noReference && isRef(val)) {
+      return REF;
+    }
+    throw new Error('Argument must be a boolean');
+  }
+  return val;
+}
+
 function integer(val, noReference) {
   if (!Number.isInteger(val)) {
     if (!noReference && isRef(val)) {
@@ -275,6 +285,7 @@ module.exports = {
   any,
   anyRef,
   array,
+  boolean,
   integer,
   number,
   object,

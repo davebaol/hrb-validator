@@ -1,3 +1,4 @@
+const deepEqual = require('fast-deep-equal');
 const lengthOf = require('@davebaol/length-of');
 const bridge = require('./bridge');
 const { get } = require('../util/path');
@@ -13,10 +14,11 @@ const { REF } = ensureArg;
 // They all take path as the first argument and have no children
 //
 
-function equals(path, value) {
+function equals(path, value, deep) {
   const infoArgs = equals.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
   let v = infoArgs[1].ensure(value);
+  let d = infoArgs[2].ensure(deep);
   return (obj, ctx) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
@@ -24,7 +26,11 @@ function equals(path, value) {
     if (v === REF) {
       try { v = infoArgs[1].ensureRef(value, ctx, obj); } catch (e) { return e.message; }
     }
-    return get(obj, p) === v ? undefined : `equals: the value at path '${path}' must be equal to ${v}`;
+    if (d === REF) {
+      try { d = infoArgs[2].ensureRef(deep, ctx, obj); } catch (e) { return e.message; }
+    }
+    const result = d ? deepEqual(get(obj, p), v) : get(obj, p) === v;
+    return result ? undefined : `equals: the value at path '${path}' must be equal to ${v}`;
   };
 }
 
@@ -138,7 +144,7 @@ function leafValidators() {
   /* eslint-disable no-unused-vars */
   /* istanbul ignore next */
   const vInfo = [
-    new Info(equals, 'path:path', 'value:any'),
+    new Info(equals, 'path:path', 'value:any', 'deep:boolean?'),
     new Info(isArrayOf, 'path:path', 'type:type'),
     new Info(isLength, 'path:path', 'options:options?'),
     new Info(isOneOf, 'path:path', 'values:array'),
