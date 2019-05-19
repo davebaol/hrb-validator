@@ -2,7 +2,7 @@ const { get } = require('./util/path');
 const Context = require('./util/context');
 const createShortcuts = require('./util/create-shortcuts');
 const ensureArg = require('./util/ensure-arg');
-const createScope = require('./util/prepare-scope');
+const prepareScope = require('./util/prepare-scope');
 const Info = require('./util/info');
 
 const { REF } = ensureArg;
@@ -34,7 +34,7 @@ function def(scope, child) {
   return (obj, ctx) => {
     // eslint-disable-next-line no-param-reassign
     ctx = ctx || new Context();
-    try { s = createScope(s, ctx, obj); } catch (e) { return e.message; }
+    try { s = prepareScope(s, ctx, obj); } catch (e) { return e.message; }
     ctx.push(s);
     if (c === REF) {
       try { c = infoArgs[1].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
@@ -238,37 +238,36 @@ function some(path, child) {
 function alter(child, resultOnSuccess, resultOnError) {
   const infoArgs = alter.info.argDescriptors;
   let c = infoArgs[0].ensure(child);
-  let s = resultOnSuccess == null ? undefined : ensureArg.any(resultOnSuccess);
-  let f = resultOnError == null ? undefined : ensureArg.any(resultOnError);
+  let s = infoArgs[1].ensure(resultOnSuccess);
+  let f = infoArgs[2].ensure(resultOnError);
   return (obj, ctx) => {
     if (c === REF) {
       try { c = infoArgs[0].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
     }
     if (s === REF) {
-      try { s = ensureArg.anyRef(resultOnSuccess, ctx); } catch (e) { return e.message; }
-      s = s == null ? undefined : s;
+      try { s = infoArgs[1].ensureRef(resultOnSuccess, ctx, obj); } catch (e) { return e.message; }
     }
     if (f === REF) {
-      try { f = ensureArg.anyRef(resultOnError, ctx); } catch (e) { return e.message; }
-      f = f == null ? undefined : f;
+      try { f = infoArgs[2].ensureRef(resultOnError, ctx, obj); } catch (e) { return e.message; }
     }
-    return c(obj, ctx) ? f : s;
+    const r = c(obj, ctx) === undefined ? s : f;
+    return r == null ? undefined : r;
   };
 }
 
-function onError(child, error) {
+function onError(child, result) {
   const infoArgs = onError.info.argDescriptors;
   let c = infoArgs[0].ensure(child);
-  let f = error == null ? undefined : ensureArg.any(error);
+  let r = infoArgs[1].ensure(result);
   return (obj, ctx) => {
     if (c === REF) {
-      try { c = infoArgs[0].ensureRef(child, ctx); } catch (e) { return e.message; }
+      try { c = infoArgs[0].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
     }
-    if (f === REF) {
-      try { f = ensureArg.anyRef(error, ctx); } catch (e) { return e.message; }
-      f = f == null ? undefined : f;
+    if (r === REF) {
+      try { r = infoArgs[1].ensureRef(result, ctx, obj); } catch (e) { return e.message; }
     }
-    return c(obj, ctx) ? f : undefined;
+    if (c(obj, ctx) === undefined) { return undefined; }
+    return r == null ? undefined : r;
   };
 }
 
