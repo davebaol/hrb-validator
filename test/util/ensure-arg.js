@@ -13,10 +13,12 @@ describe('Test references for all kinds of arguments', () => {
     return () => ensureArg[kindRef](ref, ctx, {});
   }
 
-  ensureArg.kinds.forEach((k) => {
+  Object.keys(argInfo).forEach((k) => {
     const kRef = `${k}Ref`;
+    if (!ensureArg[kRef]) {
+      return;
+    }
     let testRefToValues;
-    let testChainedReferences;
     let testUnresolvedReference;
     let mismatchedReferences;
     if (argInfo[k].acceptValueRef()) {
@@ -33,11 +35,6 @@ describe('Test references for all kinds of arguments', () => {
           ensureArg[kRef](ref, ctx, {});
         }
       ];
-      testChainedReferences = () => {
-        const obj = { a: { $path: 'b' }, b: 1 };
-        const ref = { $path: 'a' };
-        ensureArg[kRef](ref, new Context(), obj);
-      };
       testUnresolvedReference = () => {
         const ref = { $var: 'V1' };
         ensureArg[kRef](ref, new Context(), {});
@@ -52,13 +49,6 @@ describe('Test references for all kinds of arguments', () => {
           ensureArg[kRef](ref, ctx);
         }
       ];
-      testChainedReferences = () => {
-        const ctx = new Context();
-        ctx.push({ $V1: { isSet: ['a'] } });
-        ctx.push({ $V2: { $var: '$V1' } });
-        const ref = { $var: '$V2' };
-        ensureArg[kRef](ref, ctx);
-      };
       testUnresolvedReference = () => {
         // For now this fails as expected just because variable reference is not implemented yet
         const ref = { $var: '$V1' };
@@ -78,12 +68,7 @@ describe('Test references for all kinds of arguments', () => {
     }
     if (testUnresolvedReference) {
       it(`${kRef} should throw an error on unresolved reference`, () => {
-        assert.throws(testUnresolvedReference, Error);
-      });
-    }
-    if (testChainedReferences) {
-      it(`${kRef} should throw an error on chained references`, () => {
-        assert.throws(testChainedReferences, Error);
+        assert.throws(testUnresolvedReference, Error, 'Unresolved');
       });
     }
 
@@ -142,20 +127,5 @@ describe('Test utility ensureArg.children(array).', () => {
     vlds.splice(valRefIndex, 0, { $var: '$this_is_a_validator_reference' });
     const ensuredValidators = ensureArg.children(vlds);
     assert(ensuredValidators.every((v, i) => (i === valRefIndex ? v === REF : typeof v === 'function')), ':(');
-  });
-});
-
-describe('Test utility ensureArg.scope(s).', () => {
-  it('Should throw an error for anything other than a plain object', () => {
-    assert.throws(() => ensureArg.scope(['This is not a scope']), Error);
-  });
-  it('Should return the same scope specified in input', () => {
-    const scope = {};
-    assert(ensureArg.scope(scope) === scope, ':(');
-  });
-  it('Should return the same scope where only validators are functions', () => {
-    const scope = { VAR: { isSet: ['a'] }, $VALIDATOR: { contains: ['a', 'x'] } };
-    ensureArg.scope(scope);
-    assert(Object.keys(scope).every(k => (k.startsWith('$') && typeof scope[k] === 'function') || (!k.startsWith('$') && typeof scope[k] !== 'function')), ':(');
   });
 });

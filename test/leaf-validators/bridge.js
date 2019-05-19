@@ -1,20 +1,12 @@
 import { assert } from 'chai';
 import bridge from '../../src/leaf-validators/bridge';
-import { testArgument, testValidation, VALIDATION } from '../test-utils';
+import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 
 const { SUCCESS, FAILURE, THROW } = VALIDATION;
 
 function testOwnerClass(v, className) {
-  it(`Bridged leaf validator ${v.owner.name} is a representative member of ${className}`, () => {
-    assert(v.owner.constructor.name === className, ':(');
-  });
-}
-
-function testAllArguments(v, args) {
-  const vName = v.owner.name;
-  testArgument('path', vName, args, 0);
-  v.owner.argDescriptors.forEach((ad, i) => {
-    testArgument(ad.type, vName, args, i + 1);
+  it(`Bridged leaf validator ${v.info.name} is a representative member of ${className}`, () => {
+    assert(v.info.constructor.name === className, ':(');
   });
 }
 
@@ -28,18 +20,19 @@ describe('Test bridged leaf validators.', () => {
   const owners = ['StringOnly', 'StringAndNumber', 'StringAndArray'];
   it(`Bridged leaf validator owners belong all to [${owners.join(', ')}]`, () => {
     const result = Object.keys(bv).reduce((acc, k) => {
-      acc[bv[k].owner.constructor.name] = true;
+      acc[bv[k].info.constructor.name] = true;
       return acc;
     }, {});
     assert.hasAllKeys(result, owners, ':(');
   });
 
-  const { contains } = bv;
-  testOwnerClass(contains, 'StringOnly');
-  testAllArguments(contains, ['a', 'seed']);
-  testValidation(SUCCESS, { a: 'string' }, contains, 'a', '');
-  testValidation(FAILURE, { a: 3 }, contains, 'a', '');
-  testValidation([THROW, FAILURE], { a: 3 }, contains, 'a', 123);
+  // Test matches to test regex type too
+  const { matches } = bv;
+  testOwnerClass(matches, 'StringOnly');
+  testAllArguments(matches, ['a', '.*']);
+  testValidation(SUCCESS, { a: 'string' }, matches, 'a', '.*', 'i');
+  testValidation(FAILURE, { a: 3 }, matches, 'a', '.*');
+  testValidation([THROW, FAILURE], { a: 'string' }, matches, 'a', 123);
 
   const { isDivisibleBy } = bv;
   testOwnerClass(isDivisibleBy, 'StringAndNumber');

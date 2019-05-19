@@ -68,29 +68,25 @@ function resolveValidatorRef(ref, context) {
   throw new Error('Expected validator reference');
 }
 
-const ANY = ['boolean', 'number', 'object', 'string', 'undefined'].reduce((acc, k) => {
+const ANY = ['boolean', 'number', 'object', 'string'].reduce((acc, k) => {
   acc[k] = true;
   return acc;
 }, {});
 
-function any(val) {
+function any(val, noReference) {
   if (ANY[typeof val]) {
-    return isRef(val) ? REF : val;
+    return !noReference && isRef(val) ? REF : val;
   }
   throw new Error('Argument has unknown type');
 }
 
 function anyRef(ref, context, obj) {
-  const val = any(resolveValueRef(ref, context, obj));
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
+  return any(resolveValueRef(ref, context, obj), true);
 }
 
-function array(val) {
+function array(val, noReference) {
   if (!Array.isArray(val)) {
-    if (isRef(val)) {
+    if (!noReference && isRef(val)) {
       return REF;
     }
     throw new Error('Argument must be an array');
@@ -98,17 +94,9 @@ function array(val) {
   return val;
 }
 
-function arrayRef(ref, context, obj) {
-  const val = array(resolveValueRef(ref, context, obj));
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
-}
-
-function integer(val) {
+function integer(val, noReference) {
   if (!Number.isInteger(val)) {
-    if (isRef(val)) {
+    if (!noReference && isRef(val)) {
       return REF;
     }
     throw new Error('Argument must be an integer number');
@@ -116,17 +104,9 @@ function integer(val) {
   return val;
 }
 
-function integerRef(ref, context, obj) {
-  const val = integer(resolveValueRef(ref, context, obj));
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
-}
-
-function number(val) {
+function number(val, noReference) {
   if (typeof val !== 'number') {
-    if (isRef(val)) {
+    if (!noReference && isRef(val)) {
       return REF;
     }
     throw new Error('Argument must be a number');
@@ -134,39 +114,27 @@ function number(val) {
   return val;
 }
 
-function numberRef(ref, context, obj) {
-  const val = number(resolveValueRef(ref, context, obj));
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
-}
-
 // Contrary to options, an object can only be referenced as a whole.
 // Its properties cannot be referenced individually.
-function object(val) {
-  if (isRef(val)) {
+function object(val, noReference) {
+  if (!noReference && isRef(val)) {
     return REF;
   }
-  if (val == null || typeof val !== 'object') {
+  if (!isPlainObject(val)) {
     throw new Error('Argument must be an object');
   }
   return val;
 }
 
 function objectRef(ref, context, obj) {
-  const val = object(resolveValueRef(ref, context, obj));
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
+  return object(resolveValueRef(ref, context, obj), true);
 }
 
 // Like object, options can be referenced as a whole.
 // However first level properties can be referenced individually.
-function options(val) {
+function options(val, noReference) {
   if (val != null) {
-    if (isRef(val)) {
+    if (!noReference && isRef(val)) {
       return REF;
     }
     if (typeof val !== 'object') {
@@ -215,28 +183,21 @@ function optionsRef(ref, context, obj) {
   return opts;
 }
 
-function path(val, validatorName) {
+function path(val, noReference) {
   const p = ensureArrayPath(val);
   if (p === BAD_PATH) {
-    if (isRef(val)) {
+    if (!noReference && isRef(val)) {
       return REF;
     }
-    throw new Error(`${validatorName}: the path must be a string, a number, an array of the two previous types, or null`);
+    throw new Error('XXX: the path must be a string, a number, an array of the two previous types, or null');
   }
   return p;
 }
 
-function pathRef(ref, context, obj, validatorName) {
-  const val = path(resolveValueRef(ref, context, obj), validatorName);
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
-}
 
-function string(val) {
+function string(val, noReference) {
   if (typeof val !== 'string') {
-    if (isRef(val)) {
+    if (!noReference && isRef(val)) {
       return REF;
     }
     throw new Error('Argument must be a string');
@@ -244,17 +205,9 @@ function string(val) {
   return val;
 }
 
-function stringRef(ref, context, obj) {
-  const val = string(resolveValueRef(ref, context, obj));
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
-}
-
-function stringOrArray(val) {
+function stringOrArray(val, noReference) {
   if (typeof val !== 'string' && !Array.isArray(val)) {
-    if (isRef(val)) {
+    if (!noReference && isRef(val)) {
       return REF;
     }
     throw new Error('A type argument must be a string or an array of strings');
@@ -262,17 +215,9 @@ function stringOrArray(val) {
   return val;
 }
 
-function stringOrArrayRef(ref, context, obj) {
-  const val = stringOrArray(resolveValueRef(ref, context, obj));
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
-}
-
-function stringOrRegex(val) {
+function stringOrRegex(val, noReference) {
   if (typeof val !== 'string' && !isRegExp(val)) {
-    if (isRef(val)) {
+    if (!noReference && isRef(val)) {
       return REF;
     }
     throw new Error('The argument must be a string or a regex');
@@ -280,15 +225,7 @@ function stringOrRegex(val) {
   return val;
 }
 
-function stringOrRegexRef(ref, context, obj) {
-  const val = stringOrRegex(resolveValueRef(ref, context, obj));
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
-}
-
-function child(val) {
+function child(val, noReference) {
   if (typeof val === 'function') {
     return val;
   }
@@ -297,7 +234,7 @@ function child(val) {
     if (!method) {
       throw new Error('Error: A plain object validator must have exactly one property where the key is its name and the value is the array of its arguments');
     }
-    if (isRef(val)) {
+    if (!noReference && isRef(val)) {
       return REF;
     }
     const validate = V[method];
@@ -310,25 +247,7 @@ function child(val) {
 }
 
 function childRef(ref, context) {
-  const val = child(resolveValidatorRef(ref, context));
-  if (val === REF) {
-    throw new Error('XXX: chained references are not allowed');
-  }
-  return val;
-}
-
-function scope(obj) {
-  if (!isPlainObject(obj)) {
-    throw new Error('The scope must be an object');
-  }
-  // eslint-disable-next-line no-restricted-syntax
-  for (const k in obj) {
-    if (hasOwn.call(obj, k)) {
-      // eslint-disable-next-line no-param-reassign
-      obj[k] = k.startsWith('$') ? child(obj[k]) : any(obj[k]);
-    }
-  }
-  return obj;
+  return child(resolveValidatorRef(ref, context), true);
 }
 
 function children(vlds) {
@@ -356,31 +275,21 @@ module.exports = {
   any,
   anyRef,
   array,
-  arrayRef,
   integer,
-  integerRef,
   number,
-  numberRef,
   object,
   objectRef,
   options,
   optionsRef,
   path,
-  pathRef,
-  scope,
-  // scopeRef,
   string,
-  stringRef,
   stringOrArray,
-  stringOrArrayRef,
   stringOrRegex,
-  stringOrRegexRef,
   type: stringOrArray, // TODO: specialize this to check valid types, see util/type.js
-  typeRef: stringOrArrayRef,
   child,
   childRef,
-  children
+  children,
   // validatorsRef
+  resolveValidatorRef,
+  resolveValueRef
 };
-
-module.exports.kinds = Object.keys(module.exports).filter(k => typeof module.exports[k] === 'function' && typeof module.exports[`${k}Ref`] === 'function');

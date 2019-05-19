@@ -1,29 +1,34 @@
 import { assert } from 'chai';
-import { testArgument } from '../test-utils';
 import V from '../../src';
+import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 
-const success = () => undefined;
-const failure = () => 'failure';
+const { SUCCESS } = VALIDATION;
+
+const success = { optIsSet: [''] };
+const failure = { not: [success] };
 
 describe('Test branch validator alter.', () => {
-  testArgument('child', 'alter', [success, '', ''], 0);
+  testAllArguments(V.alter, ['', '', success]);
+  testValidation(SUCCESS, {}, V.alter, null, 'error', success);
+  testValidation(SUCCESS, {}, V.alter, 'error', null, failure);
   it('alter(success, "OK", "KO") should return "OK"', () => {
-    const v = V.alter(success, 'OK', 'KO');
+    const v = V.alter('OK', 'KO', success);
     assert(v({}) === 'OK', ':(');
   });
   it('alter(failure, "OK", "KO") should return "KO"', () => {
-    const v = V.alter(failure, 'OK', 'KO');
+    const v = V.alter('OK', 'KO', failure);
     assert(v({}) === 'KO', ':(');
   });
 });
 
 describe('Test branch validator onError.', () => {
-  testArgument('child', 'onError', ['error', success], 1);
-  it('onError("error", success) should succeed', () => {
+  testAllArguments(V.onError, ['error', success]);
+  testValidation(SUCCESS, {}, V.onError, null, failure);
+  it('onError("success, error") should succeed', () => {
     const v = V.onError('error', success);
     assert(v({}) === undefined, ':(');
   });
-  it('onError("error", failure) should fail with "error"', () => {
+  it('onError(failure, "error") should fail with "error"', () => {
     const v = V.onError('error', failure);
     assert(v({}) === 'error', ':(');
   });

@@ -1,17 +1,15 @@
 import { assert } from 'chai';
-import { testArgument } from '../test-utils';
 import V from '../../src';
+import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
+
+const { SUCCESS, FAILURE } = VALIDATION;
 
 const successExpected = ['123', [1, 2, 3], { a: 1, b: 2, c: 3 }];
 const failureExpected = ['12', [1, 2], { a: 1, b: 2 }, true, null, 123];
 
 function check(val, shouldSucceed) {
   const obj = { a: val };
-  it(`isLength("a", {min:3, max:3}) should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
-    const v = V.isLength('a', { min: 3, max: 3 });
-    const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;
-    assert(result, ':(');
-  });
+  testValidation(shouldSucceed ? SUCCESS : FAILURE, obj, V.isLength, 'a', { min: 3, max: 3 });
 }
 
 function checkRef(val, shouldSucceed) {
@@ -29,8 +27,7 @@ function checkRef(val, shouldSucceed) {
 
 describe('Test leaf validator isLength.', () => {
   const args = ['', {}];
-  testArgument('path', 'isLength', args, 0);
-  testArgument('object', 'isLength', args, 1);
+  testAllArguments(V.isLength, args);
   successExpected.forEach(obj => check(obj, true));
   failureExpected.forEach(obj => check(obj, false));
   successExpected.forEach(obj => checkRef(obj, true));
