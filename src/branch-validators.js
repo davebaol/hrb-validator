@@ -235,36 +235,36 @@ function some(path, child) {
   };
 }
 
-function alter(child, resultOnSuccess, resultOnError) {
+function alter(resultOnSuccess, resultOnError, child) {
   const infoArgs = alter.info.argDescriptors;
-  let c = infoArgs[0].ensure(child);
-  let s = infoArgs[1].ensure(resultOnSuccess);
-  let f = infoArgs[2].ensure(resultOnError);
+  let s = infoArgs[0].ensure(resultOnSuccess);
+  let f = infoArgs[1].ensure(resultOnError);
+  let c = infoArgs[2].ensure(child);
   return (obj, ctx) => {
-    if (c === REF) {
-      try { c = infoArgs[0].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
-    }
     if (s === REF) {
-      try { s = infoArgs[1].ensureRef(resultOnSuccess, ctx, obj); } catch (e) { return e.message; }
+      try { s = infoArgs[0].ensureRef(resultOnSuccess, ctx, obj); } catch (e) { return e.message; }
     }
     if (f === REF) {
-      try { f = infoArgs[2].ensureRef(resultOnError, ctx, obj); } catch (e) { return e.message; }
+      try { f = infoArgs[1].ensureRef(resultOnError, ctx, obj); } catch (e) { return e.message; }
+    }
+    if (c === REF) {
+      try { c = infoArgs[2].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
     }
     const r = c(obj, ctx) === undefined ? s : f;
     return r == null ? undefined : r;
   };
 }
 
-function onError(child, result) {
+function onError(result, child) {
   const infoArgs = onError.info.argDescriptors;
-  let c = infoArgs[0].ensure(child);
-  let r = infoArgs[1].ensure(result);
+  let r = infoArgs[0].ensure(result);
+  let c = infoArgs[1].ensure(child);
   return (obj, ctx) => {
-    if (c === REF) {
-      try { c = infoArgs[0].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
-    }
     if (r === REF) {
-      try { r = infoArgs[1].ensureRef(result, ctx, obj); } catch (e) { return e.message; }
+      try { r = infoArgs[0].ensureRef(result, ctx, obj); } catch (e) { return e.message; }
+    }
+    if (c === REF) {
+      try { c = infoArgs[1].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
     }
     if (c(obj, ctx) === undefined) { return undefined; }
     return r == null ? undefined : r;
@@ -350,8 +350,8 @@ function branchValidators() {
     new Info(_if, 'cond:child', 'then:child', 'else:child?'),
     new Info(every, 'path:path', 'child:child'),
     new Info(some, 'path:path', 'child:child'),
-    new Info(alter, 'child:child', 'success:any?', 'failure:any?'),
-    new Info(onError, 'child:child', 'error:any?'),
+    new Info(alter, 'resultOnSuccess:any?', 'resultOnError:any?', 'child:child'),
+    new Info(onError, 'result:any?', 'child:child'),
     new Info(_while, 'path:path', 'cond:child', 'do:child')
   ];
   /* eslint-enable no-unused-vars */

@@ -5,10 +5,10 @@ import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 const { FAILURE } = VALIDATION;
 
 describe('Test branch validator if.', () => {
-  const success = V.optIsSet('a');
-  const failure = V.alter(V.isSet('a'), 'failure', 'failure');
-  const vThen = V.alter(V.isSet('a'), 'then', 'then');
-  const vElse = V.alter(V.isSet('a'), 'else', 'else');
+  const success = { optIsSet: [''] };
+  const failure = { not: [success] };
+  const vThen = { onError: ['then', failure] };
+  const vElse = { onError: ['else', failure] };
   const args = [success, vThen, vElse];
   testAllArguments(V.if, args);
   testValidation(FAILURE, {}, V.if, success, vThen, vElse);

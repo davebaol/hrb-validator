@@ -8,28 +8,28 @@ const success = { optIsSet: [''] };
 const failure = { not: [success] };
 
 describe('Test branch validator alter.', () => {
-  testAllArguments(V.alter, [success, '', '']);
-  testValidation(SUCCESS, {}, V.alter, success, null, 'error');
-  testValidation(SUCCESS, {}, V.alter, failure, 'error', null);
+  testAllArguments(V.alter, ['', '', success]);
+  testValidation(SUCCESS, {}, V.alter, null, 'error', success);
+  testValidation(SUCCESS, {}, V.alter, 'error', null, failure);
   it('alter(success, "OK", "KO") should return "OK"', () => {
-    const v = V.alter(success, 'OK', 'KO');
+    const v = V.alter('OK', 'KO', success);
     assert(v({}) === 'OK', ':(');
   });
   it('alter(failure, "OK", "KO") should return "KO"', () => {
-    const v = V.alter(failure, 'OK', 'KO');
+    const v = V.alter('OK', 'KO', failure);
     assert(v({}) === 'KO', ':(');
   });
 });
 
 describe('Test branch validator onError.', () => {
-  testAllArguments(V.onError, [success, 'error']);
-  testValidation(SUCCESS, {}, V.onError, failure, null);
+  testAllArguments(V.onError, ['error', success]);
+  testValidation(SUCCESS, {}, V.onError, null, failure);
   it('onError("success, error") should succeed', () => {
-    const v = V.onError(success, 'error');
+    const v = V.onError('error', success);
     assert(v({}) === undefined, ':(');
   });
   it('onError(failure, "error") should fail with "error"', () => {
-    const v = V.onError(failure, 'error');
+    const v = V.onError('error', failure);
     assert(v({}) === 'error', ':(');
   });
 });
