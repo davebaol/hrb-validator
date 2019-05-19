@@ -31,13 +31,13 @@ function equals(path, value) {
 function isLength(path, options) {
   const infoArgs = isLength.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
-  let opts = ensureArg.options(options);
+  let opts = infoArgs[1].ensure(options);
   return (obj, ctx) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     if (opts === REF) {
-      try { opts = ensureArg.optionsRef(options, ctx, obj); } catch (e) { return e.message; }
+      try { opts = infoArgs[1].ensureRef(options, ctx, obj); } catch (e) { return e.message; }
     }
     const min = opts.min || 0;
     const max = opts.max; // eslint-disable-line prefer-destructuring
@@ -140,7 +140,7 @@ function leafValidators() {
   const vInfo = [
     new Info(equals, 'path:path', 'value:any'),
     new Info(isArrayOf, 'path:path', 'type:type'),
-    new Info(isLength, 'path:path', 'options:object?'),
+    new Info(isLength, 'path:path', 'options:options?'),
     new Info(isOneOf, 'path:path', 'values:array'),
     new Info(isSet, 'path:path'),
     new Info(isType, 'path:path', 'type:type')
