@@ -74,7 +74,7 @@ const ANY = ['boolean', 'number', 'object', 'string'].reduce((acc, k) => {
 }, {});
 
 function any(val, noReference) {
-  if (val != null && ANY[typeof val]) {
+  if (ANY[typeof val]) {
     return !noReference && isRef(val) ? REF : val;
   }
   throw new Error('Argument has unknown type');

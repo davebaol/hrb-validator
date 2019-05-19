@@ -1,7 +1,10 @@
 const ensureArg = require('./ensure-arg');
 
 // Types ammitting null as legal value, so naturally optional
-const nullAllowedTypes = { path: true };
+const nullAllowedTypes = ['path', 'any'].reduce((acc, k) => {
+  acc[k] = true;
+  return acc;
+}, {});
 
 const specialRefs = {
   options: ensureArg.optionsRef,
