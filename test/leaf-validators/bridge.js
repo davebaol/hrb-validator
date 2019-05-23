@@ -5,7 +5,7 @@ import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 const { SUCCESS, FAILURE, THROW } = VALIDATION;
 
 function testOwnerClass(v, className) {
-  it(`Bridged leaf validator ${v.info.name} is a representative member of ${className}`, () => {
+  it(`Bridged leaf validator ${v.info.name} should be a representative member of ${className}`, () => {
     assert(v.info.constructor.name === className, ':(');
   });
 }
@@ -13,17 +13,17 @@ function testOwnerClass(v, className) {
 describe('Test bridged leaf validators.', () => {
   const bv = bridge({});
 
-  it('Bridged leaf validators are all functions', () => {
+  it('Bridged leaf validators should be all functions', () => {
     assert(Object.keys(bv).every(k => typeof bv[k] === 'function'), ':(');
   });
 
-  const owners = ['StringOnly', 'StringAndNumber', 'StringAndArray'];
-  it(`Bridged leaf validator owners belong all to [${owners.join(', ')}]`, () => {
+  const infoList = ['StringOnly', 'StringAndNumber', 'StringAndArray'];
+  it(`Info of all bridged leaf validators should belong to [${infoList.join(', ')}]`, () => {
     const result = Object.keys(bv).reduce((acc, k) => {
       acc[bv[k].info.constructor.name] = true;
       return acc;
     }, {});
-    assert.hasAllKeys(result, owners, ':(');
+    assert.hasAllKeys(result, infoList, ':(');
   });
 
   // Test matches to test regex type too
