@@ -204,7 +204,6 @@ function path(val, noReference) {
   return p;
 }
 
-
 function string(val, noReference) {
   if (typeof val !== 'string') {
     if (!noReference && isRef(val)) {
@@ -280,6 +279,7 @@ function children(vlds) {
 }
 
 module.exports = {
+  checkUniqueKey,
   REF,
   isRef,
   any,

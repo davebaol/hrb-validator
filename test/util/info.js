@@ -12,9 +12,9 @@ describe('Test Info class.', () => {
   }
   const stringArgs = ['myPath:path', 'num:integer?', '...rest:object'];
   const args = [
-    new Argument('myPath', 'path', false, false),
-    new Argument('num', 'integer', true, false),
-    new Argument('rest', 'object', false, true)
+    new Argument('myPath', 'path', false),
+    new Argument('num', 'integer?', false),
+    new Argument('rest', 'object', true)
   ];
   it('Info constructor should accept only strings or Argument instances as argument descriptors', () => {
     assert.throws(() => new Info(validator('namedValidator'), {}), Error);
@@ -43,13 +43,13 @@ describe('Test Info class.', () => {
     info.consolidate();
     assert(v.info === info && v === info.validator, ':(');
   });
-  it('Check validator\'s name', () => {
+  it('Validator\'s name from info should match the function name', () => {
     const v = validator('namedValidator');
     const info = new Info(v, ...args);
     info.consolidate();
     assert(v.name === info.name, ':(');
   });
-  it('Check argument descriptors created from string representation', () => {
+  it('Argument descriptors created from string should match the ones from corresponding Argument instances', () => {
     const info1 = new Info(validator('namedValidator'), ...args);
     info1.consolidate();
     const info2 = new Info(validator('namedValidator'), ...stringArgs);

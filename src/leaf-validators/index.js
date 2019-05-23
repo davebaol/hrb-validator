@@ -38,12 +38,15 @@ function isLength(path, options) {
   const infoArgs = isLength.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
   let opts = infoArgs[1].ensure(options);
+  console.log('isLength ensure arg[1] =', opts, opts === REF);
   return (obj, ctx) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     if (opts === REF) {
+      console.log('isLength calling ensureRef arg[1] =', opts);
       try { opts = infoArgs[1].ensureRef(options, ctx, obj); } catch (e) { return e.message; }
+      console.log('isLength ensureRef arg[1] =', opts);
     }
     const min = opts.min || 0;
     const max = opts.max; // eslint-disable-line prefer-destructuring
@@ -145,11 +148,11 @@ function leafValidators() {
   /* istanbul ignore next */
   const vInfo = [
     new Info(equals, 'path:path', 'value:any', 'deep:boolean?'),
-    new Info(isArrayOf, 'path:path', 'type:type'),
+    new Info(isArrayOf, 'path:path', 'type:string|array'),
     new Info(isLength, 'path:path', 'options:options?'),
     new Info(isOneOf, 'path:path', 'values:array'),
     new Info(isSet, 'path:path'),
-    new Info(isType, 'path:path', 'type:type')
+    new Info(isType, 'path:path', 'type:string|array')
   ];
   /* eslint-enable no-unused-vars */
 

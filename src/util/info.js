@@ -11,7 +11,7 @@ function processArgDescriptors(vName, descriptors) {
       try {
         a = Argument.parse(d);
       } catch (e) {
-        throw new Error(`Validator '${vName}' argument at index ${i}: ${e.message}'`);
+        throw new Error(`Validator '${vName}' argument at index ${i}: ${e.message}`);
       }
     }
     if (i < last && a.restParams) {

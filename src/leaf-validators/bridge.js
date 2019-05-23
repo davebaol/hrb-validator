@@ -178,7 +178,7 @@ function bridge(target) {
     new StringOnly('isMagnetURI', args => 'in magnet uri format'),
     new StringOnly('isMD5', args => 'representing a valid MD5 hash'),
     new StringOnly('isMimeType', args => 'matching to a valid MIME type format'),
-    new StringOnly('isMobilePhone', args => 'representing a mobile phone number', 'locale:stringOrArray?', 'options:object?'),
+    new StringOnly('isMobilePhone', args => 'representing a mobile phone number', 'locale:string|array?', 'options:object?'),
     new StringOnly('isMongoId', args => 'in the form of a valid hex-encoded representation of a MongoDB ObjectId.'),
     new StringOnly('isMultibyte', args => 'containing one or more multibyte chars'),
     new StringOnly('isNumeric', args => 'containing only numbers', 'options:object?'),
@@ -191,7 +191,7 @@ function bridge(target) {
     new StringOnly('isUUID', args => 'matching to a UUID (version 3, 4 or 5)', 'version:integer?'),
     new StringOnly('isVariableWidth', args => 'containing a mixture of full and half-width chars'),
     new StringOnly('isWhitelisted', args => 'whose characters belongs to the whitelist', 'chars:string'),
-    new StringOnly('matches', args => `matching the regex '${args[0]}'`, 'pattern:stringOrRegex', 'modifiers:string?')
+    new StringOnly('matches', args => `matching the regex '${args[0]}'`, 'pattern:string|regex', 'modifiers:string?')
   ];
   /* eslint-enable no-unused-vars */
 

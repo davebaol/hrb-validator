@@ -35,7 +35,7 @@ function addShortcutOpt(target, source, key) {
     throw new Error(`Key '${key}' must be a validator function in order to create its opt shortcut '${newKey}'; found ${typeof source[key]} insead`);
   }
   const firstArgType = getFirstArgType(source[key]);
-  if (firstArgType !== 'path') {
+  if (firstArgType.name !== 'path') {
     throw new Error(`Validator '${key}' must take a path as first argument in order to create its opt shortcut '${newKey}'; found '${firstArgType}' insead`);
   }
   // eslint-disable-next-line no-param-reassign
