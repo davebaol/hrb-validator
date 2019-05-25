@@ -325,7 +325,7 @@ class ChildType extends Type {
     }
     if (isPlainObject(val)) {
       const method = checkUniqueKey(val);
-      return method && V[method];
+      return method !== undefined && V[method] !== undefined && Array.isArray(val[method]);
     }
     return false;
   }
@@ -395,7 +395,7 @@ class PathType extends UnionType {
   }
 }
 
-const ANY_CHECK_OBJ = ['boolean', 'number', 'object', 'string'].reduce((acc, k) => {
+const ANY_CHECK_OBJ = ['boolean', 'number', 'object', 'string', 'undefined'].reduce((acc, k) => {
   acc[k] = true;
   return acc;
 }, {});
@@ -500,6 +500,17 @@ module.exports = {
   isRef,
   Type,
   UnionType,
+  AnyType,
+  ArrayType,
+  BooleanType,
+  ChildType,
+  IntegerType,
+  NullType,
+  NumberType,
+  ObjectType,
+  PathType,
+  RegexType,
+  StringType,
   NATIVE_TYPES,
   getNativeType: name => NATIVE_TYPES[name],
   getType(name) {

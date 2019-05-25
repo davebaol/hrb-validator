@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import { getNativeType } from '../../../src/util/types';
 import V from '../../../src';
 
-describe('Test type child.', () => {
+describe('Test ChildType.', () => {
   const child = getNativeType('child');
 
   it('Should throw an error for neither plain object nor function', () => {
