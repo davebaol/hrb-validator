@@ -1,1 +1,1 @@
-module.exports = require('./util/ensure-arg').child;
+module.exports = require('./util/types').getNativeType('child').ensure;

@@ -1,34 +1,37 @@
 const { getType } = require('./types');
 
+function retrieveType(typeDesc, context) {
+  return context ? context.getType(typeDesc) : getType(typeDesc);
+}
+
+/* eslint-disable no-param-reassign */
+function parseDef(target, def, context) {
+  const p = def.split(':').map(s => s.trim()); // ...<name>:<type> where '...' stands for rest parameters
+  target.restParams = p[0].startsWith('...');
+  target.name = target.restParams ? p[0].substring(3).trim() : p[0];
+  target.type = retrieveType(p[1], context);
+}
+/* eslint-enable no-param-reassign */
+
 class Argument {
-  constructor(name, typeDesc, restParams, refDepth) {
-    const arg = name instanceof Argument && arguments.length === 1 ? name : undefined;
-    this.name = arg ? arg.name : name;
-    this.type = arg ? arg.type : getType(typeDesc);
-    this.restParams = arg ? arg.restParams : !!restParams;
-    this.refDepth = arg ? arg.refDepth : refDepth || 0;
-  }
-
-  static parseString(descriptor) {
-    const p = descriptor.split(':').map(s => s.trim()); // ...<name>:<type> where '...' stands for rest parameters
-    const restParams = p[0].startsWith('...');
-    const name = restParams ? p[0].substring(3).trim() : p[0];
-    const type = p[1];
-    return new Argument(name, type, restParams);
-  }
-
-  static parse(descriptor) {
-    if (typeof descriptor === 'string') {
-      return Argument.parseString(descriptor);
-    }
-    if (typeof descriptor === 'object' && 'desc' in descriptor) {
-      const arg = Argument.parseString(descriptor.desc);
-      if ('refDepth' in descriptor) {
-        arg.refDepth = descriptor.refDepth;
+  constructor(desc, context) {
+    if (typeof desc === 'string') {
+      parseDef(this, desc, context);
+    } else if (typeof desc === 'object') {
+      if (desc.def) {
+        parseDef(this, desc.def, context);
+      } else {
+        this.name = desc.name;
+        this.type = typeof desc.type === 'string' ? retrieveType(desc.type, context) : desc.type;
+        this.restParams = !!desc.restParams;
       }
-      return arg;
+    } else {
+      throw new Error('Invalid argument definition: expected string, object or another argument.');
     }
-    throw new Error('Invalid argument definition');
+    this.refDepth = desc.refDepth || 0;
+    if (!this.name || !this.type) {
+      throw new Error('Invalid argument definition: name or type are missing.');
+    }
   }
 
   ensure(value, noReference) {

@@ -1,10 +1,10 @@
 const isPlainObject = require('is-plain-object');
 const isRegExp = require('is-regexp');
 const { BAD_PATH, ensureArrayPath } = require('./path');
+const checkUniqueKey = require('./check-unique-key');
 const V = require('..');
-const {
-  REF, isRef, resolveValueRef, resolveValidatorRef, checkUniqueKey
-} = require('./ensure-arg');
+
+const hasOwn = Object.prototype.hasOwnProperty;
 
 // Primitive and union types are progressively added below
 const NATIVE_TYPES = {};
@@ -19,6 +19,17 @@ function addNativeTypes(types) {
     }
     return acc;
   }, NATIVE_TYPES);
+}
+
+const REF = Object.freeze({});
+
+const REF_VALID_KEYS = {
+  $path: true,
+  $var: true
+};
+
+function isRef(val) {
+  return typeof val === 'object' && REF_VALID_KEYS[checkUniqueKey(val)];
 }
 
 // -------------------------------------------------------
@@ -38,12 +49,27 @@ class Type {
     return value;
   }
 
+  // Returns the name of the context function that will resolve references
+  get refResolver() {
+    let value;
+    if (this.acceptsValue) {
+      value = this.acceptsValidator ? 'resolveRef' : 'resolveValueRef';
+    } else if (this.acceptsValidator) {
+      value = 'resolveValidatorRef';
+    }
+    return this.lazyProperty('refResolver', value);
+  }
+
   get nullable() {
     return this.lazyProperty('nullable', this.check(null));
   }
 
-  // Only validators are executable
-  get acceptsValidator() { /* eslint-disable no-underscore-dangle */
+  get acceptsValue() {
+    return !this.acceptsValidator;
+  }
+
+  // Only validators are executable (we're cecking for a function)
+  get acceptsValidator() {
     const value = this.check(isRef); // Let's test a randomly picked function
     return this.lazyProperty('acceptsValidator', value);
   }
@@ -69,7 +95,10 @@ class Type {
   }
 
   ensureRef(ref, context, obj) {
-    return this.ensure(resolveValueRef(ref, context, obj), true);
+    if (!this.refResolver) {
+      throw new Error('Sorry, it seems reference is not allowed here');
+    }
+    return this.ensure(context[this.refResolver](ref, obj), true);
   }
 }
 
@@ -79,15 +108,15 @@ class UnionType extends Type {
     const named = typeof name === 'string' && (typeof members === 'string' || Array.isArray(members));
     const m = named ? members : name;
     const s = named ? score : members;
-    this.members = UnionType.parse(m);
+    this.members = m;
     if (!named) {
       this.name = UnionType.membersToString(this.members);
-      this.score = s;
     }
+    this.score = s;
   }
 
-  static membersToString(members) {
-    return members.map(m => m.name).join('|');
+  static membersToString(memberTypes) {
+    return memberTypes.map(m => m.name).join('|');
   }
 
   static parse(members) {
@@ -134,8 +163,18 @@ class UnionType extends Type {
   }
 
   get nullable() {
-    const value = this.members.find(m => m.nullable);
+    const value = this.members.some(m => m.nullable);
     return this.lazyProperty('nullable', value);
+  }
+
+  get acceptsValue() { /* eslint-disable no-underscore-dangle */
+    const value = this.members.some(m => m.acceptsValue);
+    return this.lazyProperty('acceptsValue', value);
+  }
+
+  get acceptsValidator() { /* eslint-disable no-underscore-dangle */
+    const value = this.members.some(m => m.acceptsValidator);
+    return this.lazyProperty('acceptsValidator', value);
   }
 
   /*
@@ -143,7 +182,7 @@ class UnionType extends Type {
   * considers an unknown ref like a good value, so cannot fail on validator creation
   */
   get swallowsRef() { /* eslint-disable no-underscore-dangle */
-    const value = this.members.find(m => m.swallowsRef);
+    const value = this.members.some(m => m.swallowsRef);
     return this.lazyProperty('swallowsRef', value);
   }
 
@@ -167,10 +206,6 @@ class UnionType extends Type {
       }
     }
     throw new Error(`Expected type '${this.name}'`);
-  }
-
-  ensureRef(ref, context, obj) {
-    return this.ensure(resolveValueRef(ref, context, obj), true);
   }
 }
 
@@ -316,10 +351,6 @@ class ChildType extends Type {
     }
     throw new Error(`Expected a validator as either a function or a plain object; found a ${typeof val} instead`);
   }
-
-  ensureRef(ref, context) {
-    return this.ensure(resolveValidatorRef(ref, context), true);
-  }
 }
 
 // Add primitive Types
@@ -340,11 +371,9 @@ addNativeTypes(primitiveTypes);
 // --------------------- UNION TYPES ---------------------
 // -------------------------------------------------------
 
-const hasOwn = Object.prototype.hasOwnProperty;
-
 class PathType extends UnionType {
   constructor() {
-    super('path', 'string|number|array?');
+    super('path', UnionType.parse('string|number|array?'));
   }
 
   // Optimized check
@@ -371,9 +400,10 @@ const ANY_CHECK_OBJ = ['boolean', 'number', 'object', 'string'].reduce((acc, k) 
   return acc;
 }, {});
 
+// Union of all native types except child, path and options
 class AnyType extends UnionType {
   constructor() {
-    super('any', UnionType.membersToString(primitiveTypes));
+    super('any', UnionType.parse('null|string|integer|number|boolean|array|object|regex'));
   }
 
   // Optimized check
@@ -427,7 +457,7 @@ class OptionsType extends Type {
     console.log('*******************************');
     if (isRef(ref)) {
       console.log('Options.ensureRef -> isRef');
-      return this.ensure(resolveValueRef(ref, context, obj), true);
+      return this.ensure(context.resolveValueRef(ref, obj), true);
     }
     // There must be at least one 1st level key that's a reference to resolve
     let opts = ref;
@@ -466,9 +496,18 @@ addNativeTypes([new PathType(), ANY_TYPE, new OptionsType()]);
 Object.freeze(NATIVE_TYPES);
 
 module.exports = {
+  REF,
+  isRef,
   Type,
   UnionType,
   NATIVE_TYPES,
   getNativeType: name => NATIVE_TYPES[name],
-  getType: name => (name in NATIVE_TYPES ? NATIVE_TYPES[name] : new UnionType(name))
+  getType(name) {
+    if (name in NATIVE_TYPES) {
+      return NATIVE_TYPES[name];
+    }
+    // Create new type
+    const normalizedTypes = UnionType.parse(name);
+    return normalizedTypes.length === 1 ? normalizedTypes[0] : new UnionType(normalizedTypes);
+  }
 };

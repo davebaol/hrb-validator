@@ -1,25 +1,5 @@
 const Argument = require('./argument');
-const ensureArg = require('./ensure-arg');
-
-const { REF } = ensureArg;
-
-function processArgDescriptors(vName, descriptors) {
-  const last = descriptors.length - 1;
-  return descriptors.map((d, i) => {
-    let a = d;
-    if (!(a instanceof Argument)) {
-      try {
-        a = Argument.parse(d);
-      } catch (e) {
-        throw new Error(`Validator '${vName}' argument at index ${i}: ${e.message}`);
-      }
-    }
-    if (i < last && a.restParams) {
-      throw new Error(`Validator '${vName}' argument at index ${i}: rest parameter is legal only for the last argument`);
-    }
-    return a;
-  });
-}
+const { REF } = require('./types');
 
 class Info {
   constructor(validator, ...argDescriptors) {
@@ -34,7 +14,7 @@ class Info {
     } else {
       throw new Error('Expected the function or its name as first argument');
     }
-    this.argDescriptors = processArgDescriptors(this.name, argDescriptors);
+    this.argDescriptors = argDescriptors; // will be processed in consolidate()
   }
 
   ensureRestParams(args, offset = 0) {
@@ -82,10 +62,27 @@ class Info {
     throw new Error('To support anonymous function inherited classes have to implement the method link!');
   }
 
+  processArgDescriptors(context) {
+    const last = this.argDescriptors.length - 1;
+    this.argDescriptors = this.argDescriptors.map((d, i) => {
+      let a;
+      try {
+        a = new Argument(d, context);
+      } catch (e) {
+        throw new Error(`Validator '${this.name}' argument at index ${i}: ${e.message}`);
+      }
+      if (i < last && a.restParams) {
+        throw new Error(`Validator '${this.name}' argument at index ${i}: rest parameter is legal only for the last argument`);
+      }
+      return a;
+    });
+  }
+
   /*
    This method MUST be called before using the instance
   */
-  consolidate() {
+  consolidate(context) {
+    this.processArgDescriptors(context);
     if (!this.validator) {
       this.validator = this.link();
     }

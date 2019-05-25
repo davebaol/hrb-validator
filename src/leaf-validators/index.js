@@ -2,12 +2,10 @@ const deepEqual = require('fast-deep-equal');
 const lengthOf = require('@davebaol/length-of');
 const bridge = require('./bridge');
 const { get } = require('../util/path');
-const { typeCheckers, getType } = require('../util/type');
-const ensureArg = require('../util/ensure-arg');
 const createShortcuts = require('../util/create-shortcuts');
 const Info = require('../util/info');
-
-const { REF } = ensureArg;
+const Context = require('../util/context');
+const { REF, getType } = require('../util/types');
 
 //
 // LEAF VALIDATORS
@@ -19,7 +17,7 @@ function equals(path, value, deep) {
   let p = infoArgs[0].ensure(path);
   let v = infoArgs[1].ensure(value);
   let d = infoArgs[2].ensure(deep);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
@@ -39,7 +37,7 @@ function isLength(path, options) {
   let p = infoArgs[0].ensure(path);
   let opts = infoArgs[1].ensure(options);
   console.log('isLength ensure arg[1] =', opts, opts === REF);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
@@ -61,7 +59,7 @@ function isLength(path, options) {
 function isSet(path) {
   const infoArgs = isSet.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
@@ -73,26 +71,20 @@ function isType(path, type) {
   const infoArgs = isType.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
   let t = infoArgs[1].ensure(type);
-  const isSingleType = t !== REF && typeof t === 'string' && typeCheckers[t];
-  const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]);
-  if (t !== REF && !isSingleType && !isArrayOfTypes) {
-    throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
+  if (t !== REF) {
+    t = getType(t);
   }
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     if (t === REF) {
-      try { t = infoArgs[1].ensureRef(type, ctx, obj); } catch (e) { return e.message; }
+      try {
+        t = infoArgs[1].ensureRef(type, ctx, obj);
+        t = ctx.getType(t);
+      } catch (e) { return e.message; }
     }
-    if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
-      return typeCheckers[t](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${t}'; found '${getType(get(obj, p)) || 'unknown'}' instead`;
-    }
-    if (isArrayOfTypes || (Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]))) {
-      const value = get(obj, p);
-      return (t.some(tt => typeCheckers[tt](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${t.join(', ')}'; found '${getType(value) || 'unknown'}' instead`);
-    }
-    return `isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`;
+    return t.check(get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${t.name}'`;
   };
 }
 
@@ -100,7 +92,7 @@ function isOneOf(path, values) {
   const infoArgs = isOneOf.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
   let a = infoArgs[1].ensure(values);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
@@ -115,31 +107,23 @@ function isArrayOf(path, type) {
   const infoArgs = isType.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
   let t = infoArgs[1].ensure(type);
-  const isSingleType = t !== REF && typeof t === 'string' && typeCheckers[t];
-  const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]);
-  if (t !== REF && !isSingleType && !isArrayOfTypes) {
-    throw new Error(`isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
+  if (t !== REF) {
+    t = getType(t);
   }
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
     if (t === REF) {
-      try { t = infoArgs[1].ensureRef(type, ctx, obj); } catch (e) { return e.message; }
+      try {
+        t = infoArgs[1].ensureRef(type, ctx, obj);
+        t = ctx.getType(t);
+      } catch (e) { return e.message; }
     }
-    if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
-      const value = get(obj, p);
-      if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array; found '${getType(value) || 'unknown'}' instead`;
-      const flag = value.every(e => typeCheckers[t](e));
-      return flag ? undefined : `isArrayOf: the value at path '${path}' must be a 'array of ${type}'; found '${getType(value) || 'unknown'}' instead`;
-    }
-    if (isArrayOfTypes || (Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]))) {
-      const value = get(obj, p);
-      if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be a 'array'; found '${getType(value)}' instead`;
-      const flag = value.every(e => t.some(tt => typeCheckers[tt](e)));
-      return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array where each item has a type amongst ${Object.keys(t).join(', ')}'; found '${getType(value)}' instead`;
-    }
-    return `isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`;
+    const value = get(obj, p);
+    if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array`;
+    const flag = value.every(e => t.check(e));
+    return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array of '${t.name}'`;
   };
 }
 

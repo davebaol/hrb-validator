@@ -1,9 +1,8 @@
 const v = require('validator');
 const { get } = require('../util/path');
-const ensureArg = require('../util/ensure-arg');
 const Info = require('../util/info');
-
-const { REF } = ensureArg;
+const { REF } = require('../util/types');
+const Context = require('../util/context');
 
 class Bridge extends Info {
   constructor(name, errorFunc, ...noPathArgDescriptors) {
@@ -62,7 +61,7 @@ class StringOnly extends Bridge {
     return (path, ...noPathArgs) => {
       let p = this.argDescriptors[0].ensure(path);
       const ensuredNoPathArgs = this.ensureRestParams(noPathArgs, 1);
-      return (obj, ctx) => {
+      return (obj, ctx = new Context()) => {
         if (p === REF) {
           try {
             p = this.argDescriptors[0].ensureRef(path, ctx, obj);

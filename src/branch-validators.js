@@ -1,11 +1,9 @@
 const { get } = require('./util/path');
 const Context = require('./util/context');
 const createShortcuts = require('./util/create-shortcuts');
-const ensureArg = require('./util/ensure-arg');
 const prepareScope = require('./util/prepare-scope');
 const Info = require('./util/info');
-
-const { REF } = ensureArg;
+const { REF } = require('./util/types');
 
 //
 // BRANCH VALIDATORS
@@ -16,7 +14,7 @@ function call(path, child) {
   const infoArgs = call.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
   let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
@@ -31,9 +29,7 @@ function def(scope, child) {
   const infoArgs = def.info.argDescriptors;
   let s = infoArgs[0].ensure(scope); // The scope is a non referenceable object (refDepth = -1)
   let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
-    // eslint-disable-next-line no-param-reassign
-    ctx = ctx || new Context();
+  return (obj, ctx = new Context()) => {
     try { s = prepareScope(s, ctx, obj); } catch (e) { return e.message; }
     ctx.push(s);
     if (c === REF) {
@@ -48,7 +44,7 @@ function def(scope, child) {
 function not(child) {
   const infoArgs = not.info.argDescriptors;
   let c = infoArgs[0].ensure(child);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (c === REF) {
       try { c = infoArgs[0].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
     }
@@ -60,7 +56,7 @@ function and(...children) {
   const { info } = and;
   const childArg = info.argDescriptors[0];
   const offspring = info.ensureRestParams(children);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       if (offspring[i] === REF) {
         try {
@@ -81,7 +77,7 @@ function or(...children) {
   const { info } = or;
   const childArg = info.argDescriptors[0];
   const offspring = info.ensureRestParams(children);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     let error;
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       if (offspring[i] === REF) {
@@ -103,7 +99,7 @@ function xor(...children) {
   const { info } = xor;
   const childArg = info.argDescriptors[0];
   const offspring = info.ensureRestParams(children);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     let count = 0;
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       if (offspring[i] === REF) {
@@ -128,7 +124,7 @@ function _if(condChild, thenChild, elseChild) {
   let cc = infoArgs[0].ensure(condChild);
   let tc = infoArgs[1].ensure(thenChild);
   let ec = infoArgs[2].ensure(elseChild);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (cc === REF) {
       try { cc = infoArgs[0].ensureRef(condChild, ctx, obj); } catch (e) { return e.message; }
     }
@@ -149,7 +145,7 @@ function every(path, child) {
   const infoArgs = every.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
   let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
@@ -194,7 +190,7 @@ function some(path, child) {
   const infoArgs = some.info.argDescriptors;
   let p = infoArgs[0].ensure(path);
   let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
@@ -240,7 +236,7 @@ function alter(resultOnSuccess, resultOnError, child) {
   let s = infoArgs[0].ensure(resultOnSuccess);
   let f = infoArgs[1].ensure(resultOnError);
   let c = infoArgs[2].ensure(child);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (s === REF) {
       try { s = infoArgs[0].ensureRef(resultOnSuccess, ctx, obj); } catch (e) { return e.message; }
     }
@@ -259,7 +255,7 @@ function onError(result, child) {
   const infoArgs = onError.info.argDescriptors;
   let r = infoArgs[0].ensure(result);
   let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (r === REF) {
       try { r = infoArgs[0].ensureRef(result, ctx, obj); } catch (e) { return e.message; }
     }
@@ -277,7 +273,7 @@ function _while(path, condChild, doChild) {
   let p = infoArgs[0].ensure(path);
   let cc = infoArgs[1].ensure(condChild);
   let dc = infoArgs[2].ensure(doChild);
-  return (obj, ctx) => {
+  return (obj, ctx = new Context()) => {
     if (p === REF) {
       try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
     }
@@ -342,7 +338,7 @@ function branchValidators() {
   /* istanbul ignore next */
   const vInfo = [
     new Info(call, 'path:path', 'child:child'),
-    new Info(def, { desc: 'scope:object', refDepth: -1 }, 'child:child'),
+    new Info(def, { def: 'scope:object', refDepth: -1 }, 'child:child'),
     new Info(not, 'child:child'),
     new Info(and, '...child:child'),
     new Info(or, '...child:child'),

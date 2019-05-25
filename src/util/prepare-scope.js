@@ -1,14 +1,13 @@
-const ensureArg = require('./ensure-arg');
-
-const {
-  REF, any, child, resolveValueRef
-} = ensureArg;
+const { REF, getNativeType } = require('./types');
 
 const hasOwn = Object.prototype.hasOwnProperty;
 
+const any = getNativeType('any');
+const child = getNativeType('child');
+
 function variable(val, ctx, obj) {
-  const v = any(val);
-  return v !== REF ? v : any(resolveValueRef(val, ctx, obj), true);
+  const v = any.ensure(val);
+  return v !== REF ? v : any.ensureRef(val, ctx, obj);
 }
 
 function prepareScope(objScope, ctx, obj) {
@@ -16,7 +15,7 @@ function prepareScope(objScope, ctx, obj) {
   for (const k in objScope) {
     if (hasOwn.call(objScope, k)) {
       // eslint-disable-next-line no-param-reassign
-      objScope[k] = k.startsWith('$') ? child(objScope[k]) : variable(objScope[k], ctx, obj);
+      objScope[k] = k.startsWith('$') ? child.ensure(objScope[k]) : variable(objScope[k], ctx, obj);
     }
   }
   return objScope;

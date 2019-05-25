@@ -30,7 +30,7 @@ class TypeTestInfo {
   }
 
   acceptValueRef() {
-    return this.type.swallowsRef;
+    return this.type.acceptsValue;
   }
 
   acceptValidatorRef() {
@@ -46,7 +46,7 @@ class TypeTestInfo {
   * considers an unknown ref like a good value, so cannot fail on validator creation
   */
   unknownRefShouldPassCreation() {
-    if (this.acceptValueRef()) {
+    if (this.type.swallowsRef) {
       try {
         return this.type.ensure(UNKNOWN_REF) === UNKNOWN_REF;
       } catch (e) {
@@ -63,7 +63,7 @@ const typeInfo = Object.keys(V).reduce((acc, k) => {
     const typeName = ad.type.name;
     if (!acc[typeName]) {
       acc[typeName] = new TypeTestInfo(ad.type);
-      console.log('type', typeName);
+      // console.log('type', typeName);
     }
   });
   return acc;

@@ -1,10 +1,9 @@
 const camelCase = require('camelcase');
 const { get } = require('./path');
-const ensureArg = require('../util/ensure-arg');
-const Info = require('../util/info');
-const Argument = require('../util/argument');
-
-const { REF } = ensureArg;
+const Info = require('./info');
+const Argument = require('./argument');
+const Context = require('./context');
+const { REF } = require('./types');
 
 function getFirstArgType(validator) {
   const ads = validator.info.argDescriptors;
@@ -16,7 +15,7 @@ function optShortcutOf(validator, name) {
   const optV = (path, ...args) => {
     const argDescriptor0 = info.argDescriptors[0];
     let p = argDescriptor0.ensure(path);
-    return (obj, ctx) => {
+    return (obj, ctx = new Context()) => {
       if (p === REF) {
         try { p = argDescriptor0.ensureRef(path, ctx, obj); } catch (e) { return e.message; }
       }
