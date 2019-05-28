@@ -8,7 +8,7 @@ const child = getNativeType('child');
 
 function variable(val, ctx, obj) {
   const v = any.ensure(val);
-  return v instanceof Reference ? any.ensureRef(val, ctx, obj) : v;
+  return v instanceof Reference ? any.ensureRef(v, ctx, obj) : v;
 }
 
 function prepareScope(objScope, ctx, obj) {
