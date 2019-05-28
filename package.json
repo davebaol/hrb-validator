@@ -62,6 +62,8 @@
     "get-value": "^3.0.1",
     "is-plain-object": "^3.0.0",
     "is-regexp": "^2.1.0",
+    "rfdc": "^1.1.4",
+    "set-value": "^3.0.0",
     "validator": "^10.11.0"
   },
   "publishConfig": {

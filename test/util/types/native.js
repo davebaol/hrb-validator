@@ -43,8 +43,7 @@ function testNativeType(type, expectedObj) {
       nullable: type.nullable,
       acceptsValue: type.acceptsValue,
       acceptsValidator: type.acceptsValidator,
-      swallowsRef: type.swallowsRef,
-      refResolver: type.refResolver
+      swallowsRef: type.swallowsRef
     };
     assert.deepEqual(typeObj, expectedObj, ':(');
   });
@@ -69,8 +68,7 @@ describe('Test native type classes.', () => {
     nullable: true,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: true,
-    refResolver: 'resolveValueRef'
+    swallowsRef: true
   });
 
   testNativeType(new types.ArrayType(), {
@@ -78,8 +76,7 @@ describe('Test native type classes.', () => {
     nullable: false,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: false,
-    refResolver: 'resolveValueRef'
+    swallowsRef: false
   });
 
   testNativeType(new types.BooleanType(), {
@@ -87,8 +84,7 @@ describe('Test native type classes.', () => {
     nullable: false,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: false,
-    refResolver: 'resolveValueRef'
+    swallowsRef: false
   });
 
   testNativeType(new types.ChildType(), {
@@ -96,8 +92,7 @@ describe('Test native type classes.', () => {
     nullable: false,
     acceptsValue: false,
     acceptsValidator: true,
-    swallowsRef: false,
-    refResolver: 'resolveValidatorRef'
+    swallowsRef: false
   });
 
   testNativeType(new types.IntegerType(), {
@@ -105,8 +100,7 @@ describe('Test native type classes.', () => {
     nullable: false,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: false,
-    refResolver: 'resolveValueRef'
+    swallowsRef: false
   });
 
   testNativeType(new types.NullType(), {
@@ -114,8 +108,7 @@ describe('Test native type classes.', () => {
     nullable: true,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: false,
-    refResolver: 'resolveValueRef'
+    swallowsRef: false
   });
 
   testNativeType(new types.NumberType(), {
@@ -123,8 +116,7 @@ describe('Test native type classes.', () => {
     nullable: false,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: false,
-    refResolver: 'resolveValueRef'
+    swallowsRef: false
   });
 
   testNativeType(new types.ObjectType(), {
@@ -132,8 +124,7 @@ describe('Test native type classes.', () => {
     nullable: false,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: true,
-    refResolver: 'resolveValueRef'
+    swallowsRef: true
   });
 
   testNativeType(new types.PathType(), {
@@ -141,8 +132,7 @@ describe('Test native type classes.', () => {
     nullable: true,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: false,
-    refResolver: 'resolveValueRef'
+    swallowsRef: false
   });
 
   testNativeType(new types.RegexType(), {
@@ -150,8 +140,7 @@ describe('Test native type classes.', () => {
     nullable: false,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: false,
-    refResolver: 'resolveValueRef'
+    swallowsRef: false
   });
 
   testNativeType(new types.StringType(), {
@@ -159,7 +148,6 @@ describe('Test native type classes.', () => {
     nullable: false,
     acceptsValue: true,
     acceptsValidator: false,
-    swallowsRef: false,
-    refResolver: 'resolveValueRef'
+    swallowsRef: false
   });
 });

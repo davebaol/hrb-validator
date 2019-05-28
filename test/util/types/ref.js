@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import Context from '../../../src/util/context';
-import checkUniqueKey from '../../../src/util/check-unique-key';
+import { checkUniqueKey } from '../../../src/util/misc';
 import prepareScope from '../../../src/util/prepare-scope';
 import { argInfo } from '../../test-utils';
 
@@ -14,43 +14,37 @@ describe('Test references for all kinds of arguments', () => {
     };
   }
 
+  const UNRESOLVABLE = {};
+
+  function doEnsureRef(tInfo, refType, name, value) {
+    const ctx = new Context();
+    let obj = { [name]: value };
+    if (refType === '$var') {
+      if (value !== UNRESOLVABLE) {
+        ctx.push(obj);
+      }
+      obj = {};
+    } else if (refType !== '$path') {
+      throw new Error(`Fix your test!!!! Unknown refType '${refType}. Expected either '$path' or '$var'.`);
+    }
+    const ref = tInfo.type.ensure({ [refType]: name });
+    tInfo.type.ensureRef(ref, ctx, obj);
+  }
+
   Object.keys(argInfo).forEach((k) => {
     const tInfo = argInfo[k];
     const testRefToValues = [];
     const testUnresolvedReferences = [];
     const mismatchedReferences = [];
-    console.log('tInfo.acceptValueRef()', tInfo.acceptValueRef());
-    console.log('tInfo.acceptValidatorRef()', tInfo.acceptValidatorRef());
     if (tInfo.acceptValueRef()) {
-      testRefToValues.push((good) => {
-        const obj = { a: tInfo.value(good) };
-        const ref = { $path: 'a' };
-        tInfo.type.ensureRef(ref, new Context(), obj);
-      });
-      testRefToValues.push((good) => {
-        const ctx = new Context();
-        ctx.push({ a: tInfo.value(good) });
-        const ref = { $var: 'a' };
-        tInfo.type.ensureRef(ref, ctx, {});
-      });
-      testUnresolvedReferences.push(() => {
-        const ref = { $var: 'V1' };
-        tInfo.type.ensureRef(ref, new Context(), {});
-      });
+      testRefToValues.push(good => doEnsureRef(tInfo, '$path', 'a', tInfo.value(good)));
+      testRefToValues.push(good => doEnsureRef(tInfo, '$var', 'a', tInfo.value(good)));
+      testUnresolvedReferences.push(() => doEnsureRef(tInfo, '$var', 'V1', UNRESOLVABLE));
       mismatchedReferences.push({ $var: '$VALIDATOR' });
     }
     if (tInfo.acceptValidatorRef()) {
-      testRefToValues.push((good) => {
-        const ctx = new Context();
-        ctx.push({ $V1: tInfo.value(good) });
-        const ref = { $var: '$V1' };
-        tInfo.type.ensureRef(ref, ctx);
-      });
-      testUnresolvedReferences.push(() => {
-        // For now this fails as expected just because variable reference is not implemented yet
-        const ref = { $var: '$V1' };
-        tInfo.type.ensureRef(ref, new Context());
-      });
+      testRefToValues.push(good => doEnsureRef(tInfo, '$var', '$V1', tInfo.value(good)));
+      testUnresolvedReferences.push(() => doEnsureRef(tInfo, '$var', '$V1', UNRESOLVABLE));
       mismatchedReferences.push({ $path: 'a' });
       mismatchedReferences.push({ $var: 'VARIABLE' });
     }

@@ -123,7 +123,7 @@ function testArgument(vld, args, index, errorLike) {
       });
     }
     ['$path', '$var'].forEach(refType => it(`Should delay ${refType} reference resolution at validation time for ${kind} as ${ordinal(index + 1)} argument`, () => {
-      testArgs[index] = { [refType]: 'something' };
+      testArgs[index] = { [refType]: `${argDesc.type.acceptsValidator ? '$someValidator' : 'someValue'}` };
       assert(typeof vld(...testArgs) === 'function', ':(');
     }));
   }

@@ -1,4 +1,5 @@
-const { REF, getNativeType } = require('./types');
+const { getNativeType } = require('./types');
+const Reference = require('./reference');
 
 const hasOwn = Object.prototype.hasOwnProperty;
 
@@ -7,7 +8,7 @@ const child = getNativeType('child');
 
 function variable(val, ctx, obj) {
   const v = any.ensure(val);
-  return v !== REF ? v : any.ensureRef(val, ctx, obj);
+  return v instanceof Reference ? any.ensureRef(val, ctx, obj) : v;
 }
 
 function prepareScope(objScope, ctx, obj) {

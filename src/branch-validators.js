@@ -3,7 +3,7 @@ const Context = require('./util/context');
 const createShortcuts = require('./util/create-shortcuts');
 const prepareScope = require('./util/prepare-scope');
 const Info = require('./util/info');
-const { REF } = require('./util/types');
+const Reference = require('./util/reference');
 
 //
 // BRANCH VALIDATORS
@@ -15,11 +15,11 @@ function call(path, child) {
   let p = infoArgs[0].ensure(path);
   let c = infoArgs[1].ensure(child);
   return (obj, ctx = new Context()) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+    if (p instanceof Reference) {
+      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
     }
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+    if (c instanceof Reference) {
+      try { c = infoArgs[1].ensureRef(c, ctx, obj); } catch (e) { return e.message; }
     }
     return c(get(obj, p), ctx);
   };
@@ -27,13 +27,19 @@ function call(path, child) {
 
 function def(scope, child) {
   const infoArgs = def.info.argDescriptors;
-  let s = infoArgs[0].ensure(scope); // The scope is a non referenceable object (refDepth = -1)
+  let s = infoArgs[0].ensure(scope); // non referenceable object (refDepth = -1)
   let c = infoArgs[1].ensure(child);
+  console.log('ensure(scope) ->', s);
+  console.log('ensure(child) ->', c);
   return (obj, ctx = new Context()) => {
-    try { s = prepareScope(s, ctx, obj); } catch (e) { return e.message; }
+    try { s = prepareScope(s, ctx, obj); } catch (e) {
+      console.error('error', e);
+      return e.message;
+    }
+    console.log('prepareScope(scope) ->', s);
     ctx.push(s);
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+    if (c instanceof Reference) {
+      try { c = infoArgs[1].ensureRef(c, ctx, obj); } catch (e) { return e.message; }
     }
     const result = c(obj, ctx);
     ctx.pop();
@@ -45,8 +51,8 @@ function not(child) {
   const infoArgs = not.info.argDescriptors;
   let c = infoArgs[0].ensure(child);
   return (obj, ctx = new Context()) => {
-    if (c === REF) {
-      try { c = infoArgs[0].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+    if (c instanceof Reference) {
+      try { c = infoArgs[0].ensureRef(c, ctx, obj); } catch (e) { return e.message; }
     }
     return c(obj, ctx) ? undefined : 'not: the child validator must fail';
   };
@@ -58,10 +64,10 @@ function and(...children) {
   const offspring = info.ensureRestParams(children);
   return (obj, ctx = new Context()) => {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
-      if (offspring[i] === REF) {
+      if (offspring[i] instanceof Reference) {
         try {
           // replace the ref with the validator
-          offspring[i] = childArg.ensureRef(children[i], ctx, obj);
+          offspring[i] = childArg.ensureRef(offspring[i], ctx, obj);
         } catch (e) { return e.message; }
       }
       const error = offspring[i](obj, ctx); // Validate child
@@ -80,10 +86,10 @@ function or(...children) {
   return (obj, ctx = new Context()) => {
     let error;
     for (let i = 0, len = offspring.length; i < len; i += 1) {
-      if (offspring[i] === REF) {
+      if (offspring[i] instanceof Reference) {
         try {
           // replace the ref with the validator
-          offspring[i] = childArg.ensureRef(children[i], ctx, obj);
+          offspring[i] = childArg.ensureRef(offspring[i], ctx, obj);
         } catch (e) { return e.message; }
       }
       error = offspring[i](obj, ctx); // Validate child
@@ -102,10 +108,10 @@ function xor(...children) {
   return (obj, ctx = new Context()) => {
     let count = 0;
     for (let i = 0, len = offspring.length; i < len; i += 1) {
-      if (offspring[i] === REF) {
+      if (offspring[i] instanceof Reference) {
         try {
           // replace the ref with the validator
-          offspring[i] = childArg.ensureRef(children[i], ctx, obj);
+          offspring[i] = childArg.ensureRef(offspring[i], ctx, obj);
         } catch (e) { return e.message; }
       }
       const error = offspring[i](obj, ctx); // Validate child
@@ -125,14 +131,14 @@ function _if(condChild, thenChild, elseChild) {
   let tc = infoArgs[1].ensure(thenChild);
   let ec = infoArgs[2].ensure(elseChild);
   return (obj, ctx = new Context()) => {
-    if (cc === REF) {
-      try { cc = infoArgs[0].ensureRef(condChild, ctx, obj); } catch (e) { return e.message; }
+    if (cc instanceof Reference) {
+      try { cc = infoArgs[0].ensureRef(cc, ctx, obj); } catch (e) { return e.message; }
     }
-    if (tc === REF) {
-      try { tc = infoArgs[1].ensureRef(thenChild, ctx, obj); } catch (e) { return e.message; }
+    if (tc instanceof Reference) {
+      try { tc = infoArgs[1].ensureRef(tc, ctx, obj); } catch (e) { return e.message; }
     }
-    if (ec === REF) {
-      try { ec = infoArgs[2].ensureRef(elseChild, ctx, obj); } catch (e) { return e.message; }
+    if (ec instanceof Reference) {
+      try { ec = infoArgs[2].ensureRef(ec, ctx, obj); } catch (e) { return e.message; }
     }
     if (ec == null) {
       return cc(obj, ctx) ? undefined : tc(obj, ctx);
@@ -146,11 +152,11 @@ function every(path, child) {
   let p = infoArgs[0].ensure(path);
   let c = infoArgs[1].ensure(child);
   return (obj, ctx = new Context()) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+    if (p instanceof Reference) {
+      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
     }
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx); } catch (e) { return e.message; }
+    if (c instanceof Reference) {
+      try { c = infoArgs[1].ensureRef(c, ctx); } catch (e) { return e.message; }
     }
     const value = get(obj, p);
     if (Array.isArray(value)) {
@@ -191,11 +197,11 @@ function some(path, child) {
   let p = infoArgs[0].ensure(path);
   let c = infoArgs[1].ensure(child);
   return (obj, ctx = new Context()) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+    if (p instanceof Reference) {
+      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
     }
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx); } catch (e) { return e.message; }
+    if (c instanceof Reference) {
+      try { c = infoArgs[1].ensureRef(c, ctx); } catch (e) { return e.message; }
     }
     const value = get(obj, p);
     if (Array.isArray(value)) {
@@ -237,14 +243,14 @@ function alter(resultOnSuccess, resultOnError, child) {
   let f = infoArgs[1].ensure(resultOnError);
   let c = infoArgs[2].ensure(child);
   return (obj, ctx = new Context()) => {
-    if (s === REF) {
-      try { s = infoArgs[0].ensureRef(resultOnSuccess, ctx, obj); } catch (e) { return e.message; }
+    if (s instanceof Reference) {
+      try { s = infoArgs[0].ensureRef(s, ctx, obj); } catch (e) { return e.message; }
     }
-    if (f === REF) {
-      try { f = infoArgs[1].ensureRef(resultOnError, ctx, obj); } catch (e) { return e.message; }
+    if (f instanceof Reference) {
+      try { f = infoArgs[1].ensureRef(f, ctx, obj); } catch (e) { return e.message; }
     }
-    if (c === REF) {
-      try { c = infoArgs[2].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+    if (c instanceof Reference) {
+      try { c = infoArgs[2].ensureRef(c, ctx, obj); } catch (e) { return e.message; }
     }
     const r = c(obj, ctx) === undefined ? s : f;
     return r == null ? undefined : r;
@@ -256,11 +262,11 @@ function onError(result, child) {
   let r = infoArgs[0].ensure(result);
   let c = infoArgs[1].ensure(child);
   return (obj, ctx = new Context()) => {
-    if (r === REF) {
-      try { r = infoArgs[0].ensureRef(result, ctx, obj); } catch (e) { return e.message; }
+    if (r instanceof Reference) {
+      try { r = infoArgs[0].ensureRef(r, ctx, obj); } catch (e) { return e.message; }
     }
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+    if (c instanceof Reference) {
+      try { c = infoArgs[1].ensureRef(c, ctx, obj); } catch (e) { return e.message; }
     }
     if (c(obj, ctx) === undefined) { return undefined; }
     return r == null ? undefined : r;
@@ -274,14 +280,14 @@ function _while(path, condChild, doChild) {
   let cc = infoArgs[1].ensure(condChild);
   let dc = infoArgs[2].ensure(doChild);
   return (obj, ctx = new Context()) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+    if (p instanceof Reference) {
+      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
     }
-    if (cc === REF) {
-      try { cc = infoArgs[1].ensureRef(condChild, ctx, obj); } catch (e) { return e.message; }
+    if (cc instanceof Reference) {
+      try { cc = infoArgs[1].ensureRef(cc, ctx, obj); } catch (e) { return e.message; }
     }
-    if (dc === REF) {
-      try { dc = infoArgs[2].ensureRef(doChild, ctx, obj); } catch (e) { return e.message; }
+    if (dc instanceof Reference) {
+      try { dc = infoArgs[2].ensureRef(dc, ctx, obj); } catch (e) { return e.message; }
     }
     const value = get(obj, p);
     const status = { succeeded: 0, failed: 0, original: obj };

@@ -1,8 +1,8 @@
 import { assert } from 'chai';
 import Info from '../../src/util/info';
 import Argument from '../../src/util/argument';
+import Reference from '../../src/util/reference';
 import V from '../../src';
-import { REF } from '../../src/util/types';
 
 describe('Test Info instance creation.', () => {
   function validator(name) {
@@ -83,6 +83,6 @@ describe('Test Info.ensureRestParams().', () => {
     const valRefIndex = 1;
     vlds.splice(valRefIndex, 0, { $var: '$this_is_a_validator_reference' });
     const ensuredValidators = info.ensureRestParams(vlds);
-    assert(ensuredValidators.every((v, i) => (i === valRefIndex ? v === REF : typeof v === 'function')), ':(');
+    assert(ensuredValidators.every((v, i) => (i === valRefIndex ? v instanceof Reference : typeof v === 'function')), ':(');
   });
 });

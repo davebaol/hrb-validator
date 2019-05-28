@@ -3,7 +3,7 @@ const { get } = require('./path');
 const Info = require('./info');
 const Argument = require('./argument');
 const Context = require('./context');
-const { REF } = require('./types');
+const Reference = require('./reference');
 
 function getFirstArgType(validator) {
   const ads = validator.info.argDescriptors;
@@ -16,8 +16,8 @@ function optShortcutOf(validator, name) {
     const argDescriptor0 = info.argDescriptors[0];
     let p = argDescriptor0.ensure(path);
     return (obj, ctx = new Context()) => {
-      if (p === REF) {
-        try { p = argDescriptor0.ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+      if (p instanceof Reference) {
+        try { p = argDescriptor0.ensureRef(p, ctx, obj); } catch (e) { return e.message; }
       }
       return (get(obj, p) ? validator(p, ...args)(obj, ctx) : undefined);
     };

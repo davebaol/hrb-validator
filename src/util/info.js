@@ -1,5 +1,5 @@
 const Argument = require('./argument');
-const { REF } = require('./types');
+const Reference = require('./reference');
 
 class Info {
   constructor(validator, ...argDescriptors) {
@@ -37,12 +37,12 @@ class Info {
     return ensured;
   }
 
-  ensureRestParamsRef(ensured, values, offset, ctx, obj) {
+  ensureRestParamsRef(ensured, offset, ctx, obj) {
     for (let i = 0, len = ensured.length; i < len; i += 1) {
-      if (ensured[i] === REF) {
+      if (ensured[i] instanceof Reference) {
         const ad = this.argDescriptors[this.adjustArgDescriptorIndex(i + offset)];
         // eslint-disable-next-line no-param-reassign
-        ensured[i] = ad.ensureRef(values[i], ctx, obj);
+        ensured[i] = ad.ensureRef(ensured[i], ctx, obj);
       }
     }
   }
