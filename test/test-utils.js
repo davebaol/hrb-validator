@@ -122,10 +122,19 @@ function testArgument(vld, args, index, errorLike) {
         assert.throws(() => vld(...testArgs), errorLike || Error);
       });
     }
-    ['$path', '$var'].forEach(refType => it(`Should delay ${refType} reference resolution at validation time for ${kind} as ${ordinal(index + 1)} argument`, () => {
-      testArgs[index] = { [refType]: `${argDesc.type.acceptsValidator ? '$someValidator' : 'someValue'}` };
-      assert(typeof vld(...testArgs) === 'function', ':(');
-    }));
+    ['$path', '$var'].forEach((refType) => {
+      if (refType === '$path' && argDesc.type.acceptsValidator && !argDesc.type.acceptsValue) {
+        it(`Should throw immediately an error on $path reference as ${ordinal(index + 1)} argument`, () => {
+          testArgs[index] = { [refType]: 'any.path' };
+          assert.throws(() => vld(...testArgs), Error, 'Unexpected reference \'{"$path":');
+        });
+      } else {
+        it(`Should delay ${refType} reference resolution at validation time for ${kind} as ${ordinal(index + 1)} argument`, () => {
+          testArgs[index] = { [refType]: `${argDesc.type.acceptsValidator ? '$someValidator' : 'some.value'}` };
+          assert(typeof vld(...testArgs) === 'function', ':(');
+        });
+      }
+    });
   }
 }
 
