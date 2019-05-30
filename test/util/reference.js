@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import Context from '../../src/util/context';
-import prepareScope from '../../src/util/prepare-scope';
+import { ensureScope } from '../../src/util/ensure-scope';
 import Reference from '../../src/util/reference';
 import { getNativeType } from '../../src/util/types';
 import { ensureArrayPath } from '../../src/util/path';
@@ -41,8 +41,11 @@ function testEmbeddedRefCreate(type, source, expectedRefPaths) {
 
 function tesResolve(type, isRoot, source, scope, obj, expected) {
   it(`Resolving ${isRoot ? 'root' : 'embedded'} reference ${JSON.stringify(source)} in scope ${JSON.stringify(scope)} on object ${JSON.stringify(obj)} should return ${JSON.stringify(expected)}.`, () => {
+    if (ensureScope(scope) !== scope) {
+      throw new Error('Fix your test!!! Scope with references are not supported by this test');
+    }
     const context = new Context();
-    context.push(prepareScope(scope));
+    context.push(scope);
     const ref = new Reference(source, type);
     assert.deepEqual(ref.resolve(context, obj), expected, ':(');
   });

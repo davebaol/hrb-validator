@@ -19,7 +19,7 @@ class Context {
     }
 
     // Cache type name locally if its normalized name is in native type
-    const normalizedTypes = UnionType.parse(name);
+    const normalizedTypes = UnionType.parseMembers(name);
     const normalizedName = UnionType.membersToString(normalizedTypes);
     if (normalizedTypes.length === 1 && normalizedName in NATIVE_TYPES) {
       this.types[name] = NATIVE_TYPES[normalizedName];

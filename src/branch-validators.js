@@ -1,7 +1,7 @@
 const { get } = require('./util/path');
 const Context = require('./util/context');
 const createShortcuts = require('./util/create-shortcuts');
-const prepareScope = require('./util/prepare-scope');
+const { ensureScope, ensureScopeRef } = require('./util/ensure-scope');
 const Info = require('./util/info');
 const Reference = require('./util/reference');
 
@@ -27,17 +27,24 @@ function call(path, child) {
 
 function def(scope, child) {
   const infoArgs = def.info.argDescriptors;
-  let s = infoArgs[0].ensure(scope); // non referenceable object (refDepth = -1)
+  // let s = infoArgs[0].ensure(scope, true); // non referenceable object (refDepth = -1)
+  let s = ensureScope(scope, false); // non referenceable object (refDepth = -1)
   let c = infoArgs[1].ensure(child);
-  console.log('ensure(scope) ->', s);
-  console.log('ensure(child) ->', c);
   return (obj, ctx = new Context()) => {
-    try { s = prepareScope(s, ctx, obj); } catch (e) {
-      console.error('error', e);
-      return e.message;
+    if (s !== scope) { // Let's process references
+      // Create and push into the context a fresh new scope where properties are
+      // added as soon as they are resolved. This way backward references are allowed,
+      // while forward referesences are not.
+      const freshScope = {};
+      ctx.push(freshScope);
+      try {
+        s = ensureScopeRef(freshScope, s, ctx, obj);
+      } catch (e) {
+        return e.message;
+      }
+    } else {
+      ctx.push(s);
     }
-    console.log('prepareScope(scope) ->', s);
-    ctx.push(s);
     if (c instanceof Reference) {
       try { c = infoArgs[1].ensureRef(c, ctx, obj); } catch (e) { return e.message; }
     }

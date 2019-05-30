@@ -16,16 +16,18 @@ function createRefPath(type, tPath, key, value) {
   const index = value.indexOf('.');
   const varName = index < 0 ? value : value.substr(0, index);
   const path = index < 0 ? '' : value.substr(index + 1);
-  const isValidator = varName.startsWith('$');
-  if (isValidator) {
-    if (!type.acceptsValidator) {
-      throw new Error(`Unexpected validator reference to '${value}'.`);
+  if (type) {
+    const isValidator = varName.startsWith('$');
+    if (isValidator) {
+      if (!type.acceptsValidator) {
+        throw new Error(`Unexpected reference '{"${key}": "${value}"}'. Validator reference non allowed here.`);
+      }
+      if (path) {
+        throw new Error(`Illegal validator reference '{"${key}": "${value}"}'. Deep paths not allowed for a validator reference`);
+      }
+    } else if (!type.acceptsValue) {
+      throw new Error(`Unexpected reference '{"${key}": "${value}"}'. Value reference non allowed here.`);
     }
-    if (path) {
-      throw new Error(`Illegal validator reference to '${value}'; deep paths are not allowed here`);
-    }
-  } else if (!type.acceptsValue) {
-    throw new Error(`Unexpected value reference to '${value}'.`);
   }
   return { targetPath, varName, path: ensureArrayPath(path) };
 }
@@ -45,7 +47,9 @@ function prepareRefPaths(type, o, refPaths, path) {
   for (const k in o) {
     const cur = o[k];
     if (typeof cur === 'object' && cur !== null) {
-      theRefPaths = prepareRefPaths(type, cur, theRefPaths, path === undefined ? k : `${path}.${k}`);
+      // Notice that here we pass undefined for the type because it is
+      // meaningful only for the root reference, but not for deep references
+      theRefPaths = prepareRefPaths(undefined, cur, theRefPaths, path === undefined ? k : `${path}.${k}`);
     }
   }
   return theRefPaths;
@@ -64,7 +68,7 @@ function resolveRefPath(refPath, context, obj) {
   if (value === VAR_NOT_FOUND) {
     throw new Error(`Unresolved ${isValidator ? 'validator' : 'value'} reference to '${refPath.varName}'`);
   }
-  // Return either the or the value at the referenced path in the variable
+  // Return either the validator or the value at the referenced path in the variable
   return isValidator ? value : get(value, refPath.path);
 }
 

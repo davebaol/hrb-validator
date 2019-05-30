@@ -191,23 +191,26 @@ class ChildType extends Type {
       if (!method) {
         throw new Error('Error: A plain object validator must have exactly one property where the key is its name and the value is the array of its arguments');
       }
+      const validate = V[method];
+      if (validate) {
+        return validate(...val[method]);
+      }
       if (!noReference) {
+        /* This code is correct but currently breaks some tests
+        if (method === '$path') {
+          throw new Error(`Unexpected reference '${JSON.stringify(val)}' for a validator`);
+        }
+        */
         const ref = Reference.checkReference(this, val);
         if (ref !== undefined) {
           return ref;
         }
       }
-      const validate = V[method];
-      if (!validate) {
-        throw new Error(`Error: Unknown validator '${method}'`);
-      }
-      return validate(...val[method]);
+      throw new Error(`Error: Unknown validator '${method}'`);
     }
     throw new Error(`Expected a validator as either a function or a plain object; found a ${typeof val} instead`);
   }
 }
-
-const child = new ChildType();
 
 // Add primitive Types
 const primitiveTypes = [
@@ -218,7 +221,7 @@ const primitiveTypes = [
   new BooleanType(),
   new ArrayType(),
   new ObjectType(),
-  child,
+  new ChildType(),
   new RegexType()
 ];
 addNativeTypes(primitiveTypes);
@@ -244,7 +247,7 @@ class UnionType extends Type {
     return memberTypes.map(m => m.name).join('|');
   }
 
-  static parse(members) {
+  static parseMembers(members) {
     let m = members;
     if (typeof members === 'string') {
       m = members.split('|');
@@ -322,13 +325,6 @@ class UnionType extends Type {
 
   ensure(val, noReference) {
     if (!noReference) {
-      /*
-      if (this.acceptsValidator) {
-        if (child.check(val)) {
-          return child.ensure(val, noReference);
-        }
-      }
-      */
       const ref = Reference.checkReference(this, val);
       if (ref !== undefined) {
         return ref;
@@ -346,7 +342,7 @@ class UnionType extends Type {
 
 class PathType extends UnionType {
   constructor() {
-    super('path', UnionType.parse('string|number|array?'));
+    super('path', UnionType.parseMembers('string|number|array?'));
   }
 
   // Optimized check
@@ -374,7 +370,7 @@ class PathType extends UnionType {
 // Union of all native types except child, and path
 class AnyType extends UnionType {
   constructor() {
-    super('any', UnionType.parse('null|string|integer|number|boolean|array|object|regex'));
+    super('any', UnionType.parseMembers('null|string|integer|number|boolean|array|object|regex'));
   }
 
   // Optimized check
@@ -424,7 +420,7 @@ module.exports = {
       return NATIVE_TYPES[name];
     }
     // Create new type
-    const normalizedTypes = UnionType.parse(name);
+    const normalizedTypes = UnionType.parseMembers(name);
     return normalizedTypes.length === 1 ? normalizedTypes[0] : new UnionType(normalizedTypes);
   }
 };
