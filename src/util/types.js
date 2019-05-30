@@ -197,8 +197,8 @@ class ChildType extends Type {
       }
       if (!noReference) {
         if (method === '$path') {
-          // Doesn't make sense taking a validator from the object to validate
-          // It sondsl more like an error. So let's prevent this from occurring.
+          // Doesn't make sense taking a validator from the object to validate.
+          // It sounds like an error. So let's prevent this from occurring.
           throw new Error(`Unexpected reference '${JSON.stringify(val)}' for a validator`);
         }
         const ref = Reference.checkReference(this, val);
