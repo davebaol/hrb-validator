@@ -23,7 +23,7 @@ function createRefPath(type, tPath, key, value) {
         throw new Error(`Unexpected reference '{"${key}": "${value}"}'. Validator reference non allowed here.`);
       }
       if (path) {
-        throw new Error(`Illegal validator reference '{"${key}": "${value}"}'. Deep paths not allowed for a validator reference`);
+        throw new Error(`Illegal validator reference '{"${key}": "${value}"}'. Deep path not allowed for a validator reference`);
       }
     } else if (!type.acceptsValue) {
       throw new Error(`Unexpected reference '{"${key}": "${value}"}'. Value reference non allowed here.`);
@@ -47,8 +47,9 @@ function prepareRefPaths(type, o, refPaths, path) {
   for (const k in o) {
     const cur = o[k];
     if (typeof cur === 'object' && cur !== null) {
-      // Notice that here we pass undefined for the type because it is
-      // meaningful only for the root reference, but not for deep references
+      // Notice that here we're passing the type as undefined because the specific
+      // type is meaningful only for the root reference, but not for embedded
+      // references which are implicitly of type 'any'
       theRefPaths = prepareRefPaths(undefined, cur, theRefPaths, path === undefined ? k : `${path}.${k}`);
     }
   }
