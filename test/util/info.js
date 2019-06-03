@@ -61,21 +61,21 @@ describe('Test Info instance creation.', () => {
   });
 });
 
-describe('Test Info.ensureRestParams().', () => {
+describe('Test Info.compileRestParams().', () => {
   const { info } = V.and;
   it('Rest param child should return an array of resolved expressions whose result is a function regardless of children are hard-coded or not', () => {
     const vlds = [V.isSet('a'), V.isSet('b'), { isSet: ['b'] }];
-    assert(info.ensureRestParams(vlds).every(e => e.resolved && typeof e.result === 'function'), ':(');
+    assert(info.compileRestParams(vlds).every(e => e.resolved && typeof e.result === 'function'), ':(');
   });
   it('Rest param child should return an array of resolved expressions whose result is a function even if references are used in validators arguments', () => {
     const vlds = [V.isSet('a'), { isSet: [{ $var: 'my_var' }] }];
-    assert(info.ensureRestParams(vlds).every(e => e.resolved && typeof e.result === 'function'), ':(');
+    assert(info.compileRestParams(vlds).every(e => e.resolved && typeof e.result === 'function'), ':(');
   });
   it('Should return a new mixed array made of validators and references at proper index', () => {
     const vlds = [V.isSet('a'), { isSet: [{ $var: 'my_var' }] }];
     const valRefIndex = 1;
     vlds.splice(valRefIndex, 0, { $var: '$this_is_a_validator_reference' });
-    const ensuredValidators = info.ensureRestParams(vlds);
+    const ensuredValidators = info.compileRestParams(vlds);
     assert(ensuredValidators.every((e, i) => (i === valRefIndex ? !e.resolved : e.resolved)), ':(');
   });
 });

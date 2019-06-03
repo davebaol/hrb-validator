@@ -71,7 +71,7 @@ function not(child) {
 function and(...children) {
   const { info } = and;
   const childArg = info.argDescriptors[0];
-  const offspring = info.ensureRestParams(children);
+  const offspring = info.compileRestParams(children);
   return (obj, ctx = new Context()) => {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
@@ -91,7 +91,7 @@ function and(...children) {
 function or(...children) {
   const { info } = or;
   const childArg = info.argDescriptors[0];
-  const offspring = info.ensureRestParams(children);
+  const offspring = info.compileRestParams(children);
   return (obj, ctx = new Context()) => {
     let error;
     for (let i = 0, len = offspring.length; i < len; i += 1) {
@@ -112,7 +112,7 @@ function or(...children) {
 function xor(...children) {
   const { info } = xor;
   const childArg = info.argDescriptors[0];
-  const offspring = info.ensureRestParams(children);
+  const offspring = info.compileRestParams(children);
   return (obj, ctx = new Context()) => {
     let count = 0;
     for (let i = 0, len = offspring.length; i < len; i += 1) {

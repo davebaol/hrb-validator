@@ -16,7 +16,7 @@ class Info {
     this.argDescriptors = argDescriptors; // will be processed in consolidate()
   }
 
-  ensureRestParams(args, offset = 0) {
+  compileRestParams(args, offset = 0) {
     const exprs = [];
     for (let i = 0; i < args.length; i += 1) {
       const arg = args[i];
@@ -27,7 +27,7 @@ class Info {
   }
 
   // Returns the index of the first param where an error occurred; -1 otherwise
-  ensureRestParamsRef(exprs, offset, ctx, obj) {
+  resolveRestParams(exprs, offset, ctx, obj) {
     for (let i = 0, len = exprs.length; i < len; i += 1) {
       if (!exprs[i].resolved) {
         const ad = this.argDescriptors[this.adjustArgDescriptorIndex(i + offset)];
