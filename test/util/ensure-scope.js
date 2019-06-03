@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import { ensureScope } from '../../src/util/ensure-scope';
-import Reference from '../../src/util/reference';
+import Expression from '../../src/util/expression';
 import V from '../../src';
 
 describe('Test utility ensureScope(scope).', () => {
@@ -34,11 +34,11 @@ describe('Test utility ensureScope(scope).', () => {
     };
     const newScope = ensureScope(scope);
     const expected = newScope !== scope
-      && typeof newScope.VAR_1 === 'object' && !(newScope.VAR_1 instanceof Reference)
-      && newScope.VAR_2 instanceof Reference
+      && typeof newScope.VAR_1 === 'object' && !(newScope.VAR_1 instanceof Expression)
+      && newScope.VAR_2 instanceof Expression
       && typeof newScope.$VALIDATOR_1 === 'function'
       && typeof newScope.$VALIDATOR_2 === 'function'
-      && newScope.$VALIDATOR_3 instanceof Reference;
+      && newScope.$VALIDATOR_3 instanceof Expression;
     assert(expected && Object.keys(newScope).length === Object.keys(scope).length, ':(');
   });
 });

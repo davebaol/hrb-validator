@@ -1,6 +1,5 @@
 import { assert } from 'chai';
 import Context from '../../../src/util/context';
-import Reference from '../../../src/util/reference';
 import { checkUniqueKey } from '../../../src/util/misc';
 import { ensureScope, ensureScopeRef } from '../../../src/util/ensure-scope';
 import { argInfo } from '../../test-utils';
@@ -12,7 +11,7 @@ describe('Test references for all kinds of arguments', () => {
     return () => {
       const scope = { [ref[k]]: tInfo.goodValue };
       let s = ensureScope(scope);
-      let r = tInfo.type.ensure(ref);
+      const rExpr = tInfo.type.ensure(ref);
       return () => {
         const obj = { [ref[k]]: tInfo.goodValue };
         // Code taken from def
@@ -22,11 +21,10 @@ describe('Test references for all kinds of arguments', () => {
         const freshScope = {};
         ctx.push(freshScope);
         s = ensureScopeRef(freshScope, s, ctx, obj);
-        if (r instanceof Reference) {
-          r = tInfo.type.ensureRef(r, ctx, obj);
-        } else {
-          throw new Error('Fix your test!!!! For this test is needed');
+        if (rExpr.resolved) {
+          throw new Error('Fix your test!!!! For this test a reference is needed');
         }
+        tInfo.type.ensureRef(rExpr, ctx, obj);
       };
     };
   }
@@ -44,10 +42,10 @@ describe('Test references for all kinds of arguments', () => {
     } else if (refType !== '$path') {
       throw new Error(`Fix your test!!!! Unknown refType '${refType}. Expected either '$path' or '$var'.`);
     }
-    const ref = tInfo.type.ensure({ [refType]: name });
-    tInfo.type.ensureRef(ref, ctx, obj);
-    if (ref.error) {
-      throw new Error(ref.error);
+    const expr = tInfo.type.ensure({ [refType]: name });
+    tInfo.type.ensureRef(expr, ctx, obj);
+    if (expr.error) {
+      throw new Error(expr.error);
     }
   }
 

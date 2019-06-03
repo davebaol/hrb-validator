@@ -1,6 +1,6 @@
 const isPlainObject = require('is-plain-object');
 const { getNativeType } = require('./types');
-const Reference = require('./reference');
+const Expression = require('./expression');
 
 const hasOwn = Object.prototype.hasOwnProperty;
 
@@ -12,7 +12,7 @@ function ensureScope(scope) {
     throw new Error('Expected a scope of type \'object\'');
   }
   let target = scope;
-  const kRef = Reference.isRef(scope);
+  const kRef = Expression.isRef(scope);
   if (kRef) {
     throw new Error('Root reference not allowed for scopes');
   }
@@ -23,7 +23,7 @@ function ensureScope(scope) {
       if (typeof cur === 'object' && cur !== null) {
         const type = k.startsWith('$') ? child : any;
         const ref = type.ensure(cur);
-        // Notice the check (v !== cur) instead of (v instanceof Reference).
+        // Notice the check (v !== cur) instead of (v instanceof Expression).
         // This way both references and compiled validators (not hard-coded ones)
         // are detected and shallow copy is triggered.
         // if (v !== cur) {
@@ -42,7 +42,7 @@ function ensureScopeRef(newScope, scope, context, obj) {
   for (const k in scope) {
     if (hasOwn.call(scope, k)) {
       const cur = scope[k];
-      if (cur instanceof Reference) {
+      if (cur instanceof Expression) {
         const type = k.startsWith('$') ? child : any;
         const ref = type.ensureRef(cur, context, obj);
         if (ref.error) { throw new Error(ref.error); }

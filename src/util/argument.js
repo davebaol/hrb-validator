@@ -38,8 +38,8 @@ class Argument {
     return this.type.ensure(value, noReference || this.refDepth < 0);
   }
 
-  ensureRef(ref, ctx, obj) {
-    return this.type.ensureRef(ref, ctx, obj);
+  ensureRef(expr, ctx, obj) {
+    return this.type.ensureRef(expr, ctx, obj);
   }
 }
 

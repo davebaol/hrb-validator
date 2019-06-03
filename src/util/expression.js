@@ -35,7 +35,7 @@ function createRefPath(type, tPath, key, value) {
 function prepareRefPaths(type, o, refPaths, path) {
   if (typeof o !== 'object' || o === null) return refPaths;
   let theRefPaths = refPaths;
-  const kRef = Reference.isRef(o); // eslint-disable-line no-use-before-define
+  const kRef = Expression.isRef(o); // eslint-disable-line no-use-before-define
   if (kRef) {
     if (theRefPaths === undefined) {
       theRefPaths = [];
@@ -81,7 +81,7 @@ function resolveRefPathAt(reference, index, context, obj) {
   return isValidator ? value : get(value, rp.path);
 }
 
-class Reference {
+class Expression {
   constructor(type, source, refPaths) {
     this.type = type;
     this.source = source;
@@ -143,4 +143,4 @@ class Reference {
   }
 }
 
-module.exports = Reference;
+module.exports = Expression;

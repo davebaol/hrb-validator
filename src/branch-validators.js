@@ -76,7 +76,6 @@ function and(...children) {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        // replace the ref with the validator
         childArg.ensureRef(cExpr, ctx, obj);
         if (cExpr.error) { return cExpr.error; }
       }
@@ -98,7 +97,6 @@ function or(...children) {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        // replace the ref with the validator
         childArg.ensureRef(cExpr, ctx, obj);
         if (cExpr.error) { return cExpr.error; }
       }
@@ -120,7 +118,6 @@ function xor(...children) {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        // replace the ref with the validator
         childArg.ensureRef(cExpr, ctx, obj);
         if (cExpr.error) { return cExpr.error; }
       }

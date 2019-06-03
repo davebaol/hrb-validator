@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import Reference from '../src/util/reference';
+import Expression from '../src/util/expression';
 import V from '../src';
 
 const UNKNOWN_REF = Object.freeze({ $unknownRefType: 'anything' });
@@ -11,7 +11,7 @@ const PRIMITIVE_VALUES = [
   null, // null
   1.2, // number
   1, // integer
-  {}, // object & options
+  {}, // object
   /.*/, // regex
   'Hello' // string
 ];
@@ -49,7 +49,7 @@ class TypeTestInfo {
   unknownRefShouldPassCreation() {
     if (this.type.swallowsRef) {
       try {
-        return Reference.prepareRefPaths(this.type, UNKNOWN_REF) == null;
+        return Expression.prepareRefPaths(this.type, UNKNOWN_REF) == null;
       } catch (e) {
         return false;
       }
