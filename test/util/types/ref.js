@@ -11,7 +11,7 @@ describe('Test references for all kinds of arguments', () => {
     return () => {
       const scope = { [ref[k]]: tInfo.goodValue };
       let s = ensureScope(scope);
-      const rExpr = tInfo.type.ensure(ref);
+      const rExpr = tInfo.type.compile(ref);
       return () => {
         const obj = { [ref[k]]: tInfo.goodValue };
         // Code taken from def
@@ -24,14 +24,14 @@ describe('Test references for all kinds of arguments', () => {
         if (rExpr.resolved) {
           throw new Error('Fix your test!!!! For this test a reference is needed');
         }
-        tInfo.type.ensureRef(rExpr, ctx, obj);
+        tInfo.type.resolve(rExpr, ctx, obj);
       };
     };
   }
 
   const UNRESOLVABLE = {};
 
-  function doEnsureRef(tInfo, refType, name, value) {
+  function compileAndResolve(tInfo, refType, name, value) {
     const ctx = new Context();
     let obj = { [name]: value };
     if (refType === '$var') {
@@ -42,8 +42,8 @@ describe('Test references for all kinds of arguments', () => {
     } else if (refType !== '$path') {
       throw new Error(`Fix your test!!!! Unknown refType '${refType}. Expected either '$path' or '$var'.`);
     }
-    const expr = tInfo.type.ensure({ [refType]: name });
-    tInfo.type.ensureRef(expr, ctx, obj);
+    const expr = tInfo.type.compile({ [refType]: name });
+    tInfo.type.resolve(expr, ctx, obj);
     if (expr.error) {
       throw new Error(expr.error);
     }
@@ -55,14 +55,14 @@ describe('Test references for all kinds of arguments', () => {
     const testUnresolvedReferences = [];
     const mismatchedReferences = [];
     if (tInfo.acceptValueRef()) {
-      testRefToValues.push(good => doEnsureRef(tInfo, '$path', 'a', tInfo.value(good)));
-      testRefToValues.push(good => doEnsureRef(tInfo, '$var', 'a', tInfo.value(good)));
-      testUnresolvedReferences.push(() => doEnsureRef(tInfo, '$var', 'V1', UNRESOLVABLE));
+      testRefToValues.push(good => compileAndResolve(tInfo, '$path', 'a', tInfo.value(good)));
+      testRefToValues.push(good => compileAndResolve(tInfo, '$var', 'a', tInfo.value(good)));
+      testUnresolvedReferences.push(() => compileAndResolve(tInfo, '$var', 'V1', UNRESOLVABLE));
       mismatchedReferences.push({ $var: '$VALIDATOR' });
     }
     if (tInfo.acceptValidatorRef()) {
-      testRefToValues.push(good => doEnsureRef(tInfo, '$var', '$V1', tInfo.value(good)));
-      testUnresolvedReferences.push(() => doEnsureRef(tInfo, '$var', '$V1', UNRESOLVABLE));
+      testRefToValues.push(good => compileAndResolve(tInfo, '$var', '$V1', tInfo.value(good)));
+      testUnresolvedReferences.push(() => compileAndResolve(tInfo, '$var', '$V1', UNRESOLVABLE));
       mismatchedReferences.push({ $path: 'a' });
       mismatchedReferences.push({ $var: 'VARIABLE' });
     }
@@ -95,7 +95,7 @@ describe('Test references for all kinds of arguments', () => {
     }
 
     it(`${k} should throw an error on unknown ref`, () => {
-      assert.throws(() => tInfo.type.ensureRef({ $unknown: 'unknown' }, {}), Error);
+      assert.throws(() => tInfo.type.resolve({ $unknown: 'unknown' }, {}), Error);
     });
   });
 });

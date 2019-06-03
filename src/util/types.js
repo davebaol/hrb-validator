@@ -55,24 +55,24 @@ class Type {
     return true;
   }
 
-  ensure1(expr) {
+  checkExpr(expr) {
     if (!expr.error && expr.resolved && !this.check(expr.result)) {
       return expr.setError(`Expected type '${this.name}'`);
     }
     return expr;
   }
 
-  ensure(val, noReference) {
+  compile(val, noReference) {
     const expr = new Expression(this, val, noReference ? [] : undefined);
-    this.ensure1(expr);
+    this.checkExpr(expr);
     if (expr.error) {
       throw new Error(expr.error);
     }
     return expr;
   }
 
-  ensureRef(expr, context, obj) {
-    return this.ensure1(expr.resolve(context, obj));
+  resolve(expr, context, obj) {
+    return this.checkExpr(expr.resolve(context, obj));
   }
 }
 
@@ -182,7 +182,7 @@ class ChildType extends Type {
   }
 
   /* eslint-disable-next-line class-methods-use-this */
-  ensure1(expr) {
+  checkExpr(expr) {
     if (expr.error || !expr.resolved) {
       return expr;
     }
@@ -278,7 +278,7 @@ class UnionType extends Type {
     });
 
     // TODO here we should check for ambiguous things like string|path
-    // since string is also part of path and has a special treatment, see path.ensure()
+    // since string is also part of path and has a special treatment, see path.compile()
 
     out = out.sort((a, b) => a.score - b.score)
       .filter((x, i, a) => !i || x !== a[i - 1]); // unique
@@ -322,12 +322,12 @@ class UnionType extends Type {
     return false;
   }
 
-  ensure1(expr) {
+  checkExpr(expr) {
     if (expr.error || !expr.resolved) {
       return expr;
     }
     for (let i = 0; i < this.members.length; i += 1) {
-      this.members[i].ensure1(expr);
+      this.members[i].checkExpr(expr);
       if (!expr.error) {
         return expr; // Found
       }
@@ -349,7 +349,7 @@ class PathType extends UnionType {
   }
 
   /* eslint-disable-next-line class-methods-use-this */
-  ensure1(expr) {
+  checkExpr(expr) {
     if (expr.error || !expr.resolved) {
       return expr;
     }
@@ -376,7 +376,7 @@ class AnyType extends UnionType {
 
   // Optimized version: no need to check all members
   /* eslint-disable-next-line class-methods-use-this */
-  ensure1(expr) {
+  checkExpr(expr) {
     if (!expr.error && expr.resolved && !this.check(expr.result)) {
       return expr.setError(`Expected type '${this.name}'`);
     }

@@ -14,20 +14,20 @@ const { getType } = require('../util/types');
 
 function equals(path, value, deep) {
   const infoArgs = equals.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
-  const vExpr = infoArgs[1].ensure(value);
-  const dExpr = infoArgs[2].ensure(deep);
+  const pExpr = infoArgs[0].compile(path);
+  const vExpr = infoArgs[1].compile(value);
+  const dExpr = infoArgs[2].compile(deep);
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!vExpr.resolved) {
-      infoArgs[1].ensureRef(vExpr, ctx, obj);
+      infoArgs[1].resolve(vExpr, ctx, obj);
       if (vExpr.error) { return vExpr.error; }
     }
     if (!dExpr.resolved) {
-      infoArgs[2].ensureRef(dExpr, ctx, obj);
+      infoArgs[2].resolve(dExpr, ctx, obj);
       if (dExpr.error) { return dExpr.error; }
     }
     const result = dExpr.result
@@ -39,15 +39,15 @@ function equals(path, value, deep) {
 
 function isLength(path, options) {
   const infoArgs = isLength.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
-  const optsExpr = infoArgs[1].ensure(options);
+  const pExpr = infoArgs[0].compile(path);
+  const optsExpr = infoArgs[1].compile(options);
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!optsExpr.resolved) {
-      infoArgs[1].ensureRef(optsExpr, ctx, obj);
+      infoArgs[1].resolve(optsExpr, ctx, obj);
       if (optsExpr.error) { return optsExpr.error; }
     }
     const opts = optsExpr.result;
@@ -63,10 +63,10 @@ function isLength(path, options) {
 
 function isSet(path) {
   const infoArgs = isSet.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
+  const pExpr = infoArgs[0].compile(path);
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     return get(obj, pExpr.result) != null ? undefined : `isSet: the value at path '${path}' must be set`;
@@ -75,18 +75,18 @@ function isSet(path) {
 
 function isType(path, type) {
   const infoArgs = isType.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
-  const tExpr = infoArgs[1].ensure(type);
+  const pExpr = infoArgs[0].compile(path);
+  const tExpr = infoArgs[1].compile(type);
   if (tExpr.resolved) {
     tExpr.result = getType(tExpr.result);
   }
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!tExpr.resolved) {
-      infoArgs[1].ensureRef(tExpr, ctx, obj);
+      infoArgs[1].resolve(tExpr, ctx, obj);
       if (tExpr.error) { return tExpr.error; }
       try { tExpr.result = ctx.getType(tExpr.result); } catch (e) { return e.message; }
     }
@@ -97,15 +97,15 @@ function isType(path, type) {
 
 function isOneOf(path, values) {
   const infoArgs = isOneOf.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
-  const aExpr = infoArgs[1].ensure(values);
+  const pExpr = infoArgs[0].compile(path);
+  const aExpr = infoArgs[1].compile(values);
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!aExpr.resolved) {
-      infoArgs[1].ensureRef(aExpr, ctx, obj);
+      infoArgs[1].resolve(aExpr, ctx, obj);
       if (aExpr.error) { return aExpr.error; }
     }
     return aExpr.result.includes(get(obj, pExpr.result)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${aExpr.result}`;
@@ -114,18 +114,18 @@ function isOneOf(path, values) {
 
 function isArrayOf(path, type) {
   const infoArgs = isType.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
-  const tExpr = infoArgs[1].ensure(type);
+  const pExpr = infoArgs[0].compile(path);
+  const tExpr = infoArgs[1].compile(type);
   if (tExpr.resolved) {
     tExpr.result = getType(tExpr.result);
   }
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!tExpr.resolved) {
-      infoArgs[1].ensureRef(tExpr, ctx, obj);
+      infoArgs[1].resolve(tExpr, ctx, obj);
       if (tExpr.error) { return tExpr.error; }
       try { tExpr.result = ctx.getType(tExpr.result); } catch (e) { return e.message; }
     }

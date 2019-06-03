@@ -21,7 +21,7 @@ class Info {
     for (let i = 0; i < args.length; i += 1) {
       const arg = args[i];
       const ad = this.argDescriptors[this.adjustArgDescriptorIndex(i + offset)];
-      exprs[i] = ad.ensure(arg);
+      exprs[i] = ad.compile(arg);
     }
     return exprs;
   }
@@ -31,7 +31,7 @@ class Info {
     for (let i = 0, len = exprs.length; i < len; i += 1) {
       if (!exprs[i].resolved) {
         const ad = this.argDescriptors[this.adjustArgDescriptorIndex(i + offset)];
-        ad.ensureRef(exprs[i], ctx, obj);
+        ad.resolve(exprs[i], ctx, obj);
         if (exprs[i].error) {
           return i;
         }

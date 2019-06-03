@@ -11,15 +11,15 @@ const Info = require('./util/info');
 
 function call(path, child) {
   const infoArgs = call.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
-  const cExpr = infoArgs[1].ensure(child);
+  const pExpr = infoArgs[0].compile(path);
+  const cExpr = infoArgs[1].compile(child);
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[1].ensureRef(cExpr, ctx, obj);
+      infoArgs[1].resolve(cExpr, ctx, obj);
       if (cExpr.error) { return cExpr.error; }
     }
     return cExpr.result(get(obj, pExpr.result), ctx);
@@ -28,9 +28,9 @@ function call(path, child) {
 
 function def(scope, child) {
   const infoArgs = def.info.argDescriptors;
-  // const sExpr = infoArgs[0].ensure(scope, true); // non referenceable object (refDepth = -1)
+  // const sExpr = infoArgs[0].compile(scope, true); // non referenceable object (refDepth = -1)
   let s = ensureScope(scope, false); // non referenceable object (refDepth = -1)
-  const cExpr = infoArgs[1].ensure(child);
+  const cExpr = infoArgs[1].compile(child);
   return (obj, ctx = new Context()) => {
     if (s !== scope) { // Let's process references
       // Create and push into the context a fresh new scope where properties are
@@ -47,7 +47,7 @@ function def(scope, child) {
       ctx.push(s);
     }
     if (!cExpr.resolved) {
-      infoArgs[1].ensureRef(cExpr, ctx, obj);
+      infoArgs[1].resolve(cExpr, ctx, obj);
       if (cExpr.error) { return cExpr.error; }
     }
     const result = cExpr.result(obj, ctx);
@@ -58,10 +58,10 @@ function def(scope, child) {
 
 function not(child) {
   const infoArgs = not.info.argDescriptors;
-  const cExpr = infoArgs[0].ensure(child);
+  const cExpr = infoArgs[0].compile(child);
   return (obj, ctx = new Context()) => {
     if (!cExpr.resolved) {
-      infoArgs[0].ensureRef(cExpr, ctx, obj);
+      infoArgs[0].resolve(cExpr, ctx, obj);
       if (cExpr.error) { return cExpr.error; }
     }
     return cExpr.result(obj, ctx) ? undefined : 'not: the child validator must fail';
@@ -76,7 +76,7 @@ function and(...children) {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        childArg.ensureRef(cExpr, ctx, obj);
+        childArg.resolve(cExpr, ctx, obj);
         if (cExpr.error) { return cExpr.error; }
       }
       const error = (cExpr.result)(obj, ctx); // Validate child
@@ -97,7 +97,7 @@ function or(...children) {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        childArg.ensureRef(cExpr, ctx, obj);
+        childArg.resolve(cExpr, ctx, obj);
         if (cExpr.error) { return cExpr.error; }
       }
       error = (cExpr.result)(obj, ctx); // Validate child
@@ -118,7 +118,7 @@ function xor(...children) {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        childArg.ensureRef(cExpr, ctx, obj);
+        childArg.resolve(cExpr, ctx, obj);
         if (cExpr.error) { return cExpr.error; }
       }
       const error = (cExpr.result)(obj, ctx); // Validate child
@@ -134,20 +134,20 @@ function xor(...children) {
 // eslint-disable-next-line no-underscore-dangle
 function _if(condChild, thenChild, elseChild) {
   const infoArgs = _if.info.argDescriptors;
-  const ccExpr = infoArgs[0].ensure(condChild);
-  const tcExpr = infoArgs[1].ensure(thenChild);
-  const ecExpr = infoArgs[2].ensure(elseChild);
+  const ccExpr = infoArgs[0].compile(condChild);
+  const tcExpr = infoArgs[1].compile(thenChild);
+  const ecExpr = infoArgs[2].compile(elseChild);
   return (obj, ctx = new Context()) => {
     if (!ccExpr.resolved) {
-      infoArgs[0].ensureRef(ccExpr, ctx, obj);
+      infoArgs[0].resolve(ccExpr, ctx, obj);
       if (ccExpr.error) { return ccExpr.error; }
     }
     if (!tcExpr.resolved) {
-      infoArgs[1].ensureRef(tcExpr, ctx, obj);
+      infoArgs[1].resolve(tcExpr, ctx, obj);
       if (tcExpr.error) { return tcExpr.error; }
     }
     if (!ecExpr.resolved) {
-      infoArgs[2].ensureRef(ecExpr, ctx, obj);
+      infoArgs[2].resolve(ecExpr, ctx, obj);
       if (ecExpr.error) { return ecExpr.error; }
     }
     if (ecExpr.result == null) {
@@ -160,15 +160,15 @@ function _if(condChild, thenChild, elseChild) {
 
 function every(path, child) {
   const infoArgs = every.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
-  const cExpr = infoArgs[1].ensure(child);
+  const pExpr = infoArgs[0].compile(path);
+  const cExpr = infoArgs[1].compile(child);
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[1].ensureRef(cExpr, ctx);
+      infoArgs[1].resolve(cExpr, ctx);
       if (cExpr.error) { return cExpr.error; }
     }
     const value = get(obj, pExpr.result);
@@ -207,15 +207,15 @@ function every(path, child) {
 
 function some(path, child) {
   const infoArgs = some.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
-  const cExpr = infoArgs[1].ensure(child);
+  const pExpr = infoArgs[0].compile(path);
+  const cExpr = infoArgs[1].compile(child);
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[1].ensureRef(cExpr, ctx);
+      infoArgs[1].resolve(cExpr, ctx);
       if (cExpr.error) { return cExpr.error; }
     }
     const value = get(obj, pExpr.result);
@@ -254,20 +254,20 @@ function some(path, child) {
 
 function alter(resultOnSuccess, resultOnError, child) {
   const infoArgs = alter.info.argDescriptors;
-  const sExpr = infoArgs[0].ensure(resultOnSuccess);
-  const fExpr = infoArgs[1].ensure(resultOnError);
-  const cExpr = infoArgs[2].ensure(child);
+  const sExpr = infoArgs[0].compile(resultOnSuccess);
+  const fExpr = infoArgs[1].compile(resultOnError);
+  const cExpr = infoArgs[2].compile(child);
   return (obj, ctx = new Context()) => {
     if (!sExpr.resolved) {
-      infoArgs[0].ensureRef(sExpr, ctx, obj);
+      infoArgs[0].resolve(sExpr, ctx, obj);
       if (sExpr.error) { return sExpr.error; }
     }
     if (!fExpr.resolved) {
-      infoArgs[1].ensureRef(fExpr, ctx, obj);
+      infoArgs[1].resolve(fExpr, ctx, obj);
       if (fExpr.error) { return fExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[2].ensureRef(cExpr, ctx, obj);
+      infoArgs[2].resolve(cExpr, ctx, obj);
       if (cExpr.error) { return cExpr.error; }
     }
     const r = cExpr.result(obj, ctx) === undefined ? sExpr.result : fExpr.result;
@@ -277,15 +277,15 @@ function alter(resultOnSuccess, resultOnError, child) {
 
 function onError(result, child) {
   const infoArgs = onError.info.argDescriptors;
-  const rExpr = infoArgs[0].ensure(result);
-  const cExpr = infoArgs[1].ensure(child);
+  const rExpr = infoArgs[0].compile(result);
+  const cExpr = infoArgs[1].compile(child);
   return (obj, ctx = new Context()) => {
     if (!rExpr.resolved) {
-      infoArgs[0].ensureRef(rExpr, ctx, obj);
+      infoArgs[0].resolve(rExpr, ctx, obj);
       if (rExpr.error) { return rExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[1].ensureRef(cExpr, ctx, obj);
+      infoArgs[1].resolve(cExpr, ctx, obj);
       if (cExpr.error) { return cExpr.error; }
     }
     if (cExpr.result(obj, ctx) === undefined) { return undefined; }
@@ -296,20 +296,20 @@ function onError(result, child) {
 // eslint-disable-next-line no-underscore-dangle
 function _while(path, condChild, doChild) {
   const infoArgs = _while.info.argDescriptors;
-  const pExpr = infoArgs[0].ensure(path);
-  const ccExpr = infoArgs[1].ensure(condChild);
-  const dcExpr = infoArgs[2].ensure(doChild);
+  const pExpr = infoArgs[0].compile(path);
+  const ccExpr = infoArgs[1].compile(condChild);
+  const dcExpr = infoArgs[2].compile(doChild);
   return (obj, ctx = new Context()) => {
     if (!pExpr.resolved) {
-      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      infoArgs[0].resolve(pExpr, ctx, obj);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!ccExpr.resolved) {
-      infoArgs[1].ensureRef(ccExpr, ctx, obj);
+      infoArgs[1].resolve(ccExpr, ctx, obj);
       if (ccExpr.error) { return ccExpr.error; }
     }
     if (!dcExpr.resolved) {
-      infoArgs[2].ensureRef(dcExpr, ctx, obj);
+      infoArgs[2].resolve(dcExpr, ctx, obj);
       if (dcExpr.error) { return dcExpr.error; }
     }
     const value = get(obj, pExpr.result);

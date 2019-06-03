@@ -34,12 +34,12 @@ class Argument {
     }
   }
 
-  ensure(value, noReference) {
-    return this.type.ensure(value, noReference || this.refDepth < 0);
+  compile(value, noReference) {
+    return this.type.compile(value, noReference || this.refDepth < 0);
   }
 
-  ensureRef(expr, ctx, obj) {
-    return this.type.ensureRef(expr, ctx, obj);
+  resolve(expr, ctx, obj) {
+    return this.type.resolve(expr, ctx, obj);
   }
 }
 

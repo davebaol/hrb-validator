@@ -58,12 +58,12 @@ class StringOnly extends Bridge {
     const original = v[this.name];
     const specialized = SPECIALIZED_VALIDATORS[this.name];
     return (path, ...noPathArgs) => {
-      const pExpr = this.argDescriptors[0].ensure(path);
+      const pExpr = this.argDescriptors[0].compile(path);
       const restExpr = this.ensureRestParams(noPathArgs, 1);
       const restValue = [];
       return (obj, ctx = new Context()) => {
         if (!pExpr.resolved) {
-          this.argDescriptors[0].ensureRef(pExpr, ctx, obj);
+          this.argDescriptors[0].resolve(pExpr, ctx, obj);
           if (pExpr.error) { return pExpr.error; }
         }
         const errorAt = this.ensureRestParamsRef(restExpr, 1, ctx, obj);

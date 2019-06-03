@@ -22,7 +22,7 @@ function ensureScope(scope) {
       const cur = scope[k];
       if (typeof cur === 'object' && cur !== null) {
         const type = k.startsWith('$') ? child : any;
-        const ref = type.ensure(cur);
+        const ref = type.compile(cur);
         // Notice the check (v !== cur) instead of (v instanceof Expression).
         // This way both references and compiled validators (not hard-coded ones)
         // are detected and shallow copy is triggered.
@@ -44,7 +44,7 @@ function ensureScopeRef(newScope, scope, context, obj) {
       const cur = scope[k];
       if (cur instanceof Expression) {
         const type = k.startsWith('$') ? child : any;
-        const ref = type.ensureRef(cur, context, obj);
+        const ref = type.resolve(cur, context, obj);
         if (ref.error) { throw new Error(ref.error); }
         newScope[k] = ref.result; // eslint-disable-line no-param-reassign
       } else {
