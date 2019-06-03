@@ -5,7 +5,6 @@ const { get } = require('../util/path');
 const createShortcuts = require('../util/create-shortcuts');
 const Info = require('../util/info');
 const Context = require('../util/context');
-const Reference = require('../util/reference');
 const { getType } = require('../util/types');
 
 //
@@ -15,38 +14,46 @@ const { getType } = require('../util/types');
 
 function equals(path, value, deep) {
   const infoArgs = equals.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let v = infoArgs[1].ensure(value);
-  let d = infoArgs[2].ensure(deep);
+  const pExpr = infoArgs[0].ensure(path);
+  const vExpr = infoArgs[1].ensure(value);
+  const dExpr = infoArgs[2].ensure(deep);
   return (obj, ctx = new Context()) => {
-    if (p instanceof Reference) {
-      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
+    if (!pExpr.resolved) {
+      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (v instanceof Reference) {
-      try { v = infoArgs[1].ensureRef(v, ctx, obj); } catch (e) { return e.message; }
+    if (!vExpr.resolved) {
+      infoArgs[1].ensureRef(vExpr, ctx, obj);
+      if (vExpr.error) { return vExpr.error; }
     }
-    if (d instanceof Reference) {
-      try { d = infoArgs[2].ensureRef(d, ctx, obj); } catch (e) { return e.message; }
+    if (!dExpr.resolved) {
+      infoArgs[2].ensureRef(dExpr, ctx, obj);
+      if (dExpr.error) { return dExpr.error; }
     }
-    const result = d ? deepEqual(get(obj, p), v) : get(obj, p) === v;
-    return result ? undefined : `equals: the value at path '${path}' must be equal to ${v}`;
+    const result = dExpr.result
+      ? deepEqual(get(obj, pExpr.result), vExpr.result)
+      : get(obj, pExpr.result) === vExpr.result;
+    return result ? undefined : `equals: the value at path '${path}' must be equal to ${vExpr.result}`;
   };
 }
 
 function isLength(path, options) {
   const infoArgs = isLength.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let opts = infoArgs[1].ensure(options);
+  const pExpr = infoArgs[0].ensure(path);
+  const optsExpr = infoArgs[1].ensure(options);
   return (obj, ctx = new Context()) => {
-    if (p instanceof Reference) {
-      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
+    if (!pExpr.resolved) {
+      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (opts instanceof Reference) {
-      try { opts = infoArgs[1].ensureRef(opts, ctx, obj); } catch (e) { return e.message; }
+    if (!optsExpr.resolved) {
+      infoArgs[1].ensureRef(optsExpr, ctx, obj);
+      if (optsExpr.error) { return optsExpr.error; }
     }
+    const opts = optsExpr.result;
     const min = opts.min || 0;
     const max = opts.max; // eslint-disable-line prefer-destructuring
-    const len = lengthOf(get(obj, p));
+    const len = lengthOf(get(obj, pExpr.result));
     if (len === undefined) {
       return `isLength: the value at path '${path}' must be a string, an array or an object`;
     }
@@ -56,69 +63,74 @@ function isLength(path, options) {
 
 function isSet(path) {
   const infoArgs = isSet.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
+  const pExpr = infoArgs[0].ensure(path);
   return (obj, ctx = new Context()) => {
-    if (p instanceof Reference) {
-      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
+    if (!pExpr.resolved) {
+      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    return get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`;
+    return get(obj, pExpr.result) != null ? undefined : `isSet: the value at path '${path}' must be set`;
   };
 }
 
 function isType(path, type) {
   const infoArgs = isType.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let t = infoArgs[1].ensure(type);
-  if (!(t instanceof Reference)) {
-    t = getType(t);
+  const pExpr = infoArgs[0].ensure(path);
+  const tExpr = infoArgs[1].ensure(type);
+  if (tExpr.resolved) {
+    tExpr.result = getType(tExpr.result);
   }
   return (obj, ctx = new Context()) => {
-    if (p instanceof Reference) {
-      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
+    if (!pExpr.resolved) {
+      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (t instanceof Reference) {
-      try {
-        t = infoArgs[1].ensureRef(t, ctx, obj);
-        t = ctx.getType(t);
-      } catch (e) { return e.message; }
+    if (!tExpr.resolved) {
+      infoArgs[1].ensureRef(tExpr, ctx, obj);
+      if (tExpr.error) { return tExpr.error; }
+      try { tExpr.result = ctx.getType(tExpr.result); } catch (e) { return e.message; }
     }
-    return t.check(get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${t.name}'`;
+    const t = tExpr.result;
+    return t.check(get(obj, pExpr.result)) ? undefined : `isType: the value at path '${path}' must be a '${t.name}'`;
   };
 }
 
 function isOneOf(path, values) {
   const infoArgs = isOneOf.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let a = infoArgs[1].ensure(values);
+  const pExpr = infoArgs[0].ensure(path);
+  const aExpr = infoArgs[1].ensure(values);
   return (obj, ctx = new Context()) => {
-    if (p instanceof Reference) {
-      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
+    if (!pExpr.resolved) {
+      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (a instanceof Reference) {
-      try { a = infoArgs[1].ensureRef(a, ctx, obj); } catch (e) { return e.message; }
+    if (!aExpr.resolved) {
+      infoArgs[1].ensureRef(aExpr, ctx, obj);
+      if (aExpr.error) { return aExpr.error; }
     }
-    return a.includes(get(obj, p)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${a}`;
+    return aExpr.result.includes(get(obj, pExpr.result)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${aExpr.result}`;
   };
 }
 
 function isArrayOf(path, type) {
   const infoArgs = isType.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let t = infoArgs[1].ensure(type);
-  if (!(t instanceof Reference)) {
-    t = getType(t);
+  const pExpr = infoArgs[0].ensure(path);
+  const tExpr = infoArgs[1].ensure(type);
+  if (tExpr.resolved) {
+    tExpr.result = getType(tExpr.result);
   }
   return (obj, ctx = new Context()) => {
-    if (p instanceof Reference) {
-      try { p = infoArgs[0].ensureRef(p, ctx, obj); } catch (e) { return e.message; }
+    if (!pExpr.resolved) {
+      infoArgs[0].ensureRef(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (t instanceof Reference) {
-      try {
-        t = infoArgs[1].ensureRef(t, ctx, obj);
-        t = ctx.getType(t);
-      } catch (e) { return e.message; }
+    if (!tExpr.resolved) {
+      infoArgs[1].ensureRef(tExpr, ctx, obj);
+      if (tExpr.error) { return tExpr.error; }
+      try { tExpr.result = ctx.getType(tExpr.result); } catch (e) { return e.message; }
     }
-    const value = get(obj, p);
+    const value = get(obj, pExpr.result);
+    const t = tExpr.result;
     if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array`;
     const flag = value.every(e => t.check(e));
     return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array of '${t.name}'`;

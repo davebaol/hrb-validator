@@ -1,7 +1,6 @@
 import { assert } from 'chai';
 import Info from '../../src/util/info';
 import Argument from '../../src/util/argument';
-import Reference from '../../src/util/reference';
 import V from '../../src';
 
 describe('Test Info instance creation.', () => {
@@ -64,25 +63,19 @@ describe('Test Info instance creation.', () => {
 
 describe('Test Info.ensureRestParams().', () => {
   const { info } = V.and;
-  it('Should return the same array specified in input if all its validators are hard-coded', () => {
-    const vlds = [V.isSet('a'), V.isSet('b')];
-    assert(info.ensureRestParams(vlds) === vlds, ':(');
+  it('Rest param child should return an array of resolved expressions whose result is a function regardless of children are hard-coded or not', () => {
+    const vlds = [V.isSet('a'), V.isSet('b'), { isSet: ['b'] }];
+    assert(info.ensureRestParams(vlds).every(e => e.resolved && typeof e.result === 'function'), ':(');
   });
-  it('Should return a new array if any of the validators specified in input is non hard-coded', () => {
-    const vlds = [V.isSet('a'), { isSet: ['b'] }];
-    const ensuredValidators = info.ensureRestParams(vlds);
-    assert(ensuredValidators !== vlds && Array.isArray(ensuredValidators), ':(');
-  });
-  it('Should return a new array made only of validators if references are not used in input validators', () => {
-    const vlds = [V.isSet('a'), { isSet: ['b'] }];
-    const ensuredValidators = info.ensureRestParams(vlds);
-    assert(ensuredValidators.every(v => typeof v === 'function'), ':(');
+  it('Rest param child should return an array of resolved expressions whose result is a function even if references are used in validators arguments', () => {
+    const vlds = [V.isSet('a'), { isSet: [{ $var: 'my_var' }] }];
+    assert(info.ensureRestParams(vlds).every(e => e.resolved && typeof e.result === 'function'), ':(');
   });
   it('Should return a new mixed array made of validators and references at proper index', () => {
-    const vlds = [V.isSet('a'), { isSet: ['b'] }];
+    const vlds = [V.isSet('a'), { isSet: [{ $var: 'my_var' }] }];
     const valRefIndex = 1;
     vlds.splice(valRefIndex, 0, { $var: '$this_is_a_validator_reference' });
     const ensuredValidators = info.ensureRestParams(vlds);
-    assert(ensuredValidators.every((v, i) => (i === valRefIndex ? v instanceof Reference : typeof v === 'function')), ':(');
+    assert(ensuredValidators.every((e, i) => (i === valRefIndex ? !e.resolved : e.resolved)), ':(');
   });
 });

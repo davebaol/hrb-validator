@@ -43,6 +43,11 @@ function prepareRefPaths(type, o, refPaths, path) {
     theRefPaths.push(createRefPath(type, path, kRef, o[kRef]));
     return theRefPaths;
   }
+  if (type && type.acceptsValidator) {
+    // Embedded reference in child's arguments are
+    // processed directly by the child
+    return theRefPaths;
+  }
   // eslint-disable-next-line guard-for-in, no-restricted-syntax
   for (const k in o) {
     const cur = o[k];
@@ -58,32 +63,36 @@ function prepareRefPaths(type, o, refPaths, path) {
 
 const VAR_NOT_FOUND = {};
 
-function resolveRefPath(refPath, context, obj) {
-  if (refPath.varName === undefined) {
+// Any error is reported to the reference by setting its error property
+function resolveRefPathAt(reference, index, context, obj) {
+  const rp = reference.refPaths[index];
+  if (rp.varName === undefined) {
     // Return the value at the referenced path in the input object
-    return get(obj, refPath.path);
+    return get(obj, rp.path);
   }
   // Retrieve the referenced variable/validator
-  const isValidator = refPath.varName.startsWith('$');
-  const value = context.find(refPath.varName, VAR_NOT_FOUND);
+  const isValidator = rp.varName.startsWith('$');
+  const value = context.find(rp.varName, VAR_NOT_FOUND);
   if (value === VAR_NOT_FOUND) {
-    throw new Error(`Unresolved ${isValidator ? 'validator' : 'value'} reference to '${refPath.varName}'`);
+    reference.setError(`Unresolved ${isValidator ? 'validator' : 'value'} reference to '${rp.varName}'`);
+    return undefined;
   }
   // Return either the validator or the value at the referenced path in the variable
-  return isValidator ? value : get(value, refPath.path);
+  return isValidator ? value : get(value, rp.path);
 }
 
 class Reference {
-  constructor(source, refPathsOrType) {
+  constructor(type, source, refPaths) {
+    this.type = type;
     this.source = source;
-    this.refPaths = Array.isArray(refPathsOrType)
-      ? refPathsOrType // Assuming refPathsOrType is an array of refPaths
-      : prepareRefPaths(refPathsOrType, source); // Assuming refPathsOrType is a type
-    this.isRootRef = this.refPaths.length === 1 && this.refPaths[0].targetPath === undefined;
-    // In case of any embedded reference clone the source object into the target,
-    // which is where references will be replaced with the actual value
-    this.target = this.isRootRef ? undefined : clone(source);
-    this.resolved = false;
+    this.refPaths = refPaths || prepareRefPaths(type, source);
+    this.error = undefined;
+    this.resolved = this.refPaths == null || this.refPaths.length === 0;
+    this.isRootRef = !this.resolved && this.refPaths.length === 1
+      && this.refPaths[0].targetPath === undefined;
+    // In case of any embedded reference clone the source object into the value,
+    // which is where references will be replaced with their actual value
+    this.result = this.resolved || this.isRootRef ? source : clone(source);
   }
 
   static isRef(val) {
@@ -94,39 +103,43 @@ class Reference {
     return REF_VALID_KEYS[k] ? k : undefined;
   }
 
-  static checkReference(type, source) {
-    const refPaths = prepareRefPaths(type, source);
-    return refPaths == null ? undefined : new Reference(source, refPaths);
+  static prepareRefPaths(type, source) {
+    return prepareRefPaths(type, source);
   }
 
   resolve(context, obj) {
-    if (this.resolved) {
-      return this.target;
+    if (this.error || this.resolved) {
+      return this;
     }
 
-    // Set to resolved, then resolve it!
-    // Notice that variables in scopes and the object under validation
-    // cannot change during validation, so resolving references once for all
-    // makes sense
-    this.resolved = true;
-
-    // Resolve root reference
     if (this.isRootRef) {
-      this.target = resolveRefPath(this.refPaths[0], context, obj);
-      return this.target;
+      // Resolve root reference
+      this.result = resolveRefPathAt(this, 0, context, obj);
+    } else {
+      // Resolve embedded references
+      const { result: value, refPaths } = this;
+      for (let i = 0, len = refPaths.length; i < len; i += 1) {
+        const rpValue = resolveRefPathAt(this, i, context, obj);
+        if (this.error) {
+          break;
+        }
+        if (!ANY_VALUE[typeof rpValue]) {
+          this.error = `Expected a value; found ${typeof rpValue} instead.`;
+          break;
+        }
+        set(value, refPaths[i].targetPath, rpValue);
+      }
     }
 
-    // Resolve embedded references
-    const { target, refPaths } = this;
-    for (let i = 0, len = refPaths.length; i < len; i += 1) {
-      const refPath = refPaths[i];
-      const value = resolveRefPath(refPath, context, obj);
-      if (!ANY_VALUE[typeof value]) {
-        throw new Error(`Expected a value; found ${typeof value} instead.`);
-      }
-      set(target, refPath.targetPath, value);
-    }
-    return target;
+    // Set to resolve if no error
+    this.resolved = !this.error;
+
+    return this;
+  }
+
+  setError(error) {
+    this.error = error;
+    return this;
   }
 }
 

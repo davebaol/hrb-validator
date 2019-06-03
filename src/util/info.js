@@ -1,5 +1,4 @@
 const Argument = require('./argument');
-const Reference = require('./reference');
 
 class Info {
   constructor(validator, ...argDescriptors) {
@@ -18,33 +17,27 @@ class Info {
   }
 
   ensureRestParams(args, offset = 0) {
-    let ensured = args; // The original array is returned by default
-    for (let i = 0; i < ensured.length; i += 1) {
+    const exprs = [];
+    for (let i = 0; i < args.length; i += 1) {
       const arg = args[i];
       const ad = this.argDescriptors[this.adjustArgDescriptorIndex(i + offset)];
-      const ea = ad.ensure(arg);
-      if (ea !== arg) {
-        if (ensured === args) {
-          // Lazy shallow copy of the original array is made only when we know
-          // for sure that at least one item has to be replaced for some reason.
-          // From here on we can safely update items into the copied array, which
-          // of course is the one that will be returned.
-          ensured = args.slice();
-        }
-        ensured[i] = ea;
-      }
+      exprs[i] = ad.ensure(arg);
     }
-    return ensured;
+    return exprs;
   }
 
-  ensureRestParamsRef(ensured, offset, ctx, obj) {
-    for (let i = 0, len = ensured.length; i < len; i += 1) {
-      if (ensured[i] instanceof Reference) {
+  // Returns the index of the first param where an error occurred; -1 otherwise
+  ensureRestParamsRef(exprs, offset, ctx, obj) {
+    for (let i = 0, len = exprs.length; i < len; i += 1) {
+      if (!exprs[i].resolved) {
         const ad = this.argDescriptors[this.adjustArgDescriptorIndex(i + offset)];
-        // eslint-disable-next-line no-param-reassign
-        ensured[i] = ad.ensureRef(ensured[i], ctx, obj);
+        ad.ensureRef(exprs[i], ctx, obj);
+        if (exprs[i].error) {
+          return i;
+        }
       }
     }
+    return -1;
   }
 
   // Adjust the index to take into account rest parameters

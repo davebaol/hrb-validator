@@ -22,13 +22,14 @@ function ensureScope(scope) {
       const cur = scope[k];
       if (typeof cur === 'object' && cur !== null) {
         const type = k.startsWith('$') ? child : any;
-        const v = type.ensure(cur);
+        const ref = type.ensure(cur);
         // Notice the check (v !== cur) instead of (v instanceof Reference).
         // This way both references and compiled validators (not hard-coded ones)
-        // are detected and shollow copy is triggered.
-        if (v !== cur) {
+        // are detected and shallow copy is triggered.
+        // if (v !== cur) {
+        if (!ref.resolved || (ref.resolved && ref.result !== cur)) {
           if (target === scope) { target = Object.assign({}, scope); } // lazy shallow copy
-          target[k] = v;
+          target[k] = ref.resolved ? ref.result : ref;
         }
       }
     }
@@ -43,8 +44,9 @@ function ensureScopeRef(newScope, scope, context, obj) {
       const cur = scope[k];
       if (cur instanceof Reference) {
         const type = k.startsWith('$') ? child : any;
-        const v = type.ensureRef(cur, context, obj);
-        newScope[k] = v; // eslint-disable-line no-param-reassign
+        const ref = type.ensureRef(cur, context, obj);
+        if (ref.error) { throw new Error(ref.error); }
+        newScope[k] = ref.result; // eslint-disable-line no-param-reassign
       } else {
         newScope[k] = cur; // eslint-disable-line no-param-reassign
       }

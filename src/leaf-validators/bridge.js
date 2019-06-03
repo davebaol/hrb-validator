@@ -2,7 +2,6 @@ const v = require('validator');
 const { get } = require('../util/path');
 const Info = require('../util/info');
 const Context = require('../util/context');
-const Reference = require('../util/reference');
 
 class Bridge extends Info {
   constructor(name, errorFunc, ...noPathArgDescriptors) {
@@ -59,25 +58,27 @@ class StringOnly extends Bridge {
     const original = v[this.name];
     const specialized = SPECIALIZED_VALIDATORS[this.name];
     return (path, ...noPathArgs) => {
-      let p = this.argDescriptors[0].ensure(path);
-      const ensuredNoPathArgs = this.ensureRestParams(noPathArgs, 1);
+      const pExpr = this.argDescriptors[0].ensure(path);
+      const restExpr = this.ensureRestParams(noPathArgs, 1);
+      const restValue = [];
       return (obj, ctx = new Context()) => {
-        if (p instanceof Reference) {
-          try {
-            p = this.argDescriptors[0].ensureRef(p, ctx, obj);
-          } catch (e) { return e.message; }
+        if (!pExpr.resolved) {
+          this.argDescriptors[0].ensureRef(pExpr, ctx, obj);
+          if (pExpr.error) { return pExpr.error; }
         }
-        try {
-          this.ensureRestParamsRef(ensuredNoPathArgs, 1, ctx, obj);
-        } catch (e) { return e.message; }
-        let value = get(obj, p);
+        const errorAt = this.ensureRestParamsRef(restExpr, 1, ctx, obj);
+        if (errorAt >= 0) { return restExpr[errorAt].error; }
+        for (let i = 0, len = restExpr.length; i < len; i += 1) {
+          restValue[i] = restExpr[i].result;
+        }
+        let value = get(obj, pExpr.result);
         let result;
         if (specialized !== undefined && this.isSpecialized(value)) {
-          result = specialized(value, ...ensuredNoPathArgs);
+          result = specialized(value, ...restValue);
         } else {
           value = this.cast(value);
           if (typeof value === 'string') {
-            result = original(value, ...ensuredNoPathArgs);
+            result = original(value, ...restValue);
           } else {
             return this.error(path);
           }

@@ -39,7 +39,7 @@ class Argument {
   }
 
   ensureRef(ref, ctx, obj) {
-    return this.ensure(this.type.ensureRef(ref, ctx, obj), true);
+    return this.type.ensureRef(ref, ctx, obj);
   }
 }
 

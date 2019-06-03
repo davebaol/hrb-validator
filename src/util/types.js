@@ -55,24 +55,24 @@ class Type {
     return true;
   }
 
+  ensure1(ref) {
+    if (!ref.error && ref.resolved && !this.check(ref.result)) {
+      return ref.setError(`Expected type '${this.name}'`);
+    }
+    return ref;
+  }
+
   ensure(val, noReference) {
-    if (!noReference) {
-      const ref = Reference.checkReference(this, val);
-      if (ref !== undefined) {
-        return ref;
-      }
+    const ref = new Reference(this, val, noReference ? [] : undefined);
+    this.ensure1(ref);
+    if (ref.error) {
+      throw new Error(ref.error);
     }
-    if (this.check(val)) {
-      return val;
-    }
-    throw new Error(`Expected type '${this.name}'`);
+    return ref;
   }
 
   ensureRef(ref, context, obj) {
-    // if (!this.acceptsValue && ! this.acceptsValidator) {
-    //  throw new Error('Sorry, it seems reference is not allowed here');
-    // }
-    return this.ensure(ref.resolve(context, obj), true);
+    return this.ensure1(ref.resolve(context, obj));
   }
 }
 
@@ -182,33 +182,32 @@ class ChildType extends Type {
   }
 
   /* eslint-disable-next-line class-methods-use-this */
-  ensure(val, noReference) {
+  ensure1(ref) {
+    if (ref.error || !ref.resolved) {
+      return ref;
+    }
+    const val = ref.result;
     if (typeof val === 'function') {
-      return val;
+      return ref;
     }
     if (isPlainObject(val)) {
       const method = checkUniqueKey(val);
       if (!method) {
-        throw new Error('Error: A plain object validator must have exactly one property where the key is its name and the value is the array of its arguments');
+        return ref.setError('Error: A plain object validator must have exactly one property where the key is its name and the value is the array of its arguments');
       }
       const validate = V[method];
       if (validate) {
-        return validate(...val[method]);
+        ref.result = validate(...val[method]); // eslint-disable-line no-param-reassign
+        return ref;
       }
-      if (!noReference) {
-        if (method === '$path') {
-          // Doesn't make sense taking a validator from the object to validate.
-          // It sounds like an error. So let's prevent this from occurring.
-          throw new Error(`Unexpected reference '${JSON.stringify(val)}' for a validator`);
-        }
-        const ref = Reference.checkReference(this, val);
-        if (ref !== undefined) {
-          return ref;
-        }
-      }
-      throw new Error(`Error: Unknown validator '${method}'`);
+      // if (method === '$path') {
+      //   // Doesn't make sense taking a validator from the object to validate.
+      //   // It sounds like an error. So let's prevent this from occurring.
+      //   return ref.setError(`Unexpected reference '${JSON.stringify(val)}' for a validator`);
+      // }
+      return ref.setError(`Error: Unknown validator '${method}'`);
     }
-    throw new Error(`Expected a validator as either a function or a plain object; found a ${typeof val} instead`);
+    return ref.setError(`Expected a validator as either a function or a plain object; found a ${typeof val} instead`);
   }
 }
 
@@ -323,20 +322,18 @@ class UnionType extends Type {
     return false;
   }
 
-  ensure(val, noReference) {
-    if (!noReference) {
-      const ref = Reference.checkReference(this, val);
-      if (ref !== undefined) {
-        return ref;
-      }
+  ensure1(ref) {
+    if (ref.error || !ref.resolved) {
+      return ref;
     }
     for (let i = 0; i < this.members.length; i += 1) {
-      if (this.members[i].check(val)) {
-        // Found member type accepting the value; let's use it for ensuring
-        return this.members[i].ensure(val, noReference);
+      this.members[i].ensure1(ref);
+      if (!ref.error) {
+        return ref; // Found
       }
+      ref.error = undefined; // eslint-disable-line no-param-reassign
     }
-    throw new Error(`Expected type '${this.name}'`);
+    return ref.setError(`Expected type '${this.name}'`);
   }
 }
 
@@ -352,18 +349,16 @@ class PathType extends UnionType {
   }
 
   /* eslint-disable-next-line class-methods-use-this */
-  ensure(val, noReference) {
-    const p = ensureArrayPath(val);
-    if (p === BAD_PATH) {
-      if (!noReference) {
-        const ref = Reference.checkReference(this, val);
-        if (ref !== undefined) {
-          return ref;
-        }
-      }
-      throw new Error('Expected a path in the form of a string, a number, an array of the two previous types, or null');
+  ensure1(ref) {
+    if (ref.error || !ref.resolved) {
+      return ref;
     }
-    return p;
+    const p = ensureArrayPath(ref.result);
+    if (p === BAD_PATH) {
+      return ref.setError('Expected a path in the form of a string, a number, an array of the two previous types, or null');
+    }
+    ref.result = p; // eslint-disable-line no-param-reassign
+    return ref;
   }
 }
 
@@ -373,23 +368,19 @@ class AnyType extends UnionType {
     super('any', UnionType.parseMembers('null|string|integer|number|boolean|array|object|regex'));
   }
 
-  // Optimized check
+  // Optimized version: no need to check all members
   /* eslint-disable-next-line class-methods-use-this */
   check(val) {
     return ANY_VALUE[typeof val];
   }
 
-  ensure(val, noReference) {
-    if (!noReference) {
-      const ref = Reference.checkReference(this, val);
-      if (ref !== undefined) {
-        return ref;
-      }
+  // Optimized version: no need to check all members
+  /* eslint-disable-next-line class-methods-use-this */
+  ensure1(ref) {
+    if (!ref.error && ref.resolved && !this.check(ref.result)) {
+      return ref.setError(`Expected type '${this.name}'`);
     }
-    if (this.check(val)) {
-      return val;
-    }
-    throw new Error(`Expected type '${this.name}'`);
+    return ref;
   }
 }
 

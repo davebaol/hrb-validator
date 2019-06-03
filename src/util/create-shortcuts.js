@@ -3,7 +3,6 @@ const { get } = require('./path');
 const Info = require('./info');
 const Argument = require('./argument');
 const Context = require('./context');
-const Reference = require('./reference');
 
 function getFirstArgType(validator) {
   const ads = validator.info.argDescriptors;
@@ -14,12 +13,13 @@ function optShortcutOf(validator, name) {
   let info;
   const optV = (path, ...args) => {
     const argDescriptor0 = info.argDescriptors[0];
-    let p = argDescriptor0.ensure(path);
+    const pExpr = argDescriptor0.ensure(path);
     return (obj, ctx = new Context()) => {
-      if (p instanceof Reference) {
-        try { p = argDescriptor0.ensureRef(p, ctx, obj); } catch (e) { return e.message; }
+      if (!pExpr.resolved) {
+        argDescriptor0.ensureRef(pExpr, ctx, obj);
+        if (pExpr.error) { return pExpr.error; }
       }
-      return (get(obj, p) ? validator(p, ...args)(obj, ctx) : undefined);
+      return (get(obj, pExpr.result) ? validator(pExpr.result, ...args)(obj, ctx) : undefined);
     };
   };
   Object.defineProperty(optV, 'name', { value: name, writable: false });

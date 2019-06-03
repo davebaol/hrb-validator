@@ -14,28 +14,28 @@ function refPath(targetPath, varName, path) {
 
 function testRefPaths(type, isRoot, source, expectedRefPaths) {
   it(`Test refPaths for newly created ${isRoot ? 'root' : 'embedded'} reference ${JSON.stringify(source)}.`, () => {
-    const ref = new Reference(source, type);
+    const ref = new Reference(type, source);
     assert.deepEqual(ref.refPaths, expectedRefPaths, ':(');
   });
 }
 
 function testRootRefCreate(type, source, expectedRefPaths) {
   testRefPaths(type, true, source, expectedRefPaths);
-  it(`Target should be undefined for newly created root reference ${JSON.stringify(source)}.`, () => {
-    const ref = new Reference(source, type);
-    assert(ref.isRootRef === true && ref.resolved === false && ref.target === undefined, ':(');
+  it(`Expression should be unresolved and result equal to source for newly created root reference ${JSON.stringify(source)}.`, () => {
+    const ref = new Reference(type, source);
+    assert(ref.isRootRef && !ref.resolved && ref.result === ref.source, ':(');
   });
 }
 
 function testEmbeddedRefCreate(type, source, expectedRefPaths) {
   testRefPaths(type, false, source, expectedRefPaths);
-  it(`Target and source should be different instances for newly created embedded reference ${JSON.stringify(source)}.`, () => {
-    const ref = new Reference(source, type);
-    assert(ref.isRootRef === false && ref.resolved === false && ref.target !== ref.source, ':(');
+  it(`Expression result and source should be different instances for newly created embedded reference ${JSON.stringify(source)}.`, () => {
+    const ref = new Reference(type, source);
+    assert(ref.isRootRef === false && ref.resolved === false && ref.result !== ref.source, ':(');
   });
-  it(`Target should be a source clone for embedded reference ${JSON.stringify(source)}.`, () => {
-    const ref = new Reference(source, type);
-    assert.deepEqual(ref.target, ref.source, ':(');
+  it(`Expression result should be a source clone for embedded reference ${JSON.stringify(source)}.`, () => {
+    const ref = new Reference(type, source);
+    assert.deepEqual(ref.result, ref.source, ':(');
   });
 }
 
@@ -46,15 +46,15 @@ function tesResolve(type, isRoot, source, scope, obj, expected) {
     }
     const context = new Context();
     context.push(scope);
-    const ref = new Reference(source, type);
-    assert.deepEqual(ref.resolve(context, obj), expected, ':(');
+    const ref = new Reference(type, source);
+    assert.deepEqual(ref.resolve(context, obj).result, expected, ':(');
   });
 }
 
 function testRefCreateForValidatorWithDeepPath(type) {
   const source = { $var: '$myValidator.a' };
   it(`Validator reference ${JSON.stringify(source)} should throw an error because of the deep path.`, () => {
-    assert.throws(() => new Reference(source, type), Error, 'Illegal validator reference');
+    assert.throws(() => new Reference(type, source), Error, 'Illegal validator reference');
   });
 }
 

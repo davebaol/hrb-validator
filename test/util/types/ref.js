@@ -46,6 +46,9 @@ describe('Test references for all kinds of arguments', () => {
     }
     const ref = tInfo.type.ensure({ [refType]: name });
     tInfo.type.ensureRef(ref, ctx, obj);
+    if (ref.error) {
+      throw new Error(ref.error);
+    }
   }
 
   Object.keys(argInfo).forEach((k) => {
@@ -67,16 +70,16 @@ describe('Test references for all kinds of arguments', () => {
     }
 
     testRefToValues.forEach((f) => {
-      it(`${k} should not throw an error on a reference to a good value`, () => {
+      it(`${k} should not return an error on a reference to a good value`, () => {
         assert.doesNotThrow(() => f(true), Error);
       });
-      it(`${k} should throw an error on a reference to a bad value`, () => {
+      it(`${k} should return an error on a reference to a bad value`, () => {
         assert.throws(() => f(false), Error);
       });
     });
 
     testUnresolvedReferences.forEach((f) => {
-      it(`${k} should throw an error on unresolved reference`, () => {
+      it(`${k} should return an error on unresolved reference`, () => {
         assert.throws(f, Error, 'Unresolved');
       });
     });
