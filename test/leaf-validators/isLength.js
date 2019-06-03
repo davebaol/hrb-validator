@@ -18,9 +18,6 @@ function checkRef(val, shouldSucceed) {
   it(`isLength("a", ${JSON.stringify(options)}) should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
     const v = V.isLength('a', options);
     const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;
-    if (shouldSucceed && !result) {
-      console.log(v(obj)); // eslint-disable-line no-console
-    }
     assert(result, ':(');
   });
 }
