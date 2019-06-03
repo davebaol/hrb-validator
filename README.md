@@ -178,19 +178,61 @@ Imagine what would happen for a larger real-world validator. :dizzy_face:
 On the other hand, for **machine to machine communication** *JSON* is likely a  more appropriate format. For instance, think of a REST API centralizing configurations and their validators.
 
 ### How to use references
-A reference is an object with exactly one key amongst `$path` and `$var` whose walue is respectively a path and a variable name. Notice that reference keys start with `$` to avoid confusion with built-in validators.
+A reference is an object with exactly one key amongst `$path` and `$var` whose value is respectively a path to a property of the object to validate and a path to a property of a variable in nested scopes. Notice that reference keys start with `$` to avoid confusion with built-in validators.
 
 There are 2 types of references:
 
 #### Value reference
-Value references can be used for any validator argument representing a value.
+Value references can be used in any place where a value is expected, for instance a validator argument or a variable definition.
 A value reference is either a path reference or a variable reference.
-- A **path reference** has the form `{"$path": "path.to.property"}` and returns the value at the specified path for the object under validation  
-- A **variable reference** has the form `{"$var": "variable_name"}` and returns the value of the first variable with the specified name found in nested scopes from inner to outer.
+- A **path reference** has the form `{"$path": "path.to.property.of.object.to.validate"}` and returns the value at the specified path for the object under validation  
+- A **variable reference** has the form `{"$var": "path.to.property.of.variable.in.nested.scopes"}` and returns the value at the specified path for the first variable with the specified name found in nested scopes from inner to outer. For instance, `{"$var": "record.fields.0"}` returns the value of the first field of the variable with name `record` from nested scopes.
+
+A value reference can be embedded in obect properties and array items. When it's not embedded is called root reference.   
+
+For instance, suppose you have the object below representing a table with an header and an array of rows, where each row is an array of fields.
+```json
+{
+  "header": ["id", "description", "available"],
+  "rows": [
+    [123, "item 1", true],
+    [456, "item 1", false],
+    [789, "item 3", true]
+  ]
+}
+```
+You want to make sure that each row is an array with a number of fields not greater than the number of fields in the header.
+```yaml
+def:
+  - header: {$path: header} # root reference to the header in the object to validate
+    firstFieldName: {$var: header.0}  # root reference (not used, just for the sake of example)
+
+  - every:
+    - 'rows'
+    - and:
+      - isType: [value, array]
+      - isLength: [value, {max: {$var: header.length}}]  # embedded reference for the property max
+```
 
 #### Validator reference
 Validator references can be used only in branch validators for any argument that is expected to be a validator i.e. a child. 
 A **validator reference** has the form `{"$var": "$validator_name"}` (It's just a variable whose name starts with `$`) and returns the first validator with the specified name found in nested scopes from inner to outer.
+
+We can rewrite the example above by using a user-defined validator to check each row:
+```yaml
+def:
+  - header: {$path: header} # root reference to the header in the object to validate
+    firstFieldName: {$var: header.0}  # root reference (not used, just for the sake of example)
+    $checkRow:       # user-defined validator
+      and:
+        - isType: ['', array]
+        - isLength: ['', {max: {$var: header.length}}]  # embedded reference for the property max
+  - every:
+    - 'rows'
+    - call:
+      - value
+      - {$var: $checkRow}  # validator reference
+```
 
 ### Shortcut for optional paths
 
@@ -283,7 +325,7 @@ Leaf Validator                       | Expected Type at `path` | Description
 *isUUID(path♦️ [, version♦️])*         |string| Check if the value at `path` is a string representing a UUID (version 3, 4 or 5).
 *isVariableWidth(path♦️)*             |string| Check if the value at `path` is a string containing a mixture of full and half-width chars.
 *isWhitelisted(path♦️, chars♦️)*       |string| Checks if the value at `path` is a string containing only the characters in the whitelist.
-*matches(path♦️, pattern [, modifiers])* |string| Check if the value at `path` is a string matching the pattern.<br/><br/>Either `matches('foo', /foo/i)` or `matches('foo', 'foo', 'i')`.
+*matches(path♦️, pattern♦️ [, modifiers♦️])* |string| Check if the value at `path` is a string matching the pattern.<br/><br/>Either `matches('foo', /foo/i)` or `matches('foo', 'foo', 'i')`.
 
 ## Branch Validators
 
