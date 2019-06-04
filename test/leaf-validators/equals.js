@@ -20,8 +20,8 @@ describe('Test leaf validator equals.', () => {
     assert(b === null ? v(obj2) !== undefined : v(obj2) === undefined, ':(');
   }));
 
-  // Deep equal with ref
-  it('Deep equal with reference should succeed}', () => {
+  // Deep equal with reference
+  it('Deep equal with reference should succeed', () => {
     const obj1 = { a: 'hello' };
     const obj2 = { a: 'hello' };
     const v = V.def({ deep: true }, V.equals('', obj1, { $var: 'deep' }));

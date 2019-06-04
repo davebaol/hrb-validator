@@ -1,9 +1,7 @@
 const v = require('validator');
 const { get } = require('../util/path');
-const ensureArg = require('../util/ensure-arg');
 const Info = require('../util/info');
-
-const { REF } = ensureArg;
+const Context = require('../util/context');
 
 class Bridge extends Info {
   constructor(name, errorFunc, ...noPathArgDescriptors) {
@@ -60,25 +58,27 @@ class StringOnly extends Bridge {
     const original = v[this.name];
     const specialized = SPECIALIZED_VALIDATORS[this.name];
     return (path, ...noPathArgs) => {
-      let p = this.argDescriptors[0].ensure(path);
-      const ensuredNoPathArgs = this.ensureRestParams(noPathArgs, 1);
-      return (obj, ctx) => {
-        if (p === REF) {
-          try {
-            p = this.argDescriptors[0].ensureRef(path, ctx, obj);
-          } catch (e) { return e.message; }
+      const pExpr = this.argDescriptors[0].compile(path);
+      const restExpr = this.compileRestParams(noPathArgs, 1);
+      const restValue = [];
+      return (obj, ctx = new Context()) => {
+        if (!pExpr.resolved) {
+          this.argDescriptors[0].resolve(pExpr, ctx, obj);
+          if (pExpr.error) { return pExpr.error; }
         }
-        try {
-          this.ensureRestParamsRef(ensuredNoPathArgs, noPathArgs, 1, ctx, obj);
-        } catch (e) { return e.message; }
-        let value = get(obj, p);
+        const errorAt = this.resolveRestParams(restExpr, 1, ctx, obj);
+        if (errorAt >= 0) { return restExpr[errorAt].error; }
+        for (let i = 0, len = restExpr.length; i < len; i += 1) {
+          restValue[i] = restExpr[i].result;
+        }
+        let value = get(obj, pExpr.result);
         let result;
         if (specialized !== undefined && this.isSpecialized(value)) {
-          result = specialized(value, ...ensuredNoPathArgs);
+          result = specialized(value, ...restValue);
         } else {
           value = this.cast(value);
           if (typeof value === 'string') {
-            result = original(value, ...ensuredNoPathArgs);
+            result = original(value, ...restValue);
           } else {
             return this.error(path);
           }
@@ -178,7 +178,7 @@ function bridge(target) {
     new StringOnly('isMagnetURI', args => 'in magnet uri format'),
     new StringOnly('isMD5', args => 'representing a valid MD5 hash'),
     new StringOnly('isMimeType', args => 'matching to a valid MIME type format'),
-    new StringOnly('isMobilePhone', args => 'representing a mobile phone number', 'locale:stringOrArray?', 'options:object?'),
+    new StringOnly('isMobilePhone', args => 'representing a mobile phone number', 'locale:string|array?', 'options:object?'),
     new StringOnly('isMongoId', args => 'in the form of a valid hex-encoded representation of a MongoDB ObjectId.'),
     new StringOnly('isMultibyte', args => 'containing one or more multibyte chars'),
     new StringOnly('isNumeric', args => 'containing only numbers', 'options:object?'),
@@ -191,7 +191,7 @@ function bridge(target) {
     new StringOnly('isUUID', args => 'matching to a UUID (version 3, 4 or 5)', 'version:integer?'),
     new StringOnly('isVariableWidth', args => 'containing a mixture of full and half-width chars'),
     new StringOnly('isWhitelisted', args => 'whose characters belongs to the whitelist', 'chars:string'),
-    new StringOnly('matches', args => `matching the regex '${args[0]}'`, 'pattern:stringOrRegex', 'modifiers:string?')
+    new StringOnly('matches', args => `matching the regex '${args[0]}'`, 'pattern:string|regex', 'modifiers:string?')
   ];
   /* eslint-enable no-unused-vars */
 

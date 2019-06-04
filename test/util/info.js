@@ -1,8 +1,9 @@
 import { assert } from 'chai';
 import Info from '../../src/util/info';
 import Argument from '../../src/util/argument';
+import V from '../../src';
 
-describe('Test Info class.', () => {
+describe('Test Info instance creation.', () => {
   function validator(name) {
     const v = () => undefined;
     if (name) {
@@ -12,21 +13,23 @@ describe('Test Info class.', () => {
   }
   const stringArgs = ['myPath:path', 'num:integer?', '...rest:object'];
   const args = [
-    new Argument('myPath', 'path', false, false),
-    new Argument('num', 'integer', true, false),
-    new Argument('rest', 'object', false, true)
+    new Argument({ name: 'myPath', type: 'path' }),
+    new Argument({ name: 'num', type: 'integer?' }),
+    new Argument({ name: 'rest', type: 'object', restParams: true })
   ];
-  it('Info constructor should accept only strings or Argument instances as argument descriptors', () => {
-    assert.throws(() => new Info(validator('namedValidator'), {}), Error);
-  });
   it('Info constructor should throw an error if 1st argument is an anonymous function', () => {
     assert.throws(() => new Info(() => undefined, ...args), Error);
   });
-  it('Info constructor should throw an error if 1st argument is neither a named function ora its name', () => {
+  it('Info constructor should throw an error if 1st argument is neither a named function or its name', () => {
     assert.throws(() => new Info({}, ...args), Error);
   });
-  it('Info constructor should throw an error if rest parameter is used before the last argument', () => {
-    assert.throws(() => new Info(validator('badRestParam'), '...num:integer', 'tag:string'), Error, 'rest parameter');
+  it('Info should throw an error on consolidate if any argument descriptors is neither a string, nor an object, nor an Argument instance', () => {
+    const info = new Info(validator('namedValidator'), []);
+    assert.throws(() => info.consolidate(), Error, 'Invalid argument definition');
+  });
+  it('Info should throw an error on consolidate if rest parameter is used before the last argument', () => {
+    const info = new Info(validator('badRestParam'), '...num:integer', 'tag:string');
+    assert.throws(() => info.consolidate(), Error, 'rest parameter');
   });
   it('Info created by name should throw an error on consolidate (method link not implemented)', () => {
     const info = new Info('funcName', ...args);
@@ -43,17 +46,36 @@ describe('Test Info class.', () => {
     info.consolidate();
     assert(v.info === info && v === info.validator, ':(');
   });
-  it('Check validator\'s name', () => {
+  it('Validator\'s name from info should match the function name', () => {
     const v = validator('namedValidator');
     const info = new Info(v, ...args);
     info.consolidate();
     assert(v.name === info.name, ':(');
   });
-  it('Check argument descriptors created from string representation', () => {
+  it('Argument descriptors created from string should match the ones from corresponding Argument instances', () => {
     const info1 = new Info(validator('namedValidator'), ...args);
     info1.consolidate();
     const info2 = new Info(validator('namedValidator'), ...stringArgs);
     info2.consolidate();
     assert.deepEqual(info1.argDescriptors, info2.argDescriptors, ':(');
+  });
+});
+
+describe('Test Info.compileRestParams().', () => {
+  const { info } = V.and;
+  it('Rest param child should return an array of resolved expressions whose result is a function regardless of children are hard-coded or not', () => {
+    const vlds = [V.isSet('a'), V.isSet('b'), { isSet: ['b'] }];
+    assert(info.compileRestParams(vlds).every(e => e.resolved && typeof e.result === 'function'), ':(');
+  });
+  it('Rest param child should return an array of resolved expressions whose result is a function even if references are used in validators arguments', () => {
+    const vlds = [V.isSet('a'), { isSet: [{ $var: 'my_var' }] }];
+    assert(info.compileRestParams(vlds).every(e => e.resolved && typeof e.result === 'function'), ':(');
+  });
+  it('Should return a new mixed array made of validators and references at proper index', () => {
+    const vlds = [V.isSet('a'), { isSet: [{ $var: 'my_var' }] }];
+    const valRefIndex = 1;
+    vlds.splice(valRefIndex, 0, { $var: '$this_is_a_validator_reference' });
+    const ensuredValidators = info.compileRestParams(vlds);
+    assert(ensuredValidators.every((e, i) => (i === valRefIndex ? !e.resolved : e.resolved)), ':(');
   });
 });

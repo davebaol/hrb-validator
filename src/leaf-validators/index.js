@@ -2,12 +2,10 @@ const deepEqual = require('fast-deep-equal');
 const lengthOf = require('@davebaol/length-of');
 const bridge = require('./bridge');
 const { get } = require('../util/path');
-const { typeCheckers, getType } = require('../util/type');
-const ensureArg = require('../util/ensure-arg');
 const createShortcuts = require('../util/create-shortcuts');
 const Info = require('../util/info');
-
-const { REF } = ensureArg;
+const Context = require('../util/context');
+const { getType } = require('../util/types');
 
 //
 // LEAF VALIDATORS
@@ -16,38 +14,46 @@ const { REF } = ensureArg;
 
 function equals(path, value, deep) {
   const infoArgs = equals.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let v = infoArgs[1].ensure(value);
-  let d = infoArgs[2].ensure(deep);
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  const pExpr = infoArgs[0].compile(path);
+  const vExpr = infoArgs[1].compile(value);
+  const dExpr = infoArgs[2].compile(deep);
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (v === REF) {
-      try { v = infoArgs[1].ensureRef(value, ctx, obj); } catch (e) { return e.message; }
+    if (!vExpr.resolved) {
+      infoArgs[1].resolve(vExpr, ctx, obj);
+      if (vExpr.error) { return vExpr.error; }
     }
-    if (d === REF) {
-      try { d = infoArgs[2].ensureRef(deep, ctx, obj); } catch (e) { return e.message; }
+    if (!dExpr.resolved) {
+      infoArgs[2].resolve(dExpr, ctx, obj);
+      if (dExpr.error) { return dExpr.error; }
     }
-    const result = d ? deepEqual(get(obj, p), v) : get(obj, p) === v;
-    return result ? undefined : `equals: the value at path '${path}' must be equal to ${v}`;
+    const result = dExpr.result
+      ? deepEqual(get(obj, pExpr.result), vExpr.result)
+      : get(obj, pExpr.result) === vExpr.result;
+    return result ? undefined : `equals: the value at path '${path}' must be equal to ${vExpr.result}`;
   };
 }
 
 function isLength(path, options) {
   const infoArgs = isLength.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let opts = infoArgs[1].ensure(options);
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  const pExpr = infoArgs[0].compile(path);
+  const optsExpr = infoArgs[1].compile(options);
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (opts === REF) {
-      try { opts = infoArgs[1].ensureRef(options, ctx, obj); } catch (e) { return e.message; }
+    if (!optsExpr.resolved) {
+      infoArgs[1].resolve(optsExpr, ctx, obj);
+      if (optsExpr.error) { return optsExpr.error; }
     }
+    const opts = optsExpr.result;
     const min = opts.min || 0;
     const max = opts.max; // eslint-disable-line prefer-destructuring
-    const len = lengthOf(get(obj, p));
+    const len = lengthOf(get(obj, pExpr.result));
     if (len === undefined) {
       return `isLength: the value at path '${path}' must be a string, an array or an object`;
     }
@@ -57,86 +63,77 @@ function isLength(path, options) {
 
 function isSet(path) {
   const infoArgs = isSet.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  const pExpr = infoArgs[0].compile(path);
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    return get(obj, p) != null ? undefined : `isSet: the value at path '${path}' must be set`;
+    return get(obj, pExpr.result) != null ? undefined : `isSet: the value at path '${path}' must be set`;
   };
 }
 
 function isType(path, type) {
   const infoArgs = isType.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let t = infoArgs[1].ensure(type);
-  const isSingleType = t !== REF && typeof t === 'string' && typeCheckers[t];
-  const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]);
-  if (t !== REF && !isSingleType && !isArrayOfTypes) {
-    throw new Error(`isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
+  const pExpr = infoArgs[0].compile(path);
+  const tExpr = infoArgs[1].compile(type);
+  if (tExpr.resolved) {
+    tExpr.result = getType(tExpr.result);
   }
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (t === REF) {
-      try { t = infoArgs[1].ensureRef(type, ctx, obj); } catch (e) { return e.message; }
+    if (!tExpr.resolved) {
+      infoArgs[1].resolve(tExpr, ctx, obj);
+      if (tExpr.error) { return tExpr.error; }
+      try { tExpr.result = ctx.getType(tExpr.result); } catch (e) { return e.message; }
     }
-    if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
-      return typeCheckers[t](get(obj, p)) ? undefined : `isType: the value at path '${path}' must be a '${t}'; found '${getType(get(obj, p)) || 'unknown'}' instead`;
-    }
-    if (isArrayOfTypes || (Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]))) {
-      const value = get(obj, p);
-      return (t.some(tt => typeCheckers[tt](value)) ? undefined : `isType: the value at path '${path}' must have one of the specified types '${t.join(', ')}'; found '${getType(value) || 'unknown'}' instead`);
-    }
-    return `isType: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`;
+    const t = tExpr.result;
+    return t.check(get(obj, pExpr.result)) ? undefined : `isType: the value at path '${path}' must be a '${t.name}'`;
   };
 }
 
 function isOneOf(path, values) {
   const infoArgs = isOneOf.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let a = infoArgs[1].ensure(values);
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  const pExpr = infoArgs[0].compile(path);
+  const aExpr = infoArgs[1].compile(values);
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (a === REF) {
-      try { a = infoArgs[1].ensureRef(values, ctx, obj); } catch (e) { return e.message; }
+    if (!aExpr.resolved) {
+      infoArgs[1].resolve(aExpr, ctx, obj);
+      if (aExpr.error) { return aExpr.error; }
     }
-    return a.includes(get(obj, p)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${a}`;
+    return aExpr.result.includes(get(obj, pExpr.result)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${aExpr.result}`;
   };
 }
 
 function isArrayOf(path, type) {
   const infoArgs = isType.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let t = infoArgs[1].ensure(type);
-  const isSingleType = t !== REF && typeof t === 'string' && typeCheckers[t];
-  const isArrayOfTypes = t !== REF && !isSingleType && Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]);
-  if (t !== REF && !isSingleType && !isArrayOfTypes) {
-    throw new Error(`isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`);
+  const pExpr = infoArgs[0].compile(path);
+  const tExpr = infoArgs[1].compile(type);
+  if (tExpr.resolved) {
+    tExpr.result = getType(tExpr.result);
   }
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (t === REF) {
-      try { t = infoArgs[1].ensureRef(type, ctx, obj); } catch (e) { return e.message; }
+    if (!tExpr.resolved) {
+      infoArgs[1].resolve(tExpr, ctx, obj);
+      if (tExpr.error) { return tExpr.error; }
+      try { tExpr.result = ctx.getType(tExpr.result); } catch (e) { return e.message; }
     }
-    if (isSingleType || (typeof t === 'string' && typeCheckers[t])) {
-      const value = get(obj, p);
-      if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array; found '${getType(value) || 'unknown'}' instead`;
-      const flag = value.every(e => typeCheckers[t](e));
-      return flag ? undefined : `isArrayOf: the value at path '${path}' must be a 'array of ${type}'; found '${getType(value) || 'unknown'}' instead`;
-    }
-    if (isArrayOfTypes || (Array.isArray(t) && t.every(tt => typeof tt === 'string' && typeCheckers[tt]))) {
-      const value = get(obj, p);
-      if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be a 'array'; found '${getType(value)}' instead`;
-      const flag = value.every(e => t.some(tt => typeCheckers[tt](e)));
-      return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array where each item has a type amongst ${Object.keys(t).join(', ')}'; found '${getType(value)}' instead`;
-    }
-    return `isArrayOf: the type must be a string or an array of strings amongst ${Object.keys(typeCheckers).join(', ')}`;
+    const value = get(obj, pExpr.result);
+    const t = tExpr.result;
+    if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array`;
+    const flag = value.every(e => t.check(e));
+    return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array of '${t.name}'`;
   };
 }
 
@@ -145,11 +142,11 @@ function leafValidators() {
   /* istanbul ignore next */
   const vInfo = [
     new Info(equals, 'path:path', 'value:any', 'deep:boolean?'),
-    new Info(isArrayOf, 'path:path', 'type:type'),
-    new Info(isLength, 'path:path', 'options:options?'),
+    new Info(isArrayOf, 'path:path', 'type:string|array'),
+    new Info(isLength, 'path:path', 'options:object?'),
     new Info(isOneOf, 'path:path', 'values:array'),
     new Info(isSet, 'path:path'),
-    new Info(isType, 'path:path', 'type:type')
+    new Info(isType, 'path:path', 'type:string|array')
   ];
   /* eslint-enable no-unused-vars */
 

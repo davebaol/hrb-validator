@@ -1,11 +1,8 @@
 const { get } = require('./util/path');
 const Context = require('./util/context');
 const createShortcuts = require('./util/create-shortcuts');
-const ensureArg = require('./util/ensure-arg');
-const prepareScope = require('./util/prepare-scope');
+const { ensureScope, ensureScopeRef } = require('./util/ensure-scope');
 const Info = require('./util/info');
-
-const { REF } = ensureArg;
 
 //
 // BRANCH VALIDATORS
@@ -14,32 +11,46 @@ const { REF } = ensureArg;
 
 function call(path, child) {
   const infoArgs = call.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  const pExpr = infoArgs[0].compile(path);
+  const cExpr = infoArgs[1].compile(child);
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+    if (!cExpr.resolved) {
+      infoArgs[1].resolve(cExpr, ctx, obj);
+      if (cExpr.error) { return cExpr.error; }
     }
-    return c(get(obj, p), ctx);
+    return cExpr.result(get(obj, pExpr.result), ctx);
   };
 }
 
 function def(scope, child) {
   const infoArgs = def.info.argDescriptors;
-  let s = infoArgs[0].ensure(scope); // The scope is a non referenceable object (refDepth = -1)
-  let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
-    // eslint-disable-next-line no-param-reassign
-    ctx = ctx || new Context();
-    try { s = prepareScope(s, ctx, obj); } catch (e) { return e.message; }
-    ctx.push(s);
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+  // const sExpr = infoArgs[0].compile(scope, true); // non referenceable object (refDepth = -1)
+  let s = ensureScope(scope, false); // non referenceable object (refDepth = -1)
+  const cExpr = infoArgs[1].compile(child);
+  return (obj, ctx = new Context()) => {
+    if (s !== scope) { // Let's process references
+      // Create and push into the context a fresh new scope where properties are
+      // added as soon as they are resolved. This way backward references are allowed,
+      // while forward referesences are not.
+      const freshScope = {};
+      ctx.push(freshScope);
+      try {
+        s = ensureScopeRef(freshScope, s, ctx, obj);
+      } catch (e) {
+        return e.message;
+      }
+    } else {
+      ctx.push(s);
     }
-    const result = c(obj, ctx);
+    if (!cExpr.resolved) {
+      infoArgs[1].resolve(cExpr, ctx, obj);
+      if (cExpr.error) { return cExpr.error; }
+    }
+    const result = cExpr.result(obj, ctx);
     ctx.pop();
     return result;
   };
@@ -47,28 +58,28 @@ function def(scope, child) {
 
 function not(child) {
   const infoArgs = not.info.argDescriptors;
-  let c = infoArgs[0].ensure(child);
-  return (obj, ctx) => {
-    if (c === REF) {
-      try { c = infoArgs[0].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+  const cExpr = infoArgs[0].compile(child);
+  return (obj, ctx = new Context()) => {
+    if (!cExpr.resolved) {
+      infoArgs[0].resolve(cExpr, ctx, obj);
+      if (cExpr.error) { return cExpr.error; }
     }
-    return c(obj, ctx) ? undefined : 'not: the child validator must fail';
+    return cExpr.result(obj, ctx) ? undefined : 'not: the child validator must fail';
   };
 }
 
 function and(...children) {
   const { info } = and;
   const childArg = info.argDescriptors[0];
-  const offspring = info.ensureRestParams(children);
-  return (obj, ctx) => {
+  const offspring = info.compileRestParams(children);
+  return (obj, ctx = new Context()) => {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
-      if (offspring[i] === REF) {
-        try {
-          // replace the ref with the validator
-          offspring[i] = childArg.ensureRef(children[i], ctx, obj);
-        } catch (e) { return e.message; }
+      const cExpr = offspring[i];
+      if (!cExpr.resolved) {
+        childArg.resolve(cExpr, ctx, obj);
+        if (cExpr.error) { return cExpr.error; }
       }
-      const error = offspring[i](obj, ctx); // Validate child
+      const error = (cExpr.result)(obj, ctx); // Validate child
       if (error) {
         return error;
       }
@@ -80,17 +91,16 @@ function and(...children) {
 function or(...children) {
   const { info } = or;
   const childArg = info.argDescriptors[0];
-  const offspring = info.ensureRestParams(children);
-  return (obj, ctx) => {
+  const offspring = info.compileRestParams(children);
+  return (obj, ctx = new Context()) => {
     let error;
     for (let i = 0, len = offspring.length; i < len; i += 1) {
-      if (offspring[i] === REF) {
-        try {
-          // replace the ref with the validator
-          offspring[i] = childArg.ensureRef(children[i], ctx, obj);
-        } catch (e) { return e.message; }
+      const cExpr = offspring[i];
+      if (!cExpr.resolved) {
+        childArg.resolve(cExpr, ctx, obj);
+        if (cExpr.error) { return cExpr.error; }
       }
-      error = offspring[i](obj, ctx); // Validate child
+      error = (cExpr.result)(obj, ctx); // Validate child
       if (!error) {
         return undefined;
       }
@@ -102,17 +112,16 @@ function or(...children) {
 function xor(...children) {
   const { info } = xor;
   const childArg = info.argDescriptors[0];
-  const offspring = info.ensureRestParams(children);
-  return (obj, ctx) => {
+  const offspring = info.compileRestParams(children);
+  return (obj, ctx = new Context()) => {
     let count = 0;
     for (let i = 0, len = offspring.length; i < len; i += 1) {
-      if (offspring[i] === REF) {
-        try {
-          // replace the ref with the validator
-          offspring[i] = childArg.ensureRef(children[i], ctx, obj);
-        } catch (e) { return e.message; }
+      const cExpr = offspring[i];
+      if (!cExpr.resolved) {
+        childArg.resolve(cExpr, ctx, obj);
+        if (cExpr.error) { return cExpr.error; }
       }
-      const error = offspring[i](obj, ctx); // Validate child
+      const error = (cExpr.result)(obj, ctx); // Validate child
       count += error ? 0 : 1;
       if (count === 2) {
         break;
@@ -125,42 +134,48 @@ function xor(...children) {
 // eslint-disable-next-line no-underscore-dangle
 function _if(condChild, thenChild, elseChild) {
   const infoArgs = _if.info.argDescriptors;
-  let cc = infoArgs[0].ensure(condChild);
-  let tc = infoArgs[1].ensure(thenChild);
-  let ec = infoArgs[2].ensure(elseChild);
-  return (obj, ctx) => {
-    if (cc === REF) {
-      try { cc = infoArgs[0].ensureRef(condChild, ctx, obj); } catch (e) { return e.message; }
+  const ccExpr = infoArgs[0].compile(condChild);
+  const tcExpr = infoArgs[1].compile(thenChild);
+  const ecExpr = infoArgs[2].compile(elseChild);
+  return (obj, ctx = new Context()) => {
+    if (!ccExpr.resolved) {
+      infoArgs[0].resolve(ccExpr, ctx, obj);
+      if (ccExpr.error) { return ccExpr.error; }
     }
-    if (tc === REF) {
-      try { tc = infoArgs[1].ensureRef(thenChild, ctx, obj); } catch (e) { return e.message; }
+    if (!tcExpr.resolved) {
+      infoArgs[1].resolve(tcExpr, ctx, obj);
+      if (tcExpr.error) { return tcExpr.error; }
     }
-    if (ec === REF) {
-      try { ec = infoArgs[2].ensureRef(elseChild, ctx, obj); } catch (e) { return e.message; }
+    if (!ecExpr.resolved) {
+      infoArgs[2].resolve(ecExpr, ctx, obj);
+      if (ecExpr.error) { return ecExpr.error; }
     }
-    if (ec == null) {
-      return cc(obj, ctx) ? undefined : tc(obj, ctx);
+    if (ecExpr.result == null) {
+      return ccExpr.result(obj, ctx) ? undefined : tcExpr.result(obj, ctx);
     }
-    return (cc(obj, ctx) ? ec : tc)(obj, ctx); // either then or else is validated, not both!
+    // either then or else is validated, not both!
+    return (ccExpr.result(obj, ctx) ? ecExpr.result : tcExpr.result)(obj, ctx);
   };
 }
 
 function every(path, child) {
   const infoArgs = every.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  const pExpr = infoArgs[0].compile(path);
+  const cExpr = infoArgs[1].compile(child);
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx); } catch (e) { return e.message; }
+    if (!cExpr.resolved) {
+      infoArgs[1].resolve(cExpr, ctx);
+      if (cExpr.error) { return cExpr.error; }
     }
-    const value = get(obj, p);
+    const value = get(obj, pExpr.result);
     if (Array.isArray(value)) {
       let error;
       const found = value.find((item, index) => {
-        error = c({ index, value: item, original: obj }, ctx);
+        error = cExpr.result({ index, value: item, original: obj }, ctx);
         return error;
       });
       return found ? error : undefined;
@@ -168,7 +183,7 @@ function every(path, child) {
     if (typeof value === 'object') {
       let error;
       const found = Object.keys(value).find((key, index) => {
-        error = c({
+        error = cExpr.result({
           index, key, value: value[key], original: obj
         }, ctx);
         return error;
@@ -179,7 +194,7 @@ function every(path, child) {
       let error;
       // eslint-disable-next-line no-cond-assign
       for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
-        error = c({ index, value: char, original: obj }, ctx);
+        error = cExpr.result({ index, value: char, original: obj }, ctx);
         if (error) {
           break;
         }
@@ -192,20 +207,22 @@ function every(path, child) {
 
 function some(path, child) {
   const infoArgs = some.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  const pExpr = infoArgs[0].compile(path);
+  const cExpr = infoArgs[1].compile(child);
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx); } catch (e) { return e.message; }
+    if (!cExpr.resolved) {
+      infoArgs[1].resolve(cExpr, ctx);
+      if (cExpr.error) { return cExpr.error; }
     }
-    const value = get(obj, p);
+    const value = get(obj, pExpr.result);
     if (Array.isArray(value)) {
       let error;
       const found = value.find((item, index) => {
-        error = c({ index, value: item, original: obj }, ctx);
+        error = cExpr.result({ index, value: item, original: obj }, ctx);
         return !error;
       });
       return found ? undefined : error;
@@ -213,7 +230,7 @@ function some(path, child) {
     if (typeof value === 'object') {
       let error;
       const found = Object.keys(value).find((key, index) => {
-        error = c({
+        error = cExpr.result({
           index, key, value: value[key], original: obj
         }, ctx);
         return !error;
@@ -224,7 +241,7 @@ function some(path, child) {
       let error;
       // eslint-disable-next-line no-cond-assign
       for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
-        error = c({ index, value: char, original: obj }, ctx);
+        error = cExpr.result({ index, value: char, original: obj }, ctx);
         if (!error) {
           break;
         }
@@ -237,66 +254,74 @@ function some(path, child) {
 
 function alter(resultOnSuccess, resultOnError, child) {
   const infoArgs = alter.info.argDescriptors;
-  let s = infoArgs[0].ensure(resultOnSuccess);
-  let f = infoArgs[1].ensure(resultOnError);
-  let c = infoArgs[2].ensure(child);
-  return (obj, ctx) => {
-    if (s === REF) {
-      try { s = infoArgs[0].ensureRef(resultOnSuccess, ctx, obj); } catch (e) { return e.message; }
+  const sExpr = infoArgs[0].compile(resultOnSuccess);
+  const fExpr = infoArgs[1].compile(resultOnError);
+  const cExpr = infoArgs[2].compile(child);
+  return (obj, ctx = new Context()) => {
+    if (!sExpr.resolved) {
+      infoArgs[0].resolve(sExpr, ctx, obj);
+      if (sExpr.error) { return sExpr.error; }
     }
-    if (f === REF) {
-      try { f = infoArgs[1].ensureRef(resultOnError, ctx, obj); } catch (e) { return e.message; }
+    if (!fExpr.resolved) {
+      infoArgs[1].resolve(fExpr, ctx, obj);
+      if (fExpr.error) { return fExpr.error; }
     }
-    if (c === REF) {
-      try { c = infoArgs[2].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+    if (!cExpr.resolved) {
+      infoArgs[2].resolve(cExpr, ctx, obj);
+      if (cExpr.error) { return cExpr.error; }
     }
-    const r = c(obj, ctx) === undefined ? s : f;
+    const r = cExpr.result(obj, ctx) === undefined ? sExpr.result : fExpr.result;
     return r == null ? undefined : r;
   };
 }
 
 function onError(result, child) {
   const infoArgs = onError.info.argDescriptors;
-  let r = infoArgs[0].ensure(result);
-  let c = infoArgs[1].ensure(child);
-  return (obj, ctx) => {
-    if (r === REF) {
-      try { r = infoArgs[0].ensureRef(result, ctx, obj); } catch (e) { return e.message; }
+  const rExpr = infoArgs[0].compile(result);
+  const cExpr = infoArgs[1].compile(child);
+  return (obj, ctx = new Context()) => {
+    if (!rExpr.resolved) {
+      infoArgs[0].resolve(rExpr, ctx, obj);
+      if (rExpr.error) { return rExpr.error; }
     }
-    if (c === REF) {
-      try { c = infoArgs[1].ensureRef(child, ctx, obj); } catch (e) { return e.message; }
+    if (!cExpr.resolved) {
+      infoArgs[1].resolve(cExpr, ctx, obj);
+      if (cExpr.error) { return cExpr.error; }
     }
-    if (c(obj, ctx) === undefined) { return undefined; }
-    return r == null ? undefined : r;
+    if (cExpr.result(obj, ctx) === undefined) { return undefined; }
+    return rExpr.result == null ? undefined : rExpr.result;
   };
 }
 
 // eslint-disable-next-line no-underscore-dangle
 function _while(path, condChild, doChild) {
   const infoArgs = _while.info.argDescriptors;
-  let p = infoArgs[0].ensure(path);
-  let cc = infoArgs[1].ensure(condChild);
-  let dc = infoArgs[2].ensure(doChild);
-  return (obj, ctx) => {
-    if (p === REF) {
-      try { p = infoArgs[0].ensureRef(path, ctx, obj); } catch (e) { return e.message; }
+  const pExpr = infoArgs[0].compile(path);
+  const ccExpr = infoArgs[1].compile(condChild);
+  const dcExpr = infoArgs[2].compile(doChild);
+  return (obj, ctx = new Context()) => {
+    if (!pExpr.resolved) {
+      infoArgs[0].resolve(pExpr, ctx, obj);
+      if (pExpr.error) { return pExpr.error; }
     }
-    if (cc === REF) {
-      try { cc = infoArgs[1].ensureRef(condChild, ctx, obj); } catch (e) { return e.message; }
+    if (!ccExpr.resolved) {
+      infoArgs[1].resolve(ccExpr, ctx, obj);
+      if (ccExpr.error) { return ccExpr.error; }
     }
-    if (dc === REF) {
-      try { dc = infoArgs[2].ensureRef(doChild, ctx, obj); } catch (e) { return e.message; }
+    if (!dcExpr.resolved) {
+      infoArgs[2].resolve(dcExpr, ctx, obj);
+      if (dcExpr.error) { return dcExpr.error; }
     }
-    const value = get(obj, p);
+    const value = get(obj, pExpr.result);
     const status = { succeeded: 0, failed: 0, original: obj };
     if (Array.isArray(value)) {
       let error;
       const found = value.find((item, index) => {
         status.index = index;
         status.value = item;
-        error = cc(status, ctx);
+        error = ccExpr.result(status, ctx);
         if (!error) {
-          status.failed += dc(status, ctx) ? 1 : 0;
+          status.failed += dcExpr.result(status, ctx) ? 1 : 0;
           status.succeeded = index + 1 - status.failed;
         }
         return error;
@@ -309,9 +334,9 @@ function _while(path, condChild, doChild) {
         status.index = index;
         status.key = key;
         status.value = value[key];
-        error = cc(status, ctx);
+        error = ccExpr.result(status, ctx);
         if (!error) {
-          status.failed += dc(status, ctx) ? 1 : 0;
+          status.failed += dcExpr.result(status, ctx) ? 1 : 0;
           status.succeeded = index + 1 - status.failed;
         }
         return error;
@@ -324,11 +349,11 @@ function _while(path, condChild, doChild) {
       for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
         status.index = index;
         status.value = char;
-        error = cc(status, ctx);
+        error = ccExpr.result(status, ctx);
         if (error) {
           break;
         }
-        status.failed += dc(status, ctx) ? 1 : 0;
+        status.failed += dcExpr.result(status, ctx) ? 1 : 0;
         status.succeeded = index + 1 - status.failed;
       }
       return error;
@@ -342,7 +367,7 @@ function branchValidators() {
   /* istanbul ignore next */
   const vInfo = [
     new Info(call, 'path:path', 'child:child'),
-    new Info(def, { desc: 'scope:object', refDepth: -1 }, 'child:child'),
+    new Info(def, { def: 'scope:object', refDepth: -1 }, 'child:child'),
     new Info(not, 'child:child'),
     new Info(and, '...child:child'),
     new Info(or, '...child:child'),

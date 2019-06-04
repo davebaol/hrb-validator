@@ -26,7 +26,7 @@ describe('Test branch validator def.', () => {
     const v = V.def({ $TEST: { optIsSet: [''] } }, { $var: '$TEST' });
     assert(v({ a: 123 }) === undefined, ':(');
   });
-  it('Scope of inner def can access variable of outer def', () => {
+  it('Scope of inner def can reference variable of outer def', () => {
     const v = V.def(
       { v1: 123 },
       V.def(
@@ -36,4 +36,40 @@ describe('Test branch validator def.', () => {
     );
     assert(v({ a: 123 }) === undefined, ':(');
   });
+  it('Variable in a scope can make a backward reference to a variable in the same scope', () => {
+    const v = V.def(
+      {
+        v1: 123,
+        v2: { $var: 'v1' }
+      },
+      { equals: ['a', { $var: 'v2' }] }
+    );
+    assert(v({ a: 123 }) === undefined, ':(');
+  });
+  it('Variable in a scope cannot make a forward reference to a variable in the same scope', () => {
+    const v = V.def(
+      {
+        v2: { $var: 'v1' },
+        v1: 123
+      },
+      { equals: ['a', { $var: 'v2' }] }
+    );
+    assert(v({ a: 123 }) !== undefined, ':(');
+  });
+  /* FIXME comment out this test when the issue is fixed
+  it('Validator should be run in the scope of its
+  definition, not the scope of its invocation', () => {
+    const v = V.def(
+      {
+        var1: 'a',
+        $validator1: { equals: [{ $var: 'var1' }, 123] }
+      },
+      V.def(
+        { var1: 'b' },
+        { $var: '$validator1' }
+      )
+    );
+    assert(v({ a: 123 }) === undefined, ':(');
+  });
+  */
 });
