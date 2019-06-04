@@ -1,6 +1,5 @@
 import { assert } from 'chai';
-import Context from '../../src/util/context';
-import { ensureScope } from '../../src/util/ensure-scope';
+import Scope from '../../src/util/scope';
 import Expression from '../../src/util/expression';
 import { getNativeType } from '../../src/util/types';
 import { ensureArrayPath } from '../../src/util/path';
@@ -39,15 +38,14 @@ function testEmbeddedRefCreate(type, source, expectedRefPaths) {
   });
 }
 
-function tesResolve(type, isRoot, source, scope, obj, expected) {
-  it(`Resolving ${isRoot ? 'root' : 'embedded'} reference ${JSON.stringify(source)} in scope ${JSON.stringify(scope)} on object ${JSON.stringify(obj)} should return ${JSON.stringify(expected)}.`, () => {
-    if (ensureScope(scope) !== scope) {
+function tesResolve(type, isRoot, source, resources, obj, expected) {
+  it(`Resolving ${isRoot ? 'root' : 'embedded'} reference ${JSON.stringify(source)} in scope ${JSON.stringify(resources)} on object ${JSON.stringify(obj)} should return ${JSON.stringify(expected)}.`, () => {
+    const scope = Scope.compile(resources);
+    if (!scope.resolved) {
       throw new Error('Fix your test!!! Scope with references are not supported by this test');
     }
-    const context = new Context();
-    context.push(scope);
     const expr = new Expression(type, source);
-    assert.deepEqual(expr.resolve(context, obj).result, expected, ':(');
+    assert.deepEqual(expr.resolve(scope, obj).result, expected, ':(');
   });
 }
 

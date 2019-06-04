@@ -71,8 +71,8 @@ class Type {
     return expr;
   }
 
-  resolve(expr, context, obj) {
-    return this.checkExpr(expr.resolve(context, obj));
+  resolve(expr, scope, obj) {
+    return this.checkExpr(expr.resolve(scope, obj));
   }
 }
 

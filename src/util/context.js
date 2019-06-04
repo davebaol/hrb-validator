@@ -2,7 +2,6 @@ const { NATIVE_TYPES, UnionType } = require('./types');
 
 class Context {
   constructor() {
-    this.stack = [];
     this.types = {};
   }
 
@@ -40,23 +39,6 @@ class Context {
     }
     this.types[normalizedName] = type;
     return type;
-  }
-
-  push(scope) {
-    this.stack.push(scope);
-  }
-
-  pop() {
-    return this.stack.pop();
-  }
-
-  find(name, defaultValue) {
-    for (let i = this.stack.length - 1; i >= 0; i -= 1) {
-      if (name in this.stack[i]) {
-        return this.stack[i][name]; // Found!
-      }
-    }
-    return defaultValue; // Not found!
   }
 }
 

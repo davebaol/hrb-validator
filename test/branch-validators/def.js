@@ -57,7 +57,7 @@ describe('Test branch validator def.', () => {
     assert(v({ a: 123 }) !== undefined, ':(');
   });
   /* FIXME comment out this test when the issue is fixed
-  it('Validator should be run in the scope of its
+  it('Validator should run in the scope of its
   definition, not the scope of its invocation', () => {
     const v = V.def(
       {

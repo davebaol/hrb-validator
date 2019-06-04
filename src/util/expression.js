@@ -64,7 +64,7 @@ function prepareRefPaths(type, o, refPaths, path) {
 const VAR_NOT_FOUND = {};
 
 // Any error is reported to the reference by setting its error property
-function resolveRefPathAt(reference, index, context, obj) {
+function resolveRefPathAt(reference, index, scope, obj) {
   const rp = reference.refPaths[index];
   if (rp.varName === undefined) {
     // Return the value at the referenced path in the input object
@@ -72,7 +72,7 @@ function resolveRefPathAt(reference, index, context, obj) {
   }
   // Retrieve the referenced variable/validator
   const isValidator = rp.varName.startsWith('$');
-  const value = context.find(rp.varName, VAR_NOT_FOUND);
+  const value = scope.find(rp.varName, VAR_NOT_FOUND);
   if (value === VAR_NOT_FOUND) {
     reference.setError(`Unresolved ${isValidator ? 'validator' : 'value'} reference to '${rp.varName}'`);
     return undefined;
@@ -107,19 +107,19 @@ class Expression {
     return prepareRefPaths(type, source);
   }
 
-  resolve(context, obj) {
+  resolve(scope, obj) {
     if (this.error || this.resolved) {
       return this;
     }
 
     if (this.isRootRef) {
       // Resolve root reference
-      this.result = resolveRefPathAt(this, 0, context, obj);
+      this.result = resolveRefPathAt(this, 0, scope, obj);
     } else {
       // Resolve embedded references
       const { result: value, refPaths } = this;
       for (let i = 0, len = refPaths.length; i < len; i += 1) {
-        const rpValue = resolveRefPathAt(this, i, context, obj);
+        const rpValue = resolveRefPathAt(this, i, scope, obj);
         if (this.error) {
           break;
         }
