@@ -13,11 +13,12 @@ Hierarchical Rule-Based Validator is a simple yet powerful data validation engin
   - Recursive validation
   - Logical operators
   - Conditional validation
-- Widespread support for references in validator arguments:
+- Widespread support for references in validator arguments and variables:
   - Value references allow you to use variables (in fact constants at the current state of the art) and paths (for instance, to ensure that `maxAge` property has a value greater than the value of `minAge` property)
-  - Validator references allow you to reuse user-defined validators, making amongst other things recursion possible 
+  - Validator references allow you to reuse user-defined validators, making amongst other things recursion possible
 
 ### Upcoming Features
+- **User-defined validators with arguments**: user-defined validators will have the same  expressive power of built-in validators.
 - **Read/write variables, not just constants**: with adequate support of special setter validators this will make possible even more in-depth validations. For instance, consider the following two scenarios:
   - An object representing a person has an array of relatives and each relative has a flag indicating whether he's a parent or not. You want to check if at most two of the relatives are parents.
   - An object representing an email has an array of attachments and each attachment has a base64 encoded content string. You want to check if the overall size of the attachments is less than a certain threshold.
@@ -36,6 +37,7 @@ Hierarchical Rule-Based Validator is a simple yet powerful data validation engin
       - [Value reference](#value-reference)
       - [Validator reference](#validator-reference)
     - [Shortcut for optional paths](#shortcut-for-optional-paths)
+    - [Union types](#union-types)
   - [Leaf Validators](#leaf-validators)
   - [Branch Validators](#branch-validators)
 - [License](#license)
@@ -249,6 +251,29 @@ This shortcut is equivalent to the composite validator
 Notice that for a couple of validators the shortcut is somewhat redundant. For instance,
 - `V.optIsSet("a")` is always valid, since that path `a` cannot be set and null at the same time
 - `V.optIsType("a", "string")` is equivalent to `V.isType("a", ["null", "string"])`
+
+### Union types
+
+Union types are types whose set of values is the union of the value spaces of its member types.
+For instance:
+- the union type `string|integer|boolean` is the set of all strings, integer numbers and boolean values.
+- the union type `null|array` represents an optional array (i.e. array or null)
+
+The second example shows that optional types are union types. This can be done for any type T. You can syntactically represent this as `T?` or `null|T`
+
+Of course for any type T1 and T2 the union types `T1|T2` is equivalent to `T2|T1`.
+
+In practice, union types can be specified in two ways:
+- as a pipe separated string, e.g.   `"null|array"`
+- as an array of strings, e.g.   `["null", "array"]`
+
+At the moment, you can use union types in validators `isType` and `isArrayOf`. For instance, in YAML
+```yaml
+and:
+  - isType: [a.b.c, [integer, string]]
+  - isArrayOf: [s.p.q, integer|string]
+```
+In the next major release, user-defined validators will support typed arguments. You'll be able to use union types in the declaration of your own validators by specifying name and type of each argument. Also, validator reference will be suppressed and user-defined validators will be invoked just like regular validators.
 
 
 ## Leaf Validators
