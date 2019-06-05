@@ -5,6 +5,15 @@ class Context {
     this.types = {};
   }
 
+  static find(scope, name, defaultValue) {
+    for (let curScope = scope; curScope != null; curScope = curScope.parent) {
+      if (name in curScope.resources) {
+        return curScope.resources[name]; // Found in current scope
+      }
+    }
+    return defaultValue; // Not found in any scope
+  }
+
   getType(name) {
     // Search type name in native types
     if (name in NATIVE_TYPES) {

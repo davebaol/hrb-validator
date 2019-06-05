@@ -22,13 +22,7 @@ class Scope {
   }
 
   find(name, defaultValue) {
-    if (name in this.resources) {
-      return this.resources[name]; // Found in this scope
-    }
-    if (this.parent) {
-      return this.parent.find(name, defaultValue); // Search parent scope
-    }
-    return defaultValue; // Not found in any scope
+    return Context.find(this, name, defaultValue);
   }
 
   static compile(resources) {
