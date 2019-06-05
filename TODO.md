@@ -1,11 +1,10 @@
 New ideas for future releases
 ============================
 
-[0] Fix and improvements for v0.2.3
+[0] Fix and improvements for v0.2.x
 -----------------------------------------
 - Improve code allowing backward references and preventing forward ones inside a scope
 - Fix tests for mismatched references (they're currently commented)
-- Fix issue where validator run in the scope of its invocation instead of the scope of its definition (bug inherited from master)
 
 [1] New user-defined validators
 -----------------------------------------

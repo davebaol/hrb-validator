@@ -12,7 +12,7 @@ describe('Test branch validator def.', () => {
     assert.throws(() => V.def({}, 'Bad validators', { isType: ['', 'number'] }), Error);
   });
   testAllArguments(V.def, [{}, V.optIsSet('')]);
-  testValidation(SUCCESS, { a: -3.14 }, V.def, { v1: -3.14 }, { equals: ['a', { $var: 'v1' }] });
+  testValidation([SUCCESS, FAILURE, SUCCESS], { a: -3.14 }, V.def, { v1: -3.14 }, { equals: ['a', { $var: 'v1' }] });
   testValidation(FAILURE, { a: 'not -3.14' }, V.def, { v1: -3.14 }, { equals: ['a', { $var: 'v1' }] });
   it('def({}, V.optIsSet("")) should always succeed just like its child', () => {
     const v = V.def({}, V.optIsSet(''));
@@ -56,9 +56,7 @@ describe('Test branch validator def.', () => {
     );
     assert(v({ a: 123 }) !== undefined, ':(');
   });
-  /* FIXME comment out this test when the issue is fixed
-  it('Validator should run in the scope of its
-  definition, not the scope of its invocation', () => {
+  it('Validator should run in the scope of its definition, not the scope of its invocation', () => {
     const v = V.def(
       {
         var1: 'a',
@@ -71,5 +69,4 @@ describe('Test branch validator def.', () => {
     );
     assert(v({ a: 123 }) === undefined, ':(');
   });
-  */
 });

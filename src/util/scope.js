@@ -40,17 +40,15 @@ class Scope {
     if (kRef) {
       throw new Error('Root reference not allowed for scopes');
     }
-    // eslint-disable-next-line no-restricted-syntax
-    for (const k in resources) {
+    for (const k in resources) { // eslint-disable-line no-restricted-syntax
       if (hasOwn.call(resources, k)) {
         const cur = resources[k];
         if (typeof cur === 'object' && cur !== null) {
           const type = k.startsWith('$') ? child : any;
           const ref = type.compile(cur);
-          // Notice the check (v !== cur) instead of (v instanceof Expression).
-          // This way both references and compiled validators (not hard-coded ones)
-          // are detected and shallow copy is triggered.
-          // if (v !== cur) {
+          // Notice the check (ref.result !== cur) to detect both
+          // references and compiled validators (not hard-coded ones)
+          // and trigger shallow copy.
           if (!ref.resolved || (ref.resolved && ref.result !== cur)) {
             if (target === resources) {
               target = Object.assign({}, resources); // lazy shallow copy
@@ -68,21 +66,25 @@ class Scope {
   resolve(obj) {
     if (!this.resolved) {
       const compiledResources = this.resources;
-      // New resources are where properties are added as soon as they are resolved.
-      // This way backward references are allowed, while forward referesences are not.
+      // Set resources to a fresh new object in order to add properties progressively
+      // as soon as they are resolved.
+      // This way backward references are allowed, while forward references are not.
       this.resources = {};
-      // eslint-disable-next-line no-restricted-syntax
-      for (const k in compiledResources) {
+      for (const k in compiledResources) { // eslint-disable-line no-restricted-syntax
         if (hasOwn.call(compiledResources, k)) {
-          const cur = compiledResources[k];
-          if (cur instanceof Expression) {
+          let resource = compiledResources[k];
+          if (resource instanceof Expression) {
             const type = k.startsWith('$') ? child : any;
-            const ref = type.resolve(cur, this, obj);
+            const ref = type.resolve(resource, this, obj);
             if (ref.error) { throw new Error(ref.error); }
-            this.resources[k] = ref.result; // eslint-disable-line no-param-reassign
-          } else {
-            this.resources[k] = cur; // eslint-disable-line no-param-reassign
+            resource = ref.result;
           }
+          // If the resource is a validator take advantage of javasript closure
+          // to override the invocation scope with its definition scope, where
+          // the validator must run
+          this.resources[k] = typeof resource === 'function'
+            ? object => resource(object, this)
+            : resource;
         }
       }
       this.resolved = true;
