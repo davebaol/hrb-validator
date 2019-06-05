@@ -27,11 +27,11 @@ class Info {
   }
 
   // Returns the index of the first param where an error occurred; -1 otherwise
-  resolveRestParams(exprs, offset, ctx, obj) {
+  resolveRestParams(exprs, offset, scope, obj) {
     for (let i = 0, len = exprs.length; i < len; i += 1) {
       if (!exprs[i].resolved) {
         const ad = this.argDescriptors[this.adjustArgDescriptorIndex(i + offset)];
-        ad.resolve(exprs[i], ctx, obj);
+        ad.resolve(exprs[i], scope, obj);
         if (exprs[i].error) {
           return i;
         }

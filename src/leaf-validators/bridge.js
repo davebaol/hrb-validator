@@ -1,7 +1,7 @@
 const v = require('validator');
 const { get } = require('../util/path');
 const Info = require('../util/info');
-const Context = require('../util/context');
+const Scope = require('../util/scope');
 
 class Bridge extends Info {
   constructor(name, errorFunc, ...noPathArgDescriptors) {
@@ -61,12 +61,12 @@ class StringOnly extends Bridge {
       const pExpr = this.argDescriptors[0].compile(path);
       const restExpr = this.compileRestParams(noPathArgs, 1);
       const restValue = [];
-      return (obj, ctx = new Context()) => {
+      return (obj, scope = new Scope()) => {
         if (!pExpr.resolved) {
-          this.argDescriptors[0].resolve(pExpr, ctx, obj);
+          this.argDescriptors[0].resolve(pExpr, scope, obj);
           if (pExpr.error) { return pExpr.error; }
         }
-        const errorAt = this.resolveRestParams(restExpr, 1, ctx, obj);
+        const errorAt = this.resolveRestParams(restExpr, 1, scope, obj);
         if (errorAt >= 0) { return restExpr[errorAt].error; }
         for (let i = 0, len = restExpr.length; i < len; i += 1) {
           restValue[i] = restExpr[i].result;

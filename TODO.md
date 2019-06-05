@@ -1,14 +1,20 @@
-New ideas for future releses
+New ideas for future releases
 ============================
+
+[0] Fix and improvements for v0.2.x
+-----------------------------------------
+- Improve code allowing backward references and preventing forward ones inside a scope
+- Fix tests for mismatched references (they're currently commented)
 
 [1] New user-defined validators
 -----------------------------------------
 
 def:
-  - $MY_VALIDATOR:
-    - [my_path:path|null, num:integer, ...rest:string]
-    - isType: [{$var: path}, path]
-  - $MY_VALIDATOR: [mypath, 3, hello, world]
+  - $MY_VALIDATOR:                                       # name (part of the signature)
+    - [myPath:path, num:integer|boolean, ...rest:string] # arguments (part of the signature)
+    - isType: [{$var: path}, path]                       # body
+  
+  - $MY_VALIDATOR: [mypath, 3, hello, world]             # invocation
 
 [2] R/W variables
 -----------------------------------------
@@ -35,13 +41,12 @@ SETTER:
 }   
 
 def:
-  - totLen: 0
-  - len: 0
+  - @len: 0
   - every:
     - attachments
     - and
-      - add: [len, {$path: value.content.length}]
-      - isNumber: [{$var: totLen}, { min: 0, max: 100 }]
+      - add: [@len, {$path: value.content.length}]
+      - isNumber: [{$var: @len}, { min: 0, max: 100 }]
     
 --------------------------
     

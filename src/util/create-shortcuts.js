@@ -2,7 +2,7 @@ const camelCase = require('camelcase');
 const { get } = require('./path');
 const Info = require('./info');
 const Argument = require('./argument');
-const Context = require('./context');
+const Scope = require('./scope');
 
 function getFirstArgType(validator) {
   const ads = validator.info.argDescriptors;
@@ -14,12 +14,12 @@ function optShortcutOf(validator, name) {
   const optV = (path, ...args) => {
     const argDescriptor0 = info.argDescriptors[0];
     const pExpr = argDescriptor0.compile(path);
-    return (obj, ctx = new Context()) => {
+    return (obj, scope = new Scope()) => {
       if (!pExpr.resolved) {
-        argDescriptor0.resolve(pExpr, ctx, obj);
+        argDescriptor0.resolve(pExpr, scope, obj);
         if (pExpr.error) { return pExpr.error; }
       }
-      return (get(obj, pExpr.result) ? validator(pExpr.result, ...args)(obj, ctx) : undefined);
+      return (get(obj, pExpr.result) ? validator(pExpr.result, ...args)(obj, scope) : undefined);
     };
   };
   Object.defineProperty(optV, 'name', { value: name, writable: false });

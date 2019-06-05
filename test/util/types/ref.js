@@ -1,30 +1,26 @@
 import { assert } from 'chai';
-import Context from '../../../src/util/context';
+import Scope from '../../../src/util/scope';
 import { checkUniqueKey } from '../../../src/util/misc';
-import { ensureScope, ensureScopeRef } from '../../../src/util/ensure-scope';
 import { argInfo } from '../../test-utils';
 
 describe('Test references for all kinds of arguments', () => {
   function testMismatchedReferences(tInfo, ref) {
     const k = checkUniqueKey(ref);
-    const ctx = new Context();
     return () => {
-      const scope = { [ref[k]]: tInfo.goodValue };
-      let s = ensureScope(scope);
+      const resources = { [ref[k]]: tInfo.goodValue };
+      const scope = Scope.compile(resources);
       const rExpr = tInfo.type.compile(ref);
       return () => {
         const obj = { [ref[k]]: tInfo.goodValue };
         // Code taken from def
-        if (s === scope) {
+        if (scope.resolved) {
           throw new Error('Fix your test!!!! For this test the scope MUST contain a reference');
         }
-        const freshScope = {};
-        ctx.push(freshScope);
-        s = ensureScopeRef(freshScope, s, ctx, obj);
+        scope.resolve(obj);
         if (rExpr.resolved) {
           throw new Error('Fix your test!!!! For this test a reference is needed');
         }
-        tInfo.type.resolve(rExpr, ctx, obj);
+        tInfo.type.resolve(rExpr, scope, obj);
       };
     };
   }
@@ -32,18 +28,18 @@ describe('Test references for all kinds of arguments', () => {
   const UNRESOLVABLE = {};
 
   function compileAndResolve(tInfo, refType, name, value) {
-    const ctx = new Context();
+    const scope = new Scope();
     let obj = { [name]: value };
     if (refType === '$var') {
       if (value !== UNRESOLVABLE) {
-        ctx.push(obj);
+        scope.resources = obj;
       }
       obj = {};
     } else if (refType !== '$path') {
       throw new Error(`Fix your test!!!! Unknown refType '${refType}. Expected either '$path' or '$var'.`);
     }
     const expr = tInfo.type.compile({ [refType]: name });
-    tInfo.type.resolve(expr, ctx, obj);
+    tInfo.type.resolve(expr, scope, obj);
     if (expr.error) {
       throw new Error(expr.error);
     }

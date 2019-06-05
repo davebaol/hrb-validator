@@ -38,8 +38,8 @@ class Argument {
     return this.type.compile(value, noReference || this.refDepth < 0);
   }
 
-  resolve(expr, ctx, obj) {
-    return this.type.resolve(expr, ctx, obj);
+  resolve(expr, scope, obj) {
+    return this.type.resolve(expr, scope, obj);
   }
 }
 
