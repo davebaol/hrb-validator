@@ -1,10 +1,9 @@
-New ideas for future releases
-============================
+New ideas and improvements for future releases
+==============================================
 
-[0] Fix and improvements for v0.2.x
+[0] Improvements for v0.2.x
 -----------------------------------------
 - Improve code allowing backward references and preventing forward ones inside a scope
-- Fix tests for mismatched references (they're currently commented)
 
 [1] New user-defined validators
 -----------------------------------------

@@ -1,26 +1,13 @@
 import { assert } from 'chai';
 import Scope from '../../../src/util/scope';
-import { checkUniqueKey } from '../../../src/util/misc';
 import { argInfo } from '../../test-utils';
 
 describe('Test references for all kinds of arguments', () => {
   function testMismatchedReferences(tInfo, ref) {
-    const k = checkUniqueKey(ref);
     return () => {
-      const resources = { [ref[k]]: tInfo.goodValue };
-      const scope = Scope.compile(resources);
-      const rExpr = tInfo.type.compile(ref);
+      tInfo.type.compile(ref);
       return () => {
-        const obj = { [ref[k]]: tInfo.goodValue };
-        // Code taken from def
-        if (scope.resolved) {
-          throw new Error('Fix your test!!!! For this test the scope MUST contain a reference');
-        }
-        scope.resolve(obj);
-        if (rExpr.resolved) {
-          throw new Error('Fix your test!!!! For this test a reference is needed');
-        }
-        tInfo.type.resolve(rExpr, scope, obj);
+        throw new Error('This should never happen! Mismatched references should break at compile time');
       };
     };
   }
@@ -79,15 +66,9 @@ describe('Test references for all kinds of arguments', () => {
     });
 
     if (!(tInfo.acceptValidatorRef() && tInfo.acceptValueRef())) {
-      if (testMismatchedReferences) {
-        console.log('testMismatchedReferences temporarily skipped');
-      }
-      /*
-      mismatchedReferences.forEach(ref =>
-        it(`${k} should throw an error on mismatched ref ${JSON.stringify(ref)}`, () => {
+      mismatchedReferences.forEach(ref => it(`${k} should throw an error on mismatched ref ${JSON.stringify(ref)}`, () => {
         assert.throws(testMismatchedReferences(tInfo, ref), Error, 'Unexpected reference');
       }));
-      */
     }
 
     it(`${k} should throw an error on unknown ref`, () => {

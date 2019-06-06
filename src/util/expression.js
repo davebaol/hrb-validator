@@ -1,3 +1,4 @@
+const camelCase = require('camelcase');
 const clone = require('rfdc')({ proto: false, circles: false });
 const { get, set, ensureArrayPath } = require('./path');
 const { checkUniqueKey, ANY_VALUE } = require('./misc');
@@ -7,9 +8,16 @@ const REF_VALID_KEYS = {
   $var: true
 };
 
+function unexpectedReferenceError(key, value, refType, type) {
+  return new Error(`Unexpected reference '{"${key}": "${value}"}'. ${camelCase(refType, { pascalCase: true })} reference not allowed for type '${type.name}'.`);
+}
+
 function createRefPath(type, tPath, key, value) {
   const targetPath = ensureArrayPath(tPath);
   if (key === '$path') {
+    if (type && type.acceptsValidator && !type.acceptsValue) {
+      throw unexpectedReferenceError(key, value, 'value', type.name);
+    }
     return { targetPath, path: ensureArrayPath(value) }; // no varName
   }
   // Split value in varName and path
@@ -20,13 +28,13 @@ function createRefPath(type, tPath, key, value) {
     const isValidator = varName.startsWith('$');
     if (isValidator) {
       if (!type.acceptsValidator) {
-        throw new Error(`Unexpected reference '{"${key}": "${value}"}'. Validator reference non allowed here.`);
+        throw unexpectedReferenceError(key, value, 'validator', type.name);
       }
       if (path) {
         throw new Error(`Illegal validator reference '{"${key}": "${value}"}'. Deep path not allowed for a validator reference`);
       }
     } else if (!type.acceptsValue) {
-      throw new Error(`Unexpected reference '{"${key}": "${value}"}'. Value reference non allowed here.`);
+      throw unexpectedReferenceError(key, value, 'value', type.name);
     }
   }
   return { targetPath, varName, path: ensureArrayPath(path) };

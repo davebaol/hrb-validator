@@ -40,9 +40,9 @@ class Scope {
         if (typeof cur === 'object' && cur !== null) {
           const type = k.startsWith('$') ? child : any;
           const ref = type.compile(cur);
-          // Notice the check (ref.result !== cur) to detect both
-          // references and compiled validators (not hard-coded ones)
-          // and trigger shallow copy.
+          // The check (ref.result !== cur) detects both
+          // references and non hard-coded validators
+          // to trigger shallow copy.
           if (!ref.resolved || (ref.resolved && ref.result !== cur)) {
             if (target === resources) {
               target = Object.assign({}, resources); // lazy shallow copy
