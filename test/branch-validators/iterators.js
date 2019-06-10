@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 import lengthOf from '@davebaol/length-of';
 import V from '../../src';
+import Scope from '../../src/util/scope';
 import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 
 const { SUCCESS, FAILURE } = VALIDATION;
@@ -29,7 +30,7 @@ function testEveryOrSome(name) {
         return count === expected ? failureForEvery() : successForEvery();
       };
       const v = everyOrSome(t, vIt);
-      v(test);
+      v(new Scope(test));
       assert(count === expected, ':(');
     }));
     testKeys.forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'succeed when all iterations are valid' : 'fail when all iterations are invalid'}`, () => {
@@ -37,15 +38,15 @@ function testEveryOrSome(name) {
       const expected = lengthOf(test[t]);
       const vIt = () => { count += 1; return successForEvery(); };
       const v = everyOrSome(t, vIt);
-      v(test);
+      v(new Scope(test));
       assert(count === expected, ':(');
     }));
     function iterationChecker(type, expected) {
       it(`For ${type}s ${name} should generate proper iteration objects`, () => {
         const actual = [];
-        const vIt = (m) => { actual.push(m); return successForEvery(); };
+        const vIt = (scope) => { actual.push(Object.assign({}, scope.find('$'))); return successForEvery(); };
         const v = everyOrSome(type, vIt);
-        v(test);
+        v(new Scope(test));
         assert.deepEqual(actual, expected, ':(');
       });
     }
@@ -59,7 +60,7 @@ function testEveryOrSome(name) {
     Object.keys(failureExpected).forEach(k => it(`For ${k} ${name} should fail`, () => {
       const vIt = () => undefined;
       const v = everyOrSome('', vIt);
-      assert(v(failureExpected[k]) !== undefined, ':(');
+      assert(v(new Scope(failureExpected[k])) !== undefined, ':(');
     }));
   });
 }
@@ -90,9 +91,9 @@ describe('Test branch validator while.', () => {
     it(`For ${type}s while should generate proper iteration objects`, () => {
       const actual = [];
       const vCond = V.optIsSet(''); // always true
-      const vDo = (obj) => { actual.push(Object.assign({}, obj)); return undefined; };
+      const vDo = (scope) => { actual.push(Object.assign({}, scope.find('$'))); return undefined; };
       const v = V.while(type, vCond, vDo);
-      v(test);
+      v(new Scope(test));
       assert.deepEqual(actual, expected, ':(');
     });
   }
@@ -109,7 +110,7 @@ describe('Test branch validator while.', () => {
   const failureExpected = { numbers: 123, booleans: true };
   Object.keys(failureExpected).forEach(k => it(`For ${k} while should fail`, () => {
     const v = V.while('', () => undefined, () => undefined);
-    assert(v(failureExpected[k]) !== undefined, ':(');
+    assert(v(new Scope(failureExpected[k])) !== undefined, ':(');
   }));
 
   function checkParents(shouldSucceed) {
@@ -128,7 +129,8 @@ describe('Test branch validator while.', () => {
         V.isInt('succeeded', { min: 0, max: 2 }),
         V.equals('value.parent', true)
       );
-      assert(shouldSucceed ? (v(person) === undefined) : (v(person) !== undefined), ':(');
+      const result = v(new Scope(person));
+      assert(shouldSucceed ? result === undefined : result !== undefined, ':(');
     });
   }
   checkParents(true);

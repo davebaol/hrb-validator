@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 import V from '../../src';
+import Scope from '../../src/util/scope';
 
 const { SUCCESS, FAILURE } = VALIDATION;
 
@@ -17,7 +18,8 @@ describe('Test leaf validator equals.', () => {
     const obj1 = { a: 'hello', b: [undefined, { x: true }] };
     const obj2 = { a: 'hello', b: [b, { x: true }] };
     const v = V.equals('', obj1, true);
-    assert(b === null ? v(obj2) !== undefined : v(obj2) === undefined, ':(');
+    const result = v(new Scope(obj2));
+    assert(b === null ? result !== undefined : result === undefined, ':(');
   }));
 
   // Deep equal with reference
@@ -25,6 +27,6 @@ describe('Test leaf validator equals.', () => {
     const obj1 = { a: 'hello' };
     const obj2 = { a: 'hello' };
     const v = V.def({ deep: true }, V.equals('', obj1, { $var: 'deep' }));
-    assert(v(obj2) === undefined, ':(');
+    assert(v(new Scope(obj2)) === undefined, ':(');
   });
 });

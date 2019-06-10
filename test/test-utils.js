@@ -1,5 +1,7 @@
 import { assert } from 'chai';
 import Expression from '../src/util/expression';
+import Scope from '../src/util/scope';
+import { clone } from '../src/util/misc';
 import V from '../src';
 
 const UNKNOWN_REF = Object.freeze({ $unknownRefType: 'anything' });
@@ -70,10 +72,6 @@ const typeInfo = Object.keys(V).reduce((acc, k) => {
   return acc;
 }, {});
 
-function clone(data) {
-  return JSON.parse(JSON.stringify(data));
-}
-
 function ordinal(n) {
   switch (n) {
     case 1: return '1st';
@@ -123,19 +121,9 @@ function testArgument(vld, args, index, errorLike) {
         assert.throws(() => vld(...testArgs), errorLike || Error);
       });
     }
-    ['$path', '$var'].forEach((refType) => {
-      if (refType === '$path' && argDesc.type.acceptsValidator && !argDesc.type.acceptsValue) {
-        // it(`Should throw immediately an error on $path reference
-        // as ${ordinal(index + 1)} argument`, () => {
-        //   testArgs[index] = { [refType]: 'any.path' };
-        //   assert.throws(() => vld(...testArgs), Error, 'Unexpected reference \'{"$path":');
-        // });
-      } else {
-        it(`Should delay ${refType} reference resolution at validation time for ${kind} as ${ordinal(index + 1)} argument`, () => {
-          testArgs[index] = { [refType]: `${argDesc.type.acceptsValidator ? '$someValidator' : 'some.value'}` };
-          assert(typeof vld(...testArgs) === 'function', ':(');
-        });
-      }
+    it(`Should delay $var reference resolution at validation time for ${kind} as ${ordinal(index + 1)} argument`, () => {
+      testArgs[index] = { $var: `${argDesc.type.acceptsValidator ? '$someValidator' : 'some.value'}` };
+      assert(typeof vld(...testArgs) === 'function', ':(');
     });
   }
 }
@@ -150,16 +138,16 @@ const VALIDATION = Object.freeze({
 function testValidationAssert(expectedResult, vCreate, obj) {
   switch (expectedResult) {
     case VALIDATION.SUCCESS:
-      assert(vCreate()(obj) === undefined, ':(');
+      assert(vCreate()(new Scope(obj)) === undefined, ':(');
       break;
     case VALIDATION.FAILURE:
-      assert(vCreate()(obj) !== undefined, ':(');
+      assert(vCreate()(new Scope(obj)) !== undefined, ':(');
       break;
     case VALIDATION.THROW:
-      assert.throws(() => vCreate()(obj), Error);
+      assert.throws(() => vCreate()(new Scope(obj)), Error);
       break;
     case VALIDATION.DO_NOT_THROW:
-      assert.doesNotThrow(() => vCreate()(obj), Error);
+      assert.doesNotThrow(() => vCreate()(new Scope(obj)), Error);
       break;
     default:
       assert(false, 'Unknown expected result');
@@ -183,12 +171,15 @@ function testValidationWithNoRefs(expected, obj, vld, ...args) {
 }
 
 // All referenceable arguments are passed as $var references
-function testValidationWithVarRefs(expected, obj, vld, ...args) {
+// If bad is >= 0 then the arg at that index is passed
+// as a reference to a bad value.
+function testValidationWithVarRefs0(expected, obj, vld, args, bad = -1) {
   const scope = args.reduce((acc, a, i) => {
     const argDef = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)];
     if (argDef.refDepth >= 0) {
       const kind = argDef.type.name;
-      acc[`${typeInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}`] = a;
+      const value = i !== bad ? a : typeInfo[kind].badValue;
+      acc[`${typeInfo[kind].acceptValidatorRef() ? '$' : ''}v${i}`] = value;
     }
     return acc;
   }, {});
@@ -206,30 +197,16 @@ function testValidationWithVarRefs(expected, obj, vld, ...args) {
   });
 }
 
-// All referenceable arguments are passed as $path references
-function testValidationWithPathRefs(expected, obj, vld, ...args) {
-  const obj2 = args.reduce((acc, a, i) => {
+function testValidationWithVarRefs(expected, obj, vld, ...args) {
+  // All references to good value
+  testValidationWithVarRefs0(expected, obj, vld, args);
+
+  // Use reference to a bad value for one argument at a time
+  for (let i = 0; i < args.length; i += 1) {
     const argDef = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)];
-    if (argDef.refDepth >= 0) {
-      const kind = argDef.type.name;
-      if (!typeInfo[kind].acceptValidatorRef()) {
-        acc[`_${i}`] = a;
-      }
-    }
-    return acc;
-  }, clone(obj));
-  const pathArgs = args.map((a, i) => {
-    const argDef = vld.info.argDescriptors[vld.info.adjustArgDescriptorIndex(i)];
-    const kind = argDef.type.name;
-    if (argDef.refDepth >= 0) {
-      return typeInfo[kind].acceptValidatorRef() ? a : { $path: `_${i}` };
-    }
-    return a;
-  });
-  it(`${vld.info.name}(${pathArgs.map(a => JSON.stringify(a)).join(', ')}) should ${expected} for ${JSON.stringify(obj2)}`, () => {
-    const vCreate = () => vld(...pathArgs);
-    testValidationAssert(expected, vCreate, obj2);
-  });
+    const expected2 = argDef.type.acceptsValidator ? VALIDATION.THROW : VALIDATION.FAILURE;
+    testValidationWithVarRefs0(expected2, obj, vld, clone(args), i);
+  }
 }
 
 function testValidation(expectedResult, obj, vld, ...args) {
@@ -244,14 +221,10 @@ function testValidation(expectedResult, obj, vld, ...args) {
 
   // Test $var references
   testValidationWithVarRefs(expected[1], obj, vld, ...args);
-
-  // Test $path references
-  testValidationWithPathRefs(expected[2], obj, vld, ...args);
 }
 
 export {
   typeInfo as argInfo,
-  clone,
   testArgument,
   testAllArguments,
   testValidation,

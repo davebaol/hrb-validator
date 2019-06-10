@@ -4,7 +4,6 @@ const bridge = require('./bridge');
 const { get } = require('../util/path');
 const createShortcuts = require('../util/create-shortcuts');
 const Info = require('../util/info');
-const Scope = require('../util/scope');
 const { getType } = require('../util/types');
 
 //
@@ -17,22 +16,22 @@ function equals(path, value, deep) {
   const pExpr = infoArgs[0].compile(path);
   const vExpr = infoArgs[1].compile(value);
   const dExpr = infoArgs[2].compile(deep);
-  return (obj, scope = new Scope()) => {
+  return (scope) => {
     if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
+      infoArgs[0].resolve(pExpr, scope);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!vExpr.resolved) {
-      infoArgs[1].resolve(vExpr, scope, obj);
+      infoArgs[1].resolve(vExpr, scope);
       if (vExpr.error) { return vExpr.error; }
     }
     if (!dExpr.resolved) {
-      infoArgs[2].resolve(dExpr, scope, obj);
+      infoArgs[2].resolve(dExpr, scope);
       if (dExpr.error) { return dExpr.error; }
     }
     const result = dExpr.result
-      ? deepEqual(get(obj, pExpr.result), vExpr.result)
-      : get(obj, pExpr.result) === vExpr.result;
+      ? deepEqual(get(scope.find('$'), pExpr.result), vExpr.result)
+      : get(scope.find('$'), pExpr.result) === vExpr.result;
     return result ? undefined : `equals: the value at path '${path}' must be equal to ${vExpr.result}`;
   };
 }
@@ -41,19 +40,19 @@ function isLength(path, options) {
   const infoArgs = isLength.info.argDescriptors;
   const pExpr = infoArgs[0].compile(path);
   const optsExpr = infoArgs[1].compile(options);
-  return (obj, scope = new Scope()) => {
+  return (scope) => {
     if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
+      infoArgs[0].resolve(pExpr, scope);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!optsExpr.resolved) {
-      infoArgs[1].resolve(optsExpr, scope, obj);
+      infoArgs[1].resolve(optsExpr, scope);
       if (optsExpr.error) { return optsExpr.error; }
     }
     const opts = optsExpr.result;
     const min = opts.min || 0;
     const max = opts.max; // eslint-disable-line prefer-destructuring
-    const len = lengthOf(get(obj, pExpr.result));
+    const len = lengthOf(get(scope.find('$'), pExpr.result));
     if (len === undefined) {
       return `isLength: the value at path '${path}' must be a string, an array or an object`;
     }
@@ -64,12 +63,12 @@ function isLength(path, options) {
 function isSet(path) {
   const infoArgs = isSet.info.argDescriptors;
   const pExpr = infoArgs[0].compile(path);
-  return (obj, scope = new Scope()) => {
+  return (scope) => {
     if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
+      infoArgs[0].resolve(pExpr, scope);
       if (pExpr.error) { return pExpr.error; }
     }
-    return get(obj, pExpr.result) != null ? undefined : `isSet: the value at path '${path}' must be set`;
+    return get(scope.find('$'), pExpr.result) != null ? undefined : `isSet: the value at path '${path}' must be set`;
   };
 }
 
@@ -80,18 +79,18 @@ function isType(path, type) {
   if (tExpr.resolved) {
     tExpr.result = getType(tExpr.result);
   }
-  return (obj, scope = new Scope()) => {
+  return (scope) => {
     if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
+      infoArgs[0].resolve(pExpr, scope);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!tExpr.resolved) {
-      infoArgs[1].resolve(tExpr, scope, obj);
+      infoArgs[1].resolve(tExpr, scope);
       if (tExpr.error) { return tExpr.error; }
       try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
     }
     const t = tExpr.result;
-    return t.check(get(obj, pExpr.result)) ? undefined : `isType: the value at path '${path}' must be a '${t.name}'`;
+    return t.check(get(scope.find('$'), pExpr.result)) ? undefined : `isType: the value at path '${path}' must be a '${t.name}'`;
   };
 }
 
@@ -99,16 +98,16 @@ function isOneOf(path, values) {
   const infoArgs = isOneOf.info.argDescriptors;
   const pExpr = infoArgs[0].compile(path);
   const aExpr = infoArgs[1].compile(values);
-  return (obj, scope = new Scope()) => {
+  return (scope) => {
     if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
+      infoArgs[0].resolve(pExpr, scope);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!aExpr.resolved) {
-      infoArgs[1].resolve(aExpr, scope, obj);
+      infoArgs[1].resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
-    return aExpr.result.includes(get(obj, pExpr.result)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${aExpr.result}`;
+    return aExpr.result.includes(get(scope.find('$'), pExpr.result)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${aExpr.result}`;
   };
 }
 
@@ -119,17 +118,17 @@ function isArrayOf(path, type) {
   if (tExpr.resolved) {
     tExpr.result = getType(tExpr.result);
   }
-  return (obj, scope = new Scope()) => {
+  return (scope) => {
     if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
+      infoArgs[0].resolve(pExpr, scope);
       if (pExpr.error) { return pExpr.error; }
     }
     if (!tExpr.resolved) {
-      infoArgs[1].resolve(tExpr, scope, obj);
+      infoArgs[1].resolve(tExpr, scope);
       if (tExpr.error) { return tExpr.error; }
       try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
     }
-    const value = get(obj, pExpr.result);
+    const value = get(scope.find('$'), pExpr.result);
     const t = tExpr.result;
     if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array`;
     const flag = value.every(e => t.check(e));

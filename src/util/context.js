@@ -1,17 +1,30 @@
 const { NATIVE_TYPES, UnionType } = require('./types');
 
 class Context {
-  constructor() {
+  constructor($) {
+    this.stack$ = [$];
     this.types = {};
   }
 
   static find(scope, name, defaultValue) {
+    if (name === '$') {
+      const { stack$ } = scope.context;
+      return stack$[stack$.length - 1];
+    }
     for (let curScope = scope; curScope != null; curScope = curScope.parent) {
       if (name in curScope.resources) {
         return curScope.resources[name]; // Found in current scope
       }
     }
     return defaultValue; // Not found in any scope
+  }
+
+  push$(obj) {
+    this.stack$.push(obj);
+  }
+
+  pop$() {
+    this.stack$.length = Math.max(0, this.stack$.length - 1);
   }
 
   getType(name) {

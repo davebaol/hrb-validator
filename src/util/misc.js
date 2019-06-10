@@ -1,3 +1,5 @@
+const clone = require('rfdc')({ proto: false, circles: false });
+
 const ANY_VALUE = Object.freeze(['boolean', 'number', 'object', 'string', 'undefined']
   .reduce((acc, k) => {
     acc[k] = true;
@@ -33,5 +35,6 @@ function lazyProperty(instance, key, value, writable, configurable) {
 module.exports = {
   ANY_VALUE,
   checkUniqueKey,
+  clone,
   lazyProperty
 };

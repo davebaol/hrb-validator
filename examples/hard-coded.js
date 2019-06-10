@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 const path = require("path");
 const V = require('../lib');
+const Scope = require("../lib/util/scope");
 
 let toBeValidated = {
     a: {
@@ -24,6 +25,6 @@ let validator = V.and(                // Rule 1
 
 
 // Validate
-let vError = validator(toBeValidated);
+let vError = validator(new Scope(toBeValidated));
 
 console.log(`${path.basename(__filename)}: Validation result --> ${vError? vError : "OK!"}`);

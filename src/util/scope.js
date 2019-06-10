@@ -9,23 +9,32 @@ const any = getNativeType('any');
 const child = getNativeType('child');
 
 class Scope {
-  constructor(parent, resources) {
-    this.parent = parent;
-    this.context = parent ? parent.context : new Context();
+  constructor(parentOrContextOr$, resources) {
+    if (parentOrContextOr$ instanceof Scope) {
+      // Non root scope inherits context from parent
+      this.parent = parentOrContextOr$;
+      this.context = this.parent.context;
+    } else {
+      // Root scope needs either an explicit context or the object to validate
+      this.parent = undefined;
+      this.context = parentOrContextOr$ instanceof Context
+        ? parentOrContextOr$
+        : new Context(parentOrContextOr$);
+    }
     this.resources = resources || {};
     this.resolved = false;
   }
 
   setParent(parent) {
     this.parent = parent;
-    this.context = parent ? parent.context : new Context();
+    this.context = parent ? parent.context : undefined;
   }
 
   find(name, defaultValue) {
     return Context.find(this, name, defaultValue);
   }
 
-  static compile(resources) {
+  static compile(parentOrContextOr$, resources) {
     if (!isPlainObject(resources)) {
       throw new Error('Expected a scope of type \'object\'');
     }
@@ -38,7 +47,7 @@ class Scope {
       if (hasOwn.call(resources, k)) {
         const cur = resources[k];
         if (typeof cur === 'object' && cur !== null) {
-          const type = k.startsWith('$') ? child : any;
+          const type = k.startsWith('$') && k.length > 1 ? child : any;
           const ref = type.compile(cur);
           // The check (ref.result !== cur) detects both
           // references and non hard-coded validators
@@ -52,12 +61,12 @@ class Scope {
         }
       }
     }
-    const scope = new Scope(null, target);
+    const scope = new Scope(parentOrContextOr$, target);
     scope.resolved = target === resources;
     return scope;
   }
 
-  resolve(obj) {
+  resolve() {
     if (!this.resolved) {
       const compiledResources = this.resources;
       // Set resources to a fresh new object in order to add properties progressively
@@ -68,8 +77,8 @@ class Scope {
         if (hasOwn.call(compiledResources, k)) {
           let resource = compiledResources[k];
           if (resource instanceof Expression) {
-            const type = k.startsWith('$') ? child : any;
-            const ref = type.resolve(resource, this, obj);
+            const type = k.startsWith('$') && k.length > 1 ? child : any;
+            const ref = type.resolve(resource, this);
             if (ref.error) { throw new Error(ref.error); }
             resource = ref.result;
           }
@@ -77,7 +86,7 @@ class Scope {
           // to override the invocation scope with its definition scope, where
           // the validator must run
           this.resources[k] = typeof resource === 'function'
-            ? object => resource(object, this)
+            ? () => resource(this)
             : resource;
         }
       }

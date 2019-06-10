@@ -40,12 +40,12 @@ function testEmbeddedRefCreate(type, source, expectedRefPaths) {
 
 function tesResolve(type, isRoot, source, resources, obj, expected) {
   it(`Resolving ${isRoot ? 'root' : 'embedded'} reference ${JSON.stringify(source)} in scope ${JSON.stringify(resources)} on object ${JSON.stringify(obj)} should return ${JSON.stringify(expected)}.`, () => {
-    const scope = Scope.compile(resources);
+    const scope = Scope.compile(obj, resources);
     if (!scope.resolved) {
       throw new Error('Fix your test!!! Scope with references are not supported by this test');
     }
     const expr = new Expression(type, source);
-    assert.deepEqual(expr.resolve(scope, obj).result, expected, ':(');
+    assert.deepEqual(expr.resolve(scope).result, expected, ':(');
   });
 }
 
@@ -63,19 +63,20 @@ describe('Test Expression class.', () => {
   testRefCreateForValidatorWithDeepPath(childType);
   testRootRefCreate(childType, { $var: '$myValidator' }, [refPath('', '$myValidator', '')]);
   testRootRefCreate(integerType, { $var: 'record.fields.1' }, [refPath('', 'record', 'fields.1')]);
-  testRootRefCreate(integerType, { $path: 'record.fields.1' }, [refPath('', undefined, 'record.fields.1')]);
-  testEmbeddedRefCreate(integerType, {
-    bounds: {
-      upper: { $var: 'record.fields.1' },
-      lower: { $path: 'a.b.0' }
+  testRootRefCreate(integerType, { $var: '$.record.fields.1' }, [refPath('', '$', 'record.fields.1')]);
+  testEmbeddedRefCreate(integerType,
+    {
+      bounds: {
+        upper: { $var: 'record.fields.1' },
+        lower: { $var: '$.a.b.0' }
+      },
+      dummy: true
     },
-    dummy: true
-  },
-  [
-    refPath('bounds.upper', 'record', 'fields.1'),
-    refPath('bounds.lower', undefined, 'a.b.0')
-  ]);
+    [
+      refPath('bounds.upper', 'record', 'fields.1'),
+      refPath('bounds.lower', '$', 'a.b.0')
+    ]);
   tesResolve(integerType, true, { $var: 'record.fields.1' }, { record: { fields: ['xyz', 123, true] } }, {}, 123);
-  tesResolve(integerType, true, { $path: 'record.fields.1' }, {}, { record: { fields: ['xyz', 123, true] } }, 123);
-  tesResolve(integerType, false, [{ $var: 'record.0' }, { $path: 'a' }], { record: ['hello', 'world'] }, { a: 123 }, ['hello', 123]);
+  tesResolve(integerType, true, { $var: '$.record.fields.1' }, {}, { record: { fields: ['xyz', 123, true] } }, 123);
+  tesResolve(integerType, false, [{ $var: 'record.0' }, { $var: '$.a' }], { record: ['hello', 'world'] }, { a: 123 }, ['hello', 123]);
 });

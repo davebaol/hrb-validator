@@ -71,8 +71,8 @@ class Type {
     return expr;
   }
 
-  resolve(expr, scope, obj) {
-    return this.checkExpr(expr.resolve(scope, obj));
+  resolve(expr, scope) {
+    return this.checkExpr(expr.resolve(scope));
   }
 }
 
@@ -200,11 +200,6 @@ class ChildType extends Type {
         expr.result = validate(...val[method]); // eslint-disable-line no-param-reassign
         return expr;
       }
-      // if (method === '$path') {
-      //   // Doesn't make sense taking a validator from the object to validate.
-      //   // It sounds like an error. So let's prevent this from occurring.
-      //   return expr.setError(`Unexpected reference '${JSON.stringify(val)}' for a validator`);
-      // }
       return expr.setError(`Error: Unknown validator '${method}'`);
     }
     return expr.setError(`Expected a validator as either a function or a plain object; found a ${typeof val} instead`);
@@ -258,7 +253,7 @@ class UnionType extends Type {
       const tn = m[i];
       const qmIndex = tn.lastIndexOf('?');
       if (qmIndex >= 0) {
-        if (m === members) { // clone input array before changing any item
+        if (m === members) { // Make a shallow copy of input array before changing any item
           m = Array.from(m);
         }
         m[i] = tn.substring(0, qmIndex);

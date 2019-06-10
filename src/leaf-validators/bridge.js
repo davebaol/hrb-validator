@@ -1,7 +1,6 @@
 const v = require('validator');
 const { get } = require('../util/path');
 const Info = require('../util/info');
-const Scope = require('../util/scope');
 
 class Bridge extends Info {
   constructor(name, errorFunc, ...noPathArgDescriptors) {
@@ -61,17 +60,17 @@ class StringOnly extends Bridge {
       const pExpr = this.argDescriptors[0].compile(path);
       const restExpr = this.compileRestParams(noPathArgs, 1);
       const restValue = [];
-      return (obj, scope = new Scope()) => {
+      return (scope) => {
         if (!pExpr.resolved) {
-          this.argDescriptors[0].resolve(pExpr, scope, obj);
+          this.argDescriptors[0].resolve(pExpr, scope);
           if (pExpr.error) { return pExpr.error; }
         }
-        const errorAt = this.resolveRestParams(restExpr, 1, scope, obj);
+        const errorAt = this.resolveRestParams(restExpr, 1, scope);
         if (errorAt >= 0) { return restExpr[errorAt].error; }
         for (let i = 0, len = restExpr.length; i < len; i += 1) {
           restValue[i] = restExpr[i].result;
         }
-        let value = get(obj, pExpr.result);
+        let value = get(scope.find('$'), pExpr.result);
         let result;
         if (specialized !== undefined && this.isSpecialized(value)) {
           result = specialized(value, ...restValue);

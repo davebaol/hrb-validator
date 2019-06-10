@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 import camelcase from 'camelcase';
 import V from '../../src';
+import Scope from '../../src/util/scope';
 import createShortcuts from '../../src/util/create-shortcuts';
 
 describe('Test shortcut opt.', () => {
@@ -26,23 +27,23 @@ describe('Test shortcut opt.', () => {
   it('Missing property at path should always succeed', () => {
     const target = createShortcuts({}, V, ['isSet']);
     const v = target.optIsSet('a');
-    assert(v({}) === undefined, ':(');
+    assert(v(new Scope({})) === undefined, ':(');
   });
   it('Not missing property at path should always match the original validator', () => {
     const target = createShortcuts({}, V, ['isSet']);
     const v1 = target.optIsSet('a');
     const v2 = V.isSet('a');
-    assert(v1({ a: 0 }) === v2({ a: 32 }), ':(');
+    assert(v1(new Scope({ a: 0 })) === v2(new Scope({ a: 32 })), ':(');
   });
   it('Missing property at referenced path should always succeed', () => {
     const target = createShortcuts({}, V, ['isSet']);
     const v = V.def({ p: 'a' }, target.optIsSet({ $var: 'p' }));
-    assert(v({}) === undefined, ':(');
+    assert(v(new Scope({})) === undefined, ':(');
   });
   it('Not missing property at referenced path should always match the original validator', () => {
     const target = createShortcuts({}, V, ['isSet']);
     const v1 = V.def({ p: 'a' }, target.optIsSet({ $var: 'p' }));
     const v2 = V.def({ p: 'a' }, V.optIsSet({ $var: 'p' }));
-    assert(v1({ a: 0 }) === v2({ a: 32 }), ':(');
+    assert(v1(new Scope({ a: 0 })) === v2(new Scope({ a: 32 })), ':(');
   });
 });

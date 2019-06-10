@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 import V from '../../src';
+import Scope from '../../src/util/scope';
 import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 
 const { SUCCESS, FAILURE } = VALIDATION;
@@ -14,11 +15,11 @@ function check(val, shouldSucceed) {
 
 function checkRef(val, shouldSucceed) {
   const obj = { a: val, referenced: 3 };
-  const options = { min: { $path: 'referenced' }, max: 3 };
+  const options = { min: { $var: '$.referenced' }, max: 3 };
   it(`isLength("a", ${JSON.stringify(options)}) should ${shouldSucceed ? 'succeed' : 'fail'} for ${JSON.stringify(obj)}`, () => {
     const v = V.isLength('a', options);
-    const result = shouldSucceed ? v(obj) === undefined : v(obj) !== undefined;
-    assert(result, ':(');
+    const result = v(new Scope(obj));
+    assert(shouldSucceed ? result === undefined : result !== undefined, ':(');
   });
 }
 
