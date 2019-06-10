@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import Info from '../../src/util/info';
 import Argument from '../../src/util/argument';
-import V from '../../src';
+import { V } from '../../src';
 
 describe('Test Info instance creation.', () => {
   function validator(name) {

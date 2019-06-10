@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
-const path = require("path");
-const V = require('../lib');
-const Scope = require("../lib/util/scope");
+const path = require('path');
+const { V, Scope } = require('../lib');
 
 let toBeValidated = {
     a: {

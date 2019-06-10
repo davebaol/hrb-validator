@@ -2,12 +2,11 @@
 const path = require("path");
 const fs = require("fs");
 const yaml = require("js-yaml");
-const ensureValidator = require("../lib/ensure-validator");
-const Scope = require("../lib/util/scope");
+const { Scope, compile } = require("../lib");
 
 // Load DSL validator from file
 let dslValidator = yaml.safeLoad(fs.readFileSync(path.join(__dirname, "dsl-validator.yaml"), 'utf8'));
-let validator = ensureValidator(dslValidator);
+let validator = compile(dslValidator);
 
 // Validate the DSL validator itself
 let toBeValidated = yaml.safeLoad(fs.readFileSync(path.join(__dirname, "dsl-validator.yaml"), 'utf8'));

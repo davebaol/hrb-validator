@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import { getNativeType } from '../../../src/util/types';
-import V from '../../../src';
+import { V } from '../../../src';
 
 describe('Test ChildType.compile()', () => {
   const child = getNativeType('child');

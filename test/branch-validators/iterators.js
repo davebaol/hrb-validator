@@ -1,7 +1,6 @@
 import { assert } from 'chai';
 import lengthOf from '@davebaol/length-of';
-import V from '../../src';
-import Scope from '../../src/util/scope';
+import { V, Scope } from '../../src';
 import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 
 const { SUCCESS, FAILURE } = VALIDATION;

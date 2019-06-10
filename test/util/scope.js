@@ -1,7 +1,6 @@
 import { assert } from 'chai';
-import Scope from '../../src/util/scope';
 import Expression from '../../src/util/expression';
-import V from '../../src';
+import { V, Scope } from '../../src';
 
 describe('Test utility Scope.compile($, scope).', () => {
   it('Should throw an error if the scope is a root reference', () => {

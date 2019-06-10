@@ -1,8 +1,7 @@
 import { assert } from 'chai';
 import Expression from '../src/util/expression';
-import Scope from '../src/util/scope';
 import { clone } from '../src/util/misc';
-import V from '../src';
+import { V, Scope } from '../src';
 
 const UNKNOWN_REF = Object.freeze({ $unknownRefType: 'anything' });
 

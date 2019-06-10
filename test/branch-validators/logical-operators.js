@@ -1,4 +1,4 @@
-import V from '../../src';
+import { V } from '../../src';
 import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 
 const { SUCCESS, FAILURE } = VALIDATION;

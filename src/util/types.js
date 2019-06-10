@@ -3,7 +3,7 @@ const isRegExp = require('is-regexp');
 const { BAD_PATH, ensureArrayPath } = require('./path');
 const Expression = require('./expression');
 const { ANY_VALUE, checkUniqueKey, lazyProperty } = require('./misc');
-const V = require('..');
+const { V } = require('..');
 
 // Primitive and union types are progressively added below
 const NATIVE_TYPES = {};

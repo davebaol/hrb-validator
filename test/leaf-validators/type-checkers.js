@@ -1,5 +1,5 @@
 import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
-import V from '../../src';
+import { V } from '../../src';
 
 const { SUCCESS, FAILURE, THROW } = VALIDATION;
 

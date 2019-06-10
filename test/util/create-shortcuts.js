@@ -1,7 +1,6 @@
 import { assert } from 'chai';
 import camelcase from 'camelcase';
-import V from '../../src';
-import Scope from '../../src/util/scope';
+import { V, Scope } from '../../src';
 import createShortcuts from '../../src/util/create-shortcuts';
 
 describe('Test shortcut opt.', () => {
