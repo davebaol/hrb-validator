@@ -43,14 +43,19 @@ describe('Test getType(typeDesc).', () => {
     const types = ' integer| STRING|child  |boolean  ';
     assert.throws(() => getType(types), Error, 'Unknown native type');
   });
+  it('Union types with either an optional type or null as member should be distinct instances.', () => {
+    const t1 = getType('integer?');
+    const t2 = getType('null|integer');
+    assert(t1 !== t2, ':(');
+  });
   it('Union types with either an optional type or null as member should be identic.', () => {
     const t1 = getType('integer?');
     const t2 = getType('null|integer');
     assert.deepEqual(t1, t2, ':(');
   });
-  it('Union types with either an optional type or null as member should be distinct instances.', () => {
-    const t1 = getType('integer?');
-    const t2 = getType('null|integer');
+  it('Union types with redundant type members should be simplified.', () => {
+    const t1 = getType('any');
+    const t2 = getType('null|any|string?|boolean');
     assert.deepEqual(t1, t2, ':(');
   });
   it('Union types with the same members in different order should be identic.', () => {

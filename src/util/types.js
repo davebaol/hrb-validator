@@ -224,6 +224,36 @@ addNativeTypes(primitiveTypes);
 // --------------------- UNION TYPES ---------------------
 // -------------------------------------------------------
 
+function updateUniqueMembers(members, tn) {
+  const t = NATIVE_TYPES[tn];
+  if (!t) {
+    throw new Error(`Unknown native type '${tn}'`);
+  }
+  const v = members[tn];
+  if (v === null || v === t) {
+    return; // already present or included by some other union type member
+  }
+  // Add current type
+  members[tn] = t; // eslint-disable-line no-param-reassign
+  if (t.members) {
+    for (let i = 0, len = t.members.length; i < len; i += 1) {
+      // Mark as included by current union type member
+      members[t.members[i].name] = null; // eslint-disable-line no-param-reassign
+    }
+  }
+}
+
+function uniqueMembersToArray(members) {
+  const out = [];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const k in members) {
+    if (members[k] !== null) {
+      out.push(members[k]);
+    }
+  }
+  return out;
+}
+
 class UnionType extends Type {
   constructor(name, members, score) {
     super(name, score);
@@ -248,36 +278,19 @@ class UnionType extends Type {
     } else if (!Array.isArray(members)) {
       throw new Error(`Expected either a '|' separated string or an array of native types; found ${members}`);
     }
-    let nullable = false;
+
+    const uniqueMembers = {};
     for (let i = 0; i < m.length; i += 1) {
-      const tn = m[i];
-      const qmIndex = tn.lastIndexOf('?');
-      if (qmIndex >= 0) {
-        if (m === members) { // Make a shallow copy of input array before changing any item
-          m = Array.from(m);
-        }
-        m[i] = tn.substring(0, qmIndex);
-        nullable = true;
+      const tn = m[i].trim();
+      if (tn.endsWith('?')) {
+        updateUniqueMembers(uniqueMembers, 'null');
+        updateUniqueMembers(uniqueMembers, tn.substring(0, tn.length - 1).trim());
+      } else {
+        updateUniqueMembers(uniqueMembers, tn);
       }
     }
-    if (nullable) {
-      m.push('null');
-    }
-    let out = m.map((typeName) => {
-      const tn = typeName.trim();
-      const t = NATIVE_TYPES[tn];
-      if (t) {
-        return t;
-      }
-      throw new Error(`Unknown native type '${tn}'`);
-    });
-
-    // TODO here we should check for ambiguous things like string|path
-    // since string is also part of path and has a special treatment, see path.compile()
-
-    out = out.sort((a, b) => a.score - b.score)
-      .filter((x, i, a) => !i || x !== a[i - 1]); // unique
-
+    const out = uniqueMembersToArray(uniqueMembers)
+      .sort((a, b) => a.score - b.score);
     if (out.length === 0) {
       throw new Error('A union type must have at least one member');
     }
