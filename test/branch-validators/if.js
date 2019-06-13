@@ -5,7 +5,7 @@ import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 const { FAILURE } = VALIDATION;
 
 describe('Test branch validator if.', () => {
-  const success = { optIsSet: [''] };
+  const success = { optIsSet: [null] };
   const failure = { not: [success] };
   const vThen = { onError: ['then', failure] };
   const vElse = { onError: ['else', failure] };

@@ -3,8 +3,8 @@ import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 
 const { SUCCESS, FAILURE } = VALIDATION;
 
-const success = { optIsSet: [''] };
-const failure = { not: [{ optIsSet: [''] }] };
+const success = { optIsSet$: [''] };
+const failure = { not: [{ optIsSet$: [''] }] };
 
 describe('Test branch validator not.', () => {
   testAllArguments(V.not, [success]);

@@ -25,6 +25,10 @@ function checkUniqueKey(obj) {
   return k0;
 }
 
+function setFunctionName(f, n) {
+  return Object.defineProperty(f, 'name', { value: n, writable: false });
+}
+
 // Call this function from inside a getter to create on the specified instance (usually
 // passed as 'this') a property with the same name that shadows the getter itself
 function lazyProperty(instance, key, value, writable, configurable) {
@@ -36,5 +40,6 @@ module.exports = {
   ANY_VALUE,
   checkUniqueKey,
   clone,
-  lazyProperty
+  lazyProperty,
+  setFunctionName
 };

@@ -1,27 +1,25 @@
-const { get } = require('./util/path');
 const Scope = require('./util/scope');
-const createShortcuts = require('./util/create-shortcuts');
-const Info = require('./util/info');
+const { infoVariant, infoVariants$ } = require('./util/variants');
 
 //
 // BRANCH VALIDATORS
-// They all take child validators as arguments.
+// They all take at least one child validator as arguments.
 //
 
-function call(path, child) {
-  const infoArgs = call.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
+function call(info, arg, child) {
+  const infoArgs = info.argDescriptors;
+  const aExpr = infoArgs[0].compile(arg);
   const cExpr = infoArgs[1].compile(child);
   return (scope) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope);
-      if (pExpr.error) { return pExpr.error; }
+    if (!aExpr.resolved) {
+      infoArgs[0].resolve(aExpr, scope);
+      if (aExpr.error) { return aExpr.error; }
     }
     if (!cExpr.resolved) {
       infoArgs[1].resolve(cExpr, scope);
       if (cExpr.error) { return cExpr.error; }
     }
-    scope.context.push$(get(scope.find('$'), pExpr.result));
+    scope.context.push$(info.getValue(aExpr, scope));
     const result = cExpr.result(scope);
     scope.context.pop$();
     return result;
@@ -143,21 +141,21 @@ function _if(condChild, thenChild, elseChild) {
   };
 }
 
-function every(path, child) {
-  const infoArgs = every.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
+function every(info, arg, child) {
+  const infoArgs = info.argDescriptors;
+  const aExpr = infoArgs[0].compile(arg);
   const cExpr = infoArgs[1].compile(child);
   return (scope) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope);
-      if (pExpr.error) { return pExpr.error; }
+    if (!aExpr.resolved) {
+      infoArgs[0].resolve(aExpr, scope);
+      if (aExpr.error) { return aExpr.error; }
     }
     if (!cExpr.resolved) {
       infoArgs[1].resolve(cExpr, scope);
       if (cExpr.error) { return cExpr.error; }
     }
     const $ = scope.find('$');
-    const value = get($, pExpr.result);
+    const value = info.getValue(aExpr, scope);
     if (Array.isArray(value)) {
       const new$ = { original: $ };
       scope.context.push$(new$);
@@ -199,25 +197,25 @@ function every(path, child) {
       scope.context.pop$();
       return error;
     }
-    return `every: the value at path '${path}' must be either a string, an array or an object; found type '${typeof value}'`;
+    return `every: the value at path '${arg}' must be either a string, an array or an object; found type '${typeof value}'`;
   };
 }
 
-function some(path, child) {
-  const infoArgs = some.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
+function some(info, arg, child) {
+  const infoArgs = info.argDescriptors;
+  const aExpr = infoArgs[0].compile(arg);
   const cExpr = infoArgs[1].compile(child);
   return (scope) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope);
-      if (pExpr.error) { return pExpr.error; }
+    if (!aExpr.resolved) {
+      infoArgs[0].resolve(aExpr, scope);
+      if (aExpr.error) { return aExpr.error; }
     }
     if (!cExpr.resolved) {
       infoArgs[1].resolve(cExpr, scope);
       if (cExpr.error) { return cExpr.error; }
     }
     const $ = scope.find('$');
-    const value = get($, pExpr.result);
+    const value = info.getValue(aExpr, scope);
     if (Array.isArray(value)) {
       const new$ = { original: $ };
       scope.context.push$(new$);
@@ -259,7 +257,7 @@ function some(path, child) {
       scope.context.pop$();
       return error;
     }
-    return `some: the value at path '${path}' must be either a string, an array or an object; found type '${typeof value}' instead`;
+    return `some: the value at path '${arg}' must be either a string, an array or an object; found type '${typeof value}' instead`;
   };
 }
 
@@ -305,15 +303,15 @@ function onError(result, child) {
 }
 
 // eslint-disable-next-line no-underscore-dangle
-function _while(path, condChild, doChild) {
-  const infoArgs = _while.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
+function _while(info, arg, condChild, doChild) {
+  const infoArgs = info.argDescriptors;
+  const aExpr = infoArgs[0].compile(arg);
   const ccExpr = infoArgs[1].compile(condChild);
   const dcExpr = infoArgs[2].compile(doChild);
   return (scope) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope);
-      if (pExpr.error) { return pExpr.error; }
+    if (!aExpr.resolved) {
+      infoArgs[0].resolve(aExpr, scope);
+      if (aExpr.error) { return aExpr.error; }
     }
     if (!ccExpr.resolved) {
       infoArgs[1].resolve(ccExpr, scope);
@@ -324,7 +322,7 @@ function _while(path, condChild, doChild) {
       if (dcExpr.error) { return dcExpr.error; }
     }
     const $ = scope.find('$');
-    const value = get($, pExpr.result);
+    const value = info.getValue(aExpr, scope);
     const status = { succeeded: 0, failed: 0, original: $ };
     if (Array.isArray(value)) {
       scope.context.push$(status);
@@ -374,38 +372,33 @@ function _while(path, condChild, doChild) {
       scope.context.pop$();
       return error;
     }
-    return `while: the value at path '${path}' must be either a string, an array or an object; found type '${typeof value}'`;
+    return `while: the value at path '${arg}' must be either a string, an array or an object; found type '${typeof value}'`;
   };
 }
 
 function branchValidators() {
   /* eslint-disable no-unused-vars */
-  /* istanbul ignore next */
   const vInfo = [
-    new Info(call, 'path:path', 'child:child'),
-    new Info(def, { def: 'scope:object', refDepth: -1 }, 'child:child'),
-    new Info(not, 'child:child'),
-    new Info(and, '...child:child'),
-    new Info(or, '...child:child'),
-    new Info(xor, '...child:child'),
-    new Info(_if, 'cond:child', 'then:child', 'else:child?'),
-    new Info(every, 'path:path', 'child:child'),
-    new Info(some, 'path:path', 'child:child'),
-    new Info(alter, 'resultOnSuccess:any?', 'resultOnError:any?', 'child:child'),
-    new Info(onError, 'result:any?', 'child:child'),
-    new Info(_while, 'path:path', 'cond:child', 'do:child')
+    ...infoVariants$(call, 'value:any', 'child:child'),
+    infoVariant(def, { def: 'scope:object', refDepth: -1 }, 'child:child'),
+    infoVariant(not, 'child:child'),
+    infoVariant(and, '...child:child'),
+    infoVariant(or, '...child:child'),
+    infoVariant(xor, '...child:child'),
+    infoVariant(_if, 'cond:child', 'then:child', 'else:child?'),
+    ...infoVariants$(every, 'value:any', 'child:child'),
+    ...infoVariants$(some, 'value:any', 'child:child'),
+    infoVariant(alter, 'resultOnSuccess:any?', 'resultOnError:any?', 'child:child'),
+    infoVariant(onError, 'result:any?', 'child:child'),
+    ...infoVariants$(_while, 'value:any', 'cond:child', 'do:child')
   ];
   /* eslint-enable no-unused-vars */
 
   const target = vInfo.reduce((acc, info) => {
-    info.consolidate();
     const k = info.name;
     acc[k] = info.validator; // eslint-disable-line no-param-reassign
     return acc;
   }, {});
-
-  // Augment with shortcut 'opt' all branch validators taking a path as first argument
-  createShortcuts(target, target, ['call', 'every', 'some', 'while']);
 
   return target;
 }

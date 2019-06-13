@@ -13,14 +13,14 @@ const test = {
 const testKeys = Object.keys(test);
 
 function testEveryOrSome(name) {
-  const isEvery = name === 'every';
+  const isEvery = name === 'every$';
   const successForEvery = () => (isEvery ? undefined : 'error');
   const failureForEvery = () => (isEvery ? 'error' : undefined);
   describe(`Test branch validator ${name}.`, () => {
     const everyOrSome = V[name];
-    const args = ['a', V.isSet('')];
+    const args = ['a', V.isSet$('')];
     testAllArguments(everyOrSome, args);
-    testValidation(SUCCESS, test.array, everyOrSome, '', { optIsSet: ['value'] });
+    testValidation(SUCCESS, test.array, everyOrSome, '', { optIsSet$: ['value'] });
     testKeys.forEach(t => it(`For ${t}s ${name} should ${isEvery ? 'fail at first invalid' : 'succeed at first valid'} iteration`, () => {
       let count = 0;
       const expected = 2;
@@ -64,34 +64,34 @@ function testEveryOrSome(name) {
   });
 }
 
-testEveryOrSome('every');
+testEveryOrSome('every$');
 
-testEveryOrSome('some');
+testEveryOrSome('some$');
 
-describe('Test branch validator while.', () => {
+describe('Test branch validator while$.', () => {
   const args = ['a', () => undefined, () => undefined];
-  testAllArguments(V.while, args);
+  testAllArguments(V.while$, args);
 
   testKeys.forEach((t) => {
     // Should fail when the condition fails
-    const vCond = { isInt: ['failed', { min: 0, max: 1 }] }; // fails on 2nd failure of vDo
-    const vDo = { not: [{ optIsSet: ['value'] }] }; // always fails
-    testValidation(FAILURE, test, V.while, t, vCond, vDo);
+    const vCond = { isInt$: ['failed', { min: 0, max: 1 }] }; // fails on 2nd failure of vDo
+    const vDo = { not: [{ optIsSet$: ['value'] }] }; // always fails
+    testValidation(FAILURE, test, V.while$, t, vCond, vDo);
   });
 
   testKeys.forEach((t) => {
     // Should succeed when the condition never fails`, () => {
-    const vCond = { isInt: ['failed', { min: 0, max: 0 }] }; // fails on 1st failure of vDo
-    const vDo = { optIsSet: ['value'] }; // never fails
-    testValidation(SUCCESS, test, V.while, t, vCond, vDo);
+    const vCond = { isInt$: ['failed', { min: 0, max: 0 }] }; // fails on 1st failure of vDo
+    const vDo = { optIsSet$: ['value'] }; // never fails
+    testValidation(SUCCESS, test, V.while$, t, vCond, vDo);
   });
 
   function iterationChecker(type, expected) {
     it(`For ${type}s while should generate proper iteration objects`, () => {
       const actual = [];
-      const vCond = V.optIsSet(''); // always true
+      const vCond = V.optIsSet$(''); // always true
       const vDo = (scope) => { actual.push(Object.assign({}, scope.find('$'))); return undefined; };
-      const v = V.while(type, vCond, vDo);
+      const v = V.while$(type, vCond, vDo);
       v(new Scope(test));
       assert.deepEqual(actual, expected, ':(');
     });
@@ -107,8 +107,8 @@ describe('Test branch validator while.', () => {
   })));
 
   const failureExpected = { numbers: 123, booleans: true };
-  Object.keys(failureExpected).forEach(k => it(`For ${k} while should fail`, () => {
-    const v = V.while('', () => undefined, () => undefined);
+  Object.keys(failureExpected).forEach(k => it(`For ${k} while$ should fail`, () => {
+    const v = V.while$('', () => undefined, () => undefined);
     assert(v(new Scope(failureExpected[k])) !== undefined, ':(');
   }));
 
@@ -123,10 +123,10 @@ describe('Test branch validator while.', () => {
           { name: 'e', parent: false }
         ]
       };
-      const v = V.while(
+      const v = V.while$(
         'relatives',
-        V.isInt('succeeded', { min: 0, max: 2 }),
-        V.equals('value.parent', true)
+        V.isInt$('succeeded', { min: 0, max: 2 }),
+        V.equals$('value.parent', true)
       );
       const result = v(new Scope(person));
       assert(shouldSucceed ? result === undefined : result !== undefined, ':(');

@@ -1,4 +1,5 @@
 const Argument = require('./argument');
+const { get } = require('../util/path');
 
 class Info {
   constructor(validator, ...argDescriptors) {
@@ -13,7 +14,18 @@ class Info {
     } else {
       throw new Error('Expected the function or its name as first argument');
     }
-    this.argDescriptors = argDescriptors; // will be processed in consolidate()
+    this.is$ = this.name.endsWith('$');
+    if (this.is$) {
+      this.baseName = this.name.substring(0, this.name.length - 1);
+      this.getValue = (expr, scope) => get(scope.find('$'), expr.result);
+      // will be processed in consolidate()
+      this.argDescriptors = ['path:path', ...argDescriptors.slice(1)];
+    } else {
+      this.baseName = this.name;
+      this.getValue = expr => expr.result;
+      // will be processed in consolidate()
+      this.argDescriptors = argDescriptors;
+    }
   }
 
   compileRestParams(args, offset = 0) {
@@ -57,6 +69,7 @@ class Info {
 
   processArgDescriptors(context) {
     const last = this.argDescriptors.length - 1;
+    this.isLeaf = true;
     this.argDescriptors = this.argDescriptors.map((d, i) => {
       let a;
       try {
@@ -66,6 +79,9 @@ class Info {
       }
       if (i < last && a.restParams) {
         throw new Error(`Validator '${this.name}' argument at index ${i}: rest parameter is legal only for the last argument`);
+      }
+      if (a.type.acceptsValidator) {
+        this.isLeaf = false;
       }
       return a;
     });

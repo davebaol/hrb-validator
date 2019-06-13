@@ -1,8 +1,8 @@
 and:
-  - isType: [a, object]
+  - isType$: [a, object]
   - xor:
-    - isSet: [a.b]
-    - isSet: [a.c]
-  - optIsType: [a.b, number]
-  - optIsType: [a.c, boolean]
-  - isArrayOf: [a.d, string]
+    - isSet$: [a.b]
+    - isSet$: [a.c]
+  - optIsType$: [a.b, number]
+  - optIsType$: [a.c, boolean]
+  - isArrayOf$: [a.d, string]

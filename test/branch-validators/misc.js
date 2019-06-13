@@ -4,7 +4,7 @@ import { testAllArguments, testValidation, VALIDATION } from '../test-utils';
 
 const { SUCCESS } = VALIDATION;
 
-const success = { optIsSet: [''] };
+const success = { optIsSet$: [''] };
 const failure = { not: [success] };
 
 describe('Test branch validator alter.', () => {
