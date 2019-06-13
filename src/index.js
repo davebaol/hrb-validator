@@ -15,7 +15,7 @@ module.exports.V = {};
 Object.assign(module.exports.V, require('./leaf-validators'), require('./branch-validators'));
 module.exports.Scope = require('./util/scope');
 module.exports.Context = require('./util/context');
-// module.exports.compile = require('./ensure-validator');
+
 const child = require('./util/types').getNativeType('child');
 
 module.exports.compile = (v) => {
