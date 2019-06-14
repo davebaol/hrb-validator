@@ -7,16 +7,16 @@ const { infoVariant, infoVariants$ } = require('./util/variants');
 //
 
 function call(info, arg, child) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
-  const cExpr = infoArgs[1].compile(child);
+  const [aArg, cArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
+  const cExpr = cArg.compile(child);
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, scope);
+      cArg.resolve(cExpr, scope);
       if (cExpr.error) { return cExpr.error; }
     }
     scope.context.push$(info.getValue(aExpr, scope));
@@ -27,9 +27,9 @@ function call(info, arg, child) {
 }
 
 function def(resources, child) {
-  const infoArgs = def.info.argDescriptors;
+  const cArg = def.info.argDescriptors[1];
   const childScope = Scope.compile(undefined, resources); // Parent scope unknown at compile time
-  const cExpr = infoArgs[1].compile(child);
+  const cExpr = cArg.compile(child);
   return (scope) => {
     if (!childScope.parent) {
       childScope.setParent(scope);
@@ -38,7 +38,7 @@ function def(resources, child) {
       try { childScope.resolve(); } catch (e) { return e.message; }
     }
     if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, childScope);
+      cArg.resolve(cExpr, childScope);
       if (cExpr.error) { return cExpr.error; }
     }
     return cExpr.result(childScope);
@@ -46,11 +46,11 @@ function def(resources, child) {
 }
 
 function not(child) {
-  const infoArgs = not.info.argDescriptors;
-  const cExpr = infoArgs[0].compile(child);
+  const [cArg] = not.info.argDescriptors;
+  const cExpr = cArg.compile(child);
   return (scope) => {
     if (!cExpr.resolved) {
-      infoArgs[0].resolve(cExpr, scope);
+      cArg.resolve(cExpr, scope);
       if (cExpr.error) { return cExpr.error; }
     }
     return cExpr.result(scope) ? undefined : 'not: the child validator must fail';
@@ -59,13 +59,13 @@ function not(child) {
 
 function and(...children) {
   const { info } = and;
-  const childArg = info.argDescriptors[0];
+  const [cArg] = info.argDescriptors;
   const offspring = info.compileRestParams(children);
   return (scope) => {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        childArg.resolve(cExpr, scope);
+        cArg.resolve(cExpr, scope);
         if (cExpr.error) { return cExpr.error; }
       }
       const error = cExpr.result(scope); // Validate child
@@ -77,14 +77,14 @@ function and(...children) {
 
 function or(...children) {
   const { info } = or;
-  const childArg = info.argDescriptors[0];
+  const [cArg] = info.argDescriptors;
   const offspring = info.compileRestParams(children);
   return (scope) => {
     let error;
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        childArg.resolve(cExpr, scope);
+        cArg.resolve(cExpr, scope);
         if (cExpr.error) { return cExpr.error; }
       }
       error = cExpr.result(scope); // Validate child
@@ -96,14 +96,14 @@ function or(...children) {
 
 function xor(...children) {
   const { info } = xor;
-  const childArg = info.argDescriptors[0];
+  const [cArg] = info.argDescriptors;
   const offspring = info.compileRestParams(children);
   return (scope) => {
     let count = 0;
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        childArg.resolve(cExpr, scope);
+        cArg.resolve(cExpr, scope);
         if (cExpr.error) { return cExpr.error; }
       }
       const error = cExpr.result(scope); // Validate child
@@ -116,21 +116,21 @@ function xor(...children) {
 
 // eslint-disable-next-line no-underscore-dangle
 function _if(condChild, thenChild, elseChild) {
-  const infoArgs = _if.info.argDescriptors;
-  const ccExpr = infoArgs[0].compile(condChild);
-  const tcExpr = infoArgs[1].compile(thenChild);
-  const ecExpr = infoArgs[2].compile(elseChild);
+  const [ccArg, tcArg, ecArg] = _if.info.argDescriptors;
+  const ccExpr = ccArg.compile(condChild);
+  const tcExpr = tcArg.compile(thenChild);
+  const ecExpr = ecArg.compile(elseChild);
   return (scope) => {
     if (!ccExpr.resolved) {
-      infoArgs[0].resolve(ccExpr, scope);
+      ccArg.resolve(ccExpr, scope);
       if (ccExpr.error) { return ccExpr.error; }
     }
     if (!tcExpr.resolved) {
-      infoArgs[1].resolve(tcExpr, scope);
+      tcArg.resolve(tcExpr, scope);
       if (tcExpr.error) { return tcExpr.error; }
     }
     if (!ecExpr.resolved) {
-      infoArgs[2].resolve(ecExpr, scope);
+      ecArg.resolve(ecExpr, scope);
       if (ecExpr.error) { return ecExpr.error; }
     }
     if (ecExpr.result == null) {
@@ -142,16 +142,16 @@ function _if(condChild, thenChild, elseChild) {
 }
 
 function every(info, arg, child) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
-  const cExpr = infoArgs[1].compile(child);
+  const [aArg, cArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
+  const cExpr = cArg.compile(child);
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, scope);
+      cArg.resolve(cExpr, scope);
       if (cExpr.error) { return cExpr.error; }
     }
     const $ = scope.find('$');
@@ -202,16 +202,16 @@ function every(info, arg, child) {
 }
 
 function some(info, arg, child) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
-  const cExpr = infoArgs[1].compile(child);
+  const [aArg, cArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
+  const cExpr = cArg.compile(child);
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, scope);
+      cArg.resolve(cExpr, scope);
       if (cExpr.error) { return cExpr.error; }
     }
     const $ = scope.find('$');
@@ -262,21 +262,21 @@ function some(info, arg, child) {
 }
 
 function alter(resultOnSuccess, resultOnError, child) {
-  const infoArgs = alter.info.argDescriptors;
-  const sExpr = infoArgs[0].compile(resultOnSuccess);
-  const fExpr = infoArgs[1].compile(resultOnError);
-  const cExpr = infoArgs[2].compile(child);
+  const [sArg, fArg, cArg] = alter.info.argDescriptors;
+  const sExpr = sArg.compile(resultOnSuccess);
+  const fExpr = fArg.compile(resultOnError);
+  const cExpr = cArg.compile(child);
   return (scope) => {
     if (!sExpr.resolved) {
-      infoArgs[0].resolve(sExpr, scope);
+      sArg.resolve(sExpr, scope);
       if (sExpr.error) { return sExpr.error; }
     }
     if (!fExpr.resolved) {
-      infoArgs[1].resolve(fExpr, scope);
+      fArg.resolve(fExpr, scope);
       if (fExpr.error) { return fExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[2].resolve(cExpr, scope);
+      cArg.resolve(cExpr, scope);
       if (cExpr.error) { return cExpr.error; }
     }
     const r = cExpr.result(scope) === undefined ? sExpr.result : fExpr.result;
@@ -285,16 +285,16 @@ function alter(resultOnSuccess, resultOnError, child) {
 }
 
 function onError(result, child) {
-  const infoArgs = onError.info.argDescriptors;
-  const rExpr = infoArgs[0].compile(result);
-  const cExpr = infoArgs[1].compile(child);
+  const [rArg, cArg] = onError.info.argDescriptors;
+  const rExpr = rArg.compile(result);
+  const cExpr = cArg.compile(child);
   return (scope) => {
     if (!rExpr.resolved) {
-      infoArgs[0].resolve(rExpr, scope);
+      rArg.resolve(rExpr, scope);
       if (rExpr.error) { return rExpr.error; }
     }
     if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, scope);
+      cArg.resolve(cExpr, scope);
       if (cExpr.error) { return cExpr.error; }
     }
     if (cExpr.result(scope) === undefined) { return undefined; }
@@ -304,21 +304,21 @@ function onError(result, child) {
 
 // eslint-disable-next-line no-underscore-dangle
 function _while(info, arg, condChild, doChild) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
-  const ccExpr = infoArgs[1].compile(condChild);
-  const dcExpr = infoArgs[2].compile(doChild);
+  const [aArg, ccArg, dcArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
+  const ccExpr = ccArg.compile(condChild);
+  const dcExpr = dcArg.compile(doChild);
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     if (!ccExpr.resolved) {
-      infoArgs[1].resolve(ccExpr, scope);
+      ccArg.resolve(ccExpr, scope);
       if (ccExpr.error) { return ccExpr.error; }
     }
     if (!dcExpr.resolved) {
-      infoArgs[2].resolve(dcExpr, scope);
+      dcArg.resolve(dcExpr, scope);
       if (dcExpr.error) { return dcExpr.error; }
     }
     const $ = scope.find('$');

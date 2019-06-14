@@ -12,21 +12,21 @@ const { getType } = require('../util/types');
 //
 
 function equals(info, arg, other, deep) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
-  const oExpr = infoArgs[1].compile(other);
-  const dExpr = infoArgs[2].compile(deep);
+  const [aArg, oArg, dArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
+  const oExpr = oArg.compile(other);
+  const dExpr = dArg.compile(deep);
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     if (!oExpr.resolved) {
-      infoArgs[1].resolve(oExpr, scope);
+      oArg.resolve(oExpr, scope);
       if (oExpr.error) { return oExpr.error; }
     }
     if (!dExpr.resolved) {
-      infoArgs[2].resolve(dExpr, scope);
+      dArg.resolve(dExpr, scope);
       if (dExpr.error) { return dExpr.error; }
     }
     const value = info.getValue(aExpr, scope);
@@ -36,16 +36,16 @@ function equals(info, arg, other, deep) {
 }
 
 function isLength(info, arg, options) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
-  const optsExpr = infoArgs[1].compile(options);
+  const [aArg, optsArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
+  const optsExpr = optsArg.compile(options);
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     if (!optsExpr.resolved) {
-      infoArgs[1].resolve(optsExpr, scope);
+      optsArg.resolve(optsExpr, scope);
       if (optsExpr.error) { return optsExpr.error; }
     }
     const opts = optsExpr.result;
@@ -60,11 +60,11 @@ function isLength(info, arg, options) {
 }
 
 function isSet(info, arg) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
+  const [aArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     return info.getValue(aExpr, scope) != null ? undefined : `${info.name}: the value at path '${arg}' must be set`;
@@ -72,19 +72,19 @@ function isSet(info, arg) {
 }
 
 function isType(info, arg, type) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
-  const tExpr = infoArgs[1].compile(type);
+  const [aArg, tArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
+  const tExpr = tArg.compile(type);
   if (tExpr.resolved) {
     tExpr.result = getType(tExpr.result);
   }
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     if (!tExpr.resolved) {
-      infoArgs[1].resolve(tExpr, scope);
+      tArg.resolve(tExpr, scope);
       if (tExpr.error) { return tExpr.error; }
       try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
     }
@@ -94,16 +94,16 @@ function isType(info, arg, type) {
 }
 
 function isOneOf(info, arg, values) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
-  const vExpr = infoArgs[1].compile(values);
+  const [aArg, vArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
+  const vExpr = vArg.compile(values);
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     if (!vExpr.resolved) {
-      infoArgs[1].resolve(vExpr, scope);
+      vArg.resolve(vExpr, scope);
       if (vExpr.error) { return vExpr.error; }
     }
     return vExpr.result.includes(info.getValue(aExpr, scope)) ? undefined : `${info.name}: the value at path '${arg}' must be one of ${aExpr.result}`;
@@ -111,19 +111,19 @@ function isOneOf(info, arg, values) {
 }
 
 function isArrayOf(info, arg, type) {
-  const infoArgs = info.argDescriptors;
-  const aExpr = infoArgs[0].compile(arg);
-  const tExpr = infoArgs[1].compile(type);
+  const [aArg, tArg] = info.argDescriptors;
+  const aExpr = aArg.compile(arg);
+  const tExpr = tArg.compile(type);
   if (tExpr.resolved) {
     tExpr.result = getType(tExpr.result);
   }
   return (scope) => {
     if (!aExpr.resolved) {
-      infoArgs[0].resolve(aExpr, scope);
+      aArg.resolve(aExpr, scope);
       if (aExpr.error) { return aExpr.error; }
     }
     if (!tExpr.resolved) {
-      infoArgs[1].resolve(tExpr, scope);
+      tArg.resolve(tExpr, scope);
       if (tExpr.error) { return tExpr.error; }
       try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
     }
