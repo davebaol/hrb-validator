@@ -1,10 +1,10 @@
 import { assert } from 'chai';
 import { V, Scope } from '../../src';
-import { infoVariants, optInfoVariant } from '../../src/util/variants';
+import { infoVariants, infoVariants$, variantOpt } from '../../src/util/variants';
 
 describe('Test optShortcut().', () => {
   function optOf(validator) {
-    return optInfoVariant(validator).validator;
+    return variantOpt(validator).validator;
   }
 
   it('Function xyz should become optXyz', () => {
@@ -44,15 +44,18 @@ describe('Test optShortcut().', () => {
 });
 
 describe('Test infoVariants().', () => {
-  it('Passing a non function should throw an error', () => {
-    assert.throws(() => infoVariants('not a function'), Error, 'expected a named function');
-  });
-  it('Passing a non named function should throw an error', () => {
-    assert.throws(() => infoVariants(() => null), Error, 'expected a named function');
-  });
   it('Passing a named function should return the info for that function and its opt shortcut', () => {
     function foo(any) { return any; }
     const info = infoVariants(foo, 'value:any');
     assert.deepEqual(info.map(i => i.validator.name), ['foo', 'optFoo'], ':(');
+  });
+});
+
+describe('Test infoVariants$().', () => {
+  it('Passing something other than a named function or its name should throw an error', () => {
+    assert.throws(() => infoVariants$(123), Error, 'Expected either a named function or its name as first argument');
+  });
+  it('Passing a non named function should throw an error', () => {
+    assert.throws(() => infoVariants$(() => null), Error, 'Expected non anonymous function');
   });
 });

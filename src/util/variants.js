@@ -19,29 +19,32 @@ function optShortcut(validator) {
   return setFunctionName(optValidator, camelCase(`opt ${validator.info.name}`));
 }
 
-function infoVariant(validator, ...argDescriptors) {
-  if (typeof validator !== 'function' || !validator.name) {
-    throw new Error('infoVariant: expected a named function');
-  }
-  return new Info(validator, ...argDescriptors).consolidate();
+function variant(InfoClass, validator, ...args) {
+  return new InfoClass(validator, ...args).consolidate();
 }
 
-function optInfoVariant(validator) {
-  if (typeof validator !== 'function' || !validator.info || !Object.isFrozen(validator.info)) {
-    throw new Error('infoOptVariant: expected a validator whose info property is consolidated');
-  }
+function infoVariant(validator, ...args) {
+  return variant(Info, validator, ...args);
+}
+
+function variantOpt(validator) {
   const { argDescriptors } = validator.info;
-  return new Info(
+  return infoVariant(
     optShortcut(validator),
     ...[`${argDescriptors[0].name}:${argDescriptors[0].type.name}?`, ...argDescriptors.slice(1)]
-  ).consolidate();
+  );
 }
 
-function infoVariants(validator, ...argDescriptors) {
+function variants(InfoClass, validator, ...args) {
+  const mainVariant = variant(InfoClass, validator, ...args);
   return [
-    infoVariant(validator, ...argDescriptors),
-    optInfoVariant(validator)
+    mainVariant,
+    variantOpt(mainVariant.validator)
   ];
+}
+
+function infoVariants(validator, ...args) {
+  return variants(Info, validator, ...args);
 }
 
 function getVariant(name, commonImpl) {
@@ -49,21 +52,38 @@ function getVariant(name, commonImpl) {
   return setFunctionName(f, name);
 }
 
-function infoVariants$(commonImpl, ...argDescriptors) {
-  const { name } = commonImpl;
-  const func = typeof commonImpl === 'function' ? commonImpl : commonImpl.func;
-  const validator = getVariant(name, func);
-  const validator$ = getVariant(`${name}$`, func);
+function variants$(InfoClass, commonImpl, ...args) {
+  let validator;
+  let validator$;
+  if (typeof commonImpl === 'function') {
+    if (!commonImpl.name) {
+      throw new Error('Expected non anonymous function; otherwise make sure it\'s not an issue due to minification');
+    }
+    validator = getVariant(commonImpl.name, commonImpl);
+    validator$ = getVariant(`${commonImpl.name}$`, commonImpl);
+  } else if (typeof commonImpl === 'string') {
+    validator = commonImpl;
+    validator$ = `${commonImpl}$`;
+  } else {
+    throw new Error('Expected either a named function or its name as first argument');
+  }
   return [
-    ...infoVariants(validator, ...argDescriptors),
-    ...infoVariants(validator$, ...argDescriptors)
+    ...variants(InfoClass, validator, ...args),
+    ...variants(InfoClass, validator$, ...args)
   ];
 }
 
+function infoVariants$(commonImpl, ...args) {
+  return variants$(Info, commonImpl, ...args);
+}
+
 module.exports = {
+  variant,
+  variants,
+  variants$,
   infoVariant,
   infoVariants,
   infoVariants$,
-  optInfoVariant,
+  variantOpt,
   optShortcut
 };
