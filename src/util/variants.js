@@ -23,9 +23,7 @@ function infoVariant(validator, ...argDescriptors) {
   if (typeof validator !== 'function' || !validator.name) {
     throw new Error('infoVariant: expected a named function');
   }
-  const info = new Info(validator, ...argDescriptors);
-  info.consolidate();
-  return info;
+  return new Info(validator, ...argDescriptors).consolidate();
 }
 
 function optInfoVariant(validator) {
@@ -33,9 +31,10 @@ function optInfoVariant(validator) {
     throw new Error('infoOptVariant: expected a validator whose info property is consolidated');
   }
   const { argDescriptors } = validator.info;
-  const info = new Info(optShortcut(validator), ...[`${argDescriptors[0].name}:${argDescriptors[0].type.name}?`, ...argDescriptors.slice(1)]);
-  info.consolidate();
-  return info;
+  return new Info(
+    optShortcut(validator),
+    ...[`${argDescriptors[0].name}:${argDescriptors[0].type.name}?`, ...argDescriptors.slice(1)]
+  ).consolidate();
 }
 
 function infoVariants(validator, ...argDescriptors) {

@@ -42,8 +42,8 @@ class StringOnly extends Bridge {
   static variants(name, errorFunc, ...argDescriptors) {
     const adList = ['value:string', ...argDescriptors];
     return [
-      new StringOnly(name, errorFunc, ...adList),
-      new StringOnly(`${name}$`, errorFunc, ...adList)
+      new StringOnly(name, errorFunc, ...adList).consolidate(),
+      new StringOnly(`${name}$`, errorFunc, ...adList).consolidate()
     ];
   }
 
@@ -99,8 +99,8 @@ class StringOrNumber extends StringOnly {
   static variants(name, errorFunc, ...argDescriptors) {
     const adList = ['value:string|number', ...argDescriptors];
     return [
-      new StringOrNumber(name, errorFunc, ...adList),
-      new StringOrNumber(`${name}$`, errorFunc, ...adList)
+      new StringOrNumber(name, errorFunc, ...adList).consolidate(),
+      new StringOrNumber(`${name}$`, errorFunc, ...adList).consolidate()
     ];
   }
 
@@ -129,8 +129,8 @@ class StringOrArray extends StringOnly {
   static variants(name, length, type, errorFunc, ...argDescriptors) {
     const adList = ['value:string|array', ...argDescriptors];
     return [
-      new StringOrArray(name, length, type, errorFunc, ...adList),
-      new StringOrArray(`${name}$`, length, type, errorFunc, ...adList)
+      new StringOrArray(name, length, type, errorFunc, ...adList).consolidate(),
+      new StringOrArray(`${name}$`, length, type, errorFunc, ...adList).consolidate()
     ];
   }
 
@@ -218,7 +218,6 @@ function bridge(target) {
   /* eslint-enable no-unused-vars */
 
   vInfo.forEach((info) => {
-    info.consolidate();
     const k = info.name;
     // 1. Make sure not to overwrite any function already defined in the target
     // 2. The value from the validator module must be a function (this prevents errors

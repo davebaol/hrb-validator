@@ -96,7 +96,7 @@ class Info {
       this.validator = this.link();
     }
     this.validator.info = this;
-    Object.freeze(this);
+    return Object.freeze(this); // Return this for chaining
   }
 }
 
