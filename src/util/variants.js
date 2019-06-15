@@ -5,13 +5,12 @@ const { setFunctionName } = require('./misc');
 function optShortcut(validator) {
   const optValidator = (arg, ...args) => {
     const { info } = optValidator;
-    const argDescriptor0 = info.argDescriptors[0];
-    const aExpr = argDescriptor0.compile(arg);
+    const aArg = info.argDescriptors[0];
+    const aExpr = aArg.compile(arg);
     info.compileRestParams(args, 1); // Make sure other arguments compile correctly
     return (scope) => {
       if (!aExpr.resolved) {
-        argDescriptor0.resolve(aExpr, scope);
-        if (aExpr.error) { return aExpr.error; }
+        if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
       }
       return (info.getValue(aExpr, scope) ? validator(aExpr.result, ...args)(scope) : undefined);
     };

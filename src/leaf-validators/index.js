@@ -18,16 +18,13 @@ function equals(info, arg, other, deep) {
   const dExpr = dArg.compile(deep);
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     if (!oExpr.resolved) {
-      oArg.resolve(oExpr, scope);
-      if (oExpr.error) { return oExpr.error; }
+      if (oArg.resolve(oExpr, scope).error) { return oExpr.error; }
     }
     if (!dExpr.resolved) {
-      dArg.resolve(dExpr, scope);
-      if (dExpr.error) { return dExpr.error; }
+      if (dArg.resolve(dExpr, scope).error) { return dExpr.error; }
     }
     const value = info.getValue(aExpr, scope);
     const result = dExpr.result ? deepEqual(value, oExpr.result) : value === oExpr.result;
@@ -41,12 +38,10 @@ function isLength(info, arg, options) {
   const optsExpr = optsArg.compile(options);
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     if (!optsExpr.resolved) {
-      optsArg.resolve(optsExpr, scope);
-      if (optsExpr.error) { return optsExpr.error; }
+      if (optsArg.resolve(optsExpr, scope).error) { return optsExpr.error; }
     }
     const opts = optsExpr.result;
     const min = opts.min || 0;
@@ -64,8 +59,7 @@ function isSet(info, arg) {
   const aExpr = aArg.compile(arg);
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     return info.getValue(aExpr, scope) != null ? undefined : `${info.name}: the value at path '${arg}' must be set`;
   };
@@ -80,12 +74,10 @@ function isType(info, arg, type) {
   }
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     if (!tExpr.resolved) {
-      tArg.resolve(tExpr, scope);
-      if (tExpr.error) { return tExpr.error; }
+      if (tArg.resolve(tExpr, scope).error) { return tExpr.error; }
       try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
     }
     const t = tExpr.result;
@@ -99,12 +91,10 @@ function isOneOf(info, arg, values) {
   const vExpr = vArg.compile(values);
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     if (!vExpr.resolved) {
-      vArg.resolve(vExpr, scope);
-      if (vExpr.error) { return vExpr.error; }
+      if (vArg.resolve(vExpr, scope).error) { return vExpr.error; }
     }
     return vExpr.result.includes(info.getValue(aExpr, scope)) ? undefined : `${info.name}: the value at path '${arg}' must be one of ${aExpr.result}`;
   };
@@ -119,12 +109,10 @@ function isArrayOf(info, arg, type) {
   }
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     if (!tExpr.resolved) {
-      tArg.resolve(tExpr, scope);
-      if (tExpr.error) { return tExpr.error; }
+      if (tArg.resolve(tExpr, scope).error) { return tExpr.error; }
       try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
     }
     const value = info.getValue(aExpr, scope);

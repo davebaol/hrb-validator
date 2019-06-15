@@ -43,8 +43,7 @@ class Info {
     for (let i = 0, len = exprs.length; i < len; i += 1) {
       if (!exprs[i].resolved) {
         const ad = this.argDescriptors[this.adjustArgDescriptorIndex(i + offset)];
-        ad.resolve(exprs[i], scope);
-        if (exprs[i].error) {
+        if (ad.resolve(exprs[i], scope).error) {
           return i;
         }
       }

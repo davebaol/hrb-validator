@@ -55,13 +55,13 @@ class Bridge extends Info {
     const original = v[this.baseName];
     const specialized = SPECIALIZED_VALIDATORS[this.baseName];
     return (arg, ...restArgs) => {
-      const aExpr = this.argDescriptors[0].compile(arg);
+      const aArg = this.argDescriptors[0];
+      const aExpr = aArg.compile(arg);
       const restExpr = this.compileRestParams(restArgs, 1);
       const restValue = [];
       return (scope) => {
         if (!aExpr.resolved) {
-          this.argDescriptors[0].resolve(aExpr, scope);
-          if (aExpr.error) { return aExpr.error; }
+          if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
         }
         const errorAt = this.resolveRestParams(restExpr, 1, scope);
         if (errorAt >= 0) { return restExpr[errorAt].error; }

@@ -12,12 +12,10 @@ function call(info, arg, child) {
   const cExpr = cArg.compile(child);
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     if (!cExpr.resolved) {
-      cArg.resolve(cExpr, scope);
-      if (cExpr.error) { return cExpr.error; }
+      if (cArg.resolve(cExpr, scope).error) { return cExpr.error; }
     }
     scope.context.push$(info.getValue(aExpr, scope));
     const result = cExpr.result(scope);
@@ -27,8 +25,8 @@ function call(info, arg, child) {
 }
 
 function def(resources, child) {
-  const cArg = def.info.argDescriptors[1];
   const childScope = Scope.compile(undefined, resources); // Parent scope unknown at compile time
+  const cArg = def.info.argDescriptors[1];
   const cExpr = cArg.compile(child);
   return (scope) => {
     if (!childScope.parent) {
@@ -38,8 +36,7 @@ function def(resources, child) {
       try { childScope.resolve(); } catch (e) { return e.message; }
     }
     if (!cExpr.resolved) {
-      cArg.resolve(cExpr, childScope);
-      if (cExpr.error) { return cExpr.error; }
+      if (cArg.resolve(cExpr, childScope).error) { return cExpr.error; }
     }
     return cExpr.result(childScope);
   };
@@ -50,8 +47,7 @@ function not(child) {
   const cExpr = cArg.compile(child);
   return (scope) => {
     if (!cExpr.resolved) {
-      cArg.resolve(cExpr, scope);
-      if (cExpr.error) { return cExpr.error; }
+      if (cArg.resolve(cExpr, scope).error) { return cExpr.error; }
     }
     return cExpr.result(scope) ? undefined : 'not: the child validator must fail';
   };
@@ -65,8 +61,7 @@ function and(...children) {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        cArg.resolve(cExpr, scope);
-        if (cExpr.error) { return cExpr.error; }
+        if (cArg.resolve(cExpr, scope).error) { return cExpr.error; }
       }
       const error = cExpr.result(scope); // Validate child
       if (error) { return error; }
@@ -84,8 +79,7 @@ function or(...children) {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        cArg.resolve(cExpr, scope);
-        if (cExpr.error) { return cExpr.error; }
+        if (cArg.resolve(cExpr, scope).error) { return cExpr.error; }
       }
       error = cExpr.result(scope); // Validate child
       if (!error) { return undefined; }
@@ -103,8 +97,7 @@ function xor(...children) {
     for (let i = 0, len = offspring.length; i < len; i += 1) {
       const cExpr = offspring[i];
       if (!cExpr.resolved) {
-        cArg.resolve(cExpr, scope);
-        if (cExpr.error) { return cExpr.error; }
+        if (cArg.resolve(cExpr, scope).error) { return cExpr.error; }
       }
       const error = cExpr.result(scope); // Validate child
       count += error ? 0 : 1;
@@ -122,16 +115,13 @@ function _if(condChild, thenChild, elseChild) {
   const ecExpr = ecArg.compile(elseChild);
   return (scope) => {
     if (!ccExpr.resolved) {
-      ccArg.resolve(ccExpr, scope);
-      if (ccExpr.error) { return ccExpr.error; }
+      if (ccArg.resolve(ccExpr, scope).error) { return ccExpr.error; }
     }
     if (!tcExpr.resolved) {
-      tcArg.resolve(tcExpr, scope);
-      if (tcExpr.error) { return tcExpr.error; }
+      if (tcArg.resolve(tcExpr, scope).error) { return tcExpr.error; }
     }
     if (!ecExpr.resolved) {
-      ecArg.resolve(ecExpr, scope);
-      if (ecExpr.error) { return ecExpr.error; }
+      if (ecArg.resolve(ecExpr, scope).error) { return ecExpr.error; }
     }
     if (ecExpr.result == null) {
       return ccExpr.result(scope) ? undefined : tcExpr.result(scope);
@@ -147,12 +137,10 @@ function every(info, arg, child) {
   const cExpr = cArg.compile(child);
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     if (!cExpr.resolved) {
-      cArg.resolve(cExpr, scope);
-      if (cExpr.error) { return cExpr.error; }
+      if (cArg.resolve(cExpr, scope).error) { return cExpr.error; }
     }
     const $ = scope.find('$');
     const value = info.getValue(aExpr, scope);
@@ -207,12 +195,10 @@ function some(info, arg, child) {
   const cExpr = cArg.compile(child);
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     if (!cExpr.resolved) {
-      cArg.resolve(cExpr, scope);
-      if (cExpr.error) { return cExpr.error; }
+      if (cArg.resolve(cExpr, scope).error) { return cExpr.error; }
     }
     const $ = scope.find('$');
     const value = info.getValue(aExpr, scope);
@@ -268,16 +254,13 @@ function alter(resultOnSuccess, resultOnError, child) {
   const cExpr = cArg.compile(child);
   return (scope) => {
     if (!sExpr.resolved) {
-      sArg.resolve(sExpr, scope);
-      if (sExpr.error) { return sExpr.error; }
+      if (sArg.resolve(sExpr, scope).error) { return sExpr.error; }
     }
     if (!fExpr.resolved) {
-      fArg.resolve(fExpr, scope);
-      if (fExpr.error) { return fExpr.error; }
+      if (fArg.resolve(fExpr, scope).error) { return fExpr.error; }
     }
     if (!cExpr.resolved) {
-      cArg.resolve(cExpr, scope);
-      if (cExpr.error) { return cExpr.error; }
+      if (cArg.resolve(cExpr, scope).error) { return cExpr.error; }
     }
     const r = cExpr.result(scope) === undefined ? sExpr.result : fExpr.result;
     return r == null ? undefined : r;
@@ -290,12 +273,10 @@ function onError(result, child) {
   const cExpr = cArg.compile(child);
   return (scope) => {
     if (!rExpr.resolved) {
-      rArg.resolve(rExpr, scope);
-      if (rExpr.error) { return rExpr.error; }
+      if (rArg.resolve(rExpr, scope).error) { return rExpr.error; }
     }
     if (!cExpr.resolved) {
-      cArg.resolve(cExpr, scope);
-      if (cExpr.error) { return cExpr.error; }
+      if (cArg.resolve(cExpr, scope).error) { return cExpr.error; }
     }
     if (cExpr.result(scope) === undefined) { return undefined; }
     return rExpr.result == null ? undefined : rExpr.result;
@@ -310,16 +291,13 @@ function _while(info, arg, condChild, doChild) {
   const dcExpr = dcArg.compile(doChild);
   return (scope) => {
     if (!aExpr.resolved) {
-      aArg.resolve(aExpr, scope);
-      if (aExpr.error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
     }
     if (!ccExpr.resolved) {
-      ccArg.resolve(ccExpr, scope);
-      if (ccExpr.error) { return ccExpr.error; }
+      if (ccArg.resolve(ccExpr, scope).error) { return ccExpr.error; }
     }
     if (!dcExpr.resolved) {
-      dcArg.resolve(dcExpr, scope);
-      if (dcExpr.error) { return dcExpr.error; }
+      if (dcArg.resolve(dcExpr, scope).error) { return dcExpr.error; }
     }
     const $ = scope.find('$');
     const value = info.getValue(aExpr, scope);
