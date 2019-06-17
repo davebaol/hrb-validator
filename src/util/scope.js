@@ -43,20 +43,23 @@ class Scope {
     if (kRef) {
       throw new Error('Root reference not allowed for scopes');
     }
+    if ('$' in resources) {
+      throw new Error('$ cannot be shadowed');
+    }
     for (const k in resources) { // eslint-disable-line no-restricted-syntax
       if (hasOwn.call(resources, k)) {
         const cur = resources[k];
         if (typeof cur === 'object' && cur !== null) {
-          const type = k.startsWith('$') && k.length > 1 ? child : any;
-          const ref = type.compile(cur);
+          const type = k.startsWith('$') ? child : any;
+          const expr = type.compile(cur);
           // The check (ref.result !== cur) detects both
           // references and non hard-coded validators
           // to trigger shallow copy.
-          if (!ref.resolved || (ref.resolved && ref.result !== cur)) {
+          if (!expr.resolved || (expr.resolved && expr.result !== cur)) {
             if (target === resources) {
               target = Object.assign({}, resources); // lazy shallow copy
             }
-            target[k] = ref.resolved ? ref.result : ref;
+            target[k] = expr.resolved ? expr.result : expr;
           }
         }
       }
@@ -77,7 +80,7 @@ class Scope {
         if (hasOwn.call(compiledResources, k)) {
           let resource = compiledResources[k];
           if (resource instanceof Expression) {
-            const type = k.startsWith('$') && k.length > 1 ? child : any;
+            const type = k.startsWith('$') ? child : any;
             const ref = type.resolve(resource, this);
             if (ref.error) { throw new Error(ref.error); }
             resource = ref.result;
