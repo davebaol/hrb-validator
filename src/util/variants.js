@@ -10,7 +10,7 @@ function optShortcut(validator) {
     info.compileRestParams(args, 1); // Make sure other arguments compile correctly
     return (scope) => {
       if (!aExpr.resolved) {
-        if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
+        if (aArg.resolve(aExpr, scope).error) { return info.error(aExpr.error); }
       }
       return (info.getValue(aExpr, scope) ? validator(aExpr.result, ...args)(scope) : undefined);
     };
