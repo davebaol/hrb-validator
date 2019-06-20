@@ -18,17 +18,17 @@ function equals(info, arg, other, deep) {
   const dExpr = dArg.compile(deep);
   return (scope) => {
     if (!aExpr.resolved) {
-      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return info.error(aExpr.error); }
     }
     if (!oExpr.resolved) {
-      if (oArg.resolve(oExpr, scope).error) { return oExpr.error; }
+      if (oArg.resolve(oExpr, scope).error) { return info.error(oExpr.error); }
     }
     if (!dExpr.resolved) {
-      if (dArg.resolve(dExpr, scope).error) { return dExpr.error; }
+      if (dArg.resolve(dExpr, scope).error) { return info.error(dExpr.error); }
     }
     const value = info.getValue(aExpr, scope);
     const result = dExpr.result ? deepEqual(value, oExpr.result) : value === oExpr.result;
-    return result ? undefined : `${info.name}: expected a value equal to ${oExpr.result}`;
+    return result ? undefined : info.error(`expected a value equal to ${oExpr.result}`);
   };
 }
 
@@ -38,19 +38,19 @@ function isLength(info, arg, options) {
   const optsExpr = optsArg.compile(options);
   return (scope) => {
     if (!aExpr.resolved) {
-      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return info.error(aExpr.error); }
     }
     if (!optsExpr.resolved) {
-      if (optsArg.resolve(optsExpr, scope).error) { return optsExpr.error; }
+      if (optsArg.resolve(optsExpr, scope).error) { return info.error(optsExpr.error); }
     }
     const opts = optsExpr.result;
     const min = opts.min || 0;
     const max = opts.max; // eslint-disable-line prefer-destructuring
     const len = lengthOf(info.getValue(aExpr, scope));
     if (len === undefined) {
-      return `${info.name}: expected a string, an array or an object`;
+      return info.error('expected a string, an array or an object');
     }
-    return len >= min && (max === undefined || len <= max) ? undefined : `${info.name}: expected string, array or object of length between ${opts.min} and ${opts.max}`;
+    return len >= min && (max === undefined || len <= max) ? undefined : info.error(`expected string, array or object of length between ${opts.min} and ${opts.max}`);
   };
 }
 
@@ -59,9 +59,9 @@ function isSet(info, arg) {
   const aExpr = aArg.compile(arg);
   return (scope) => {
     if (!aExpr.resolved) {
-      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return info.error(aExpr.error); }
     }
-    return info.getValue(aExpr, scope) != null ? undefined : `${info.name}: the value at path '${arg}' must be set`;
+    return info.getValue(aExpr, scope) != null ? undefined : info.error(`the value at path '${arg}' must be set`);
   };
 }
 
@@ -74,14 +74,16 @@ function isType(info, arg, type) {
   }
   return (scope) => {
     if (!aExpr.resolved) {
-      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return info.error(aExpr.error); }
     }
     if (!tExpr.resolved) {
-      if (tArg.resolve(tExpr, scope).error) { return tExpr.error; }
-      try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
+      if (tArg.resolve(tExpr, scope).error) { return info.error(tExpr.error); }
+      try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) {
+        return info.error(e.message);
+      }
     }
     const t = tExpr.result;
-    return t.check(info.getValue(aExpr, scope)) ? undefined : `${info.name}: the value at path '${arg}' must be a '${t.name}'`;
+    return t.check(info.getValue(aExpr, scope)) ? undefined : info.error(`the value at path '${arg}' must be a '${t.name}'`);
   };
 }
 
@@ -91,12 +93,12 @@ function isOneOf(info, arg, values) {
   const vExpr = vArg.compile(values);
   return (scope) => {
     if (!aExpr.resolved) {
-      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return info.error(aExpr.error); }
     }
     if (!vExpr.resolved) {
-      if (vArg.resolve(vExpr, scope).error) { return vExpr.error; }
+      if (vArg.resolve(vExpr, scope).error) { return info.error(vExpr.error); }
     }
-    return vExpr.result.includes(info.getValue(aExpr, scope)) ? undefined : `${info.name}: the value at path '${arg}' must be one of ${aExpr.result}`;
+    return vExpr.result.includes(info.getValue(aExpr, scope)) ? undefined : info.error(`the value at path '${arg}' must be one of ${aExpr.result}`);
   };
 }
 
@@ -109,17 +111,19 @@ function isArrayOf(info, arg, type) {
   }
   return (scope) => {
     if (!aExpr.resolved) {
-      if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
+      if (aArg.resolve(aExpr, scope).error) { return info.error(aExpr.error); }
     }
     if (!tExpr.resolved) {
-      if (tArg.resolve(tExpr, scope).error) { return tExpr.error; }
-      try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
+      if (tArg.resolve(tExpr, scope).error) { return info.error(tExpr.error); }
+      try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) {
+        return info.error(e.message);
+      }
     }
     const value = info.getValue(aExpr, scope);
     const t = tExpr.result;
-    if (!Array.isArray(value)) return `${info.name}: the value at path '${arg}' must be an array`;
+    if (!Array.isArray(value)) return info.error(`the value at path '${arg}' must be an array`);
     const flag = value.every(e => t.check(e));
-    return flag ? undefined : `${info.name}: the value at path '${arg}' must be an array of '${t.name}'`;
+    return flag ? undefined : info.error(`the value at path '${arg}' must be an array of '${t.name}'`);
   };
 }
 

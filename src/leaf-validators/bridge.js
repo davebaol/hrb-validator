@@ -47,8 +47,11 @@ class Bridge extends Info {
     return value;
   }
 
-  error(path, vArgs) {
-    return `${this.name}: the value at path '${path}' must be a string ${vArgs ? this.errorFunc(vArgs) : ''}`;
+  genericError(path, vArgs) {
+    if (this.is$) {
+      return this.error(`the value at path '${path}' must be a '${this.originalArg0Desc.type.name}' ${vArgs ? this.errorFunc(vArgs) : ''}`);
+    }
+    return this.error(`the first argument must be a '${this.argDescriptors[0].type.name}' ${vArgs ? this.errorFunc(vArgs) : ''}`);
   }
 
   link() {
@@ -61,10 +64,10 @@ class Bridge extends Info {
       const restValue = [];
       return (scope) => {
         if (!aExpr.resolved) {
-          if (aArg.resolve(aExpr, scope).error) { return aExpr.error; }
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
         }
         const errorAt = this.resolveRestParams(restExpr, 1, scope);
-        if (errorAt >= 0) { return restExpr[errorAt].error; }
+        if (errorAt >= 0) { return this.error(restExpr[errorAt].error); }
         for (let i = 0, len = restExpr.length; i < len; i += 1) {
           restValue[i] = restExpr[i].result;
         }
@@ -79,7 +82,7 @@ class Bridge extends Info {
           }
           result = original(value, ...restValue);
         }
-        return result ? undefined : this.error(arg, restArgs);
+        return result ? undefined : this.genericError(arg, restArgs);
       };
     };
   }

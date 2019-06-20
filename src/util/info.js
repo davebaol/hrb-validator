@@ -20,12 +20,18 @@ class Info {
       this.getValue = (expr, scope) => get(scope.find('$'), expr.result);
       // will be processed in consolidate()
       this.argDescriptors = ['path:path', ...argDescriptors.slice(1)];
+      [this.originalArg0Desc] = argDescriptors;
     } else {
       this.baseName = this.name;
       this.getValue = expr => expr.result;
       // will be processed in consolidate()
       this.argDescriptors = argDescriptors;
+      this.originalArg0Desc = undefined;
     }
+  }
+
+  error(msg) {
+    return `${this.name}: ${msg}`;
   }
 
   compileRestParams(args, offset = 0) {
@@ -74,16 +80,19 @@ class Info {
       try {
         a = new Argument(d, context);
       } catch (e) {
-        throw new Error(`Validator '${this.name}' argument at index ${i}: ${e.message}`);
+        throw new Error(this.error(`bad argument at index ${i}: ${e.message}`));
       }
       if (i < last && a.restParams) {
-        throw new Error(`Validator '${this.name}' argument at index ${i}: rest parameter is legal only for the last argument`);
+        throw new Error(this.error(`bad argument at index ${i}: rest parameter is allowed only for the last argument`));
       }
       if (a.type.acceptsValidator) {
         this.isLeaf = false;
       }
       return a;
     });
+    if (this.originalArg0Desc) {
+      this.originalArg0Desc = new Argument(this.originalArg0Desc, context);
+    }
   }
 
   /*
