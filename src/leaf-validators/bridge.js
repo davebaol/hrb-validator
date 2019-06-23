@@ -1,5 +1,4 @@
 const v = require('validator');
-const { variants$ } = require('../util/variants');
 const Info = require('../util/info');
 
 const EMPTY_OBJ = Object.freeze({});
@@ -54,7 +53,7 @@ class Bridge extends Info {
     return this.error(`the first argument must be a '${this.argDescriptors[0].type.name}' ${vArgs ? this.errorFunc(vArgs) : ''}`);
   }
 
-  link() {
+  create() {
     const original = v[this.baseName];
     const specialized = SPECIALIZED_VALIDATORS[this.baseName];
     return (arg, ...restArgs) => {
@@ -108,10 +107,6 @@ class StringOrNumber extends Bridge {
   cast(value) {
     return typeof value === 'number' ? String(value) : value;
   }
-
-  error(path, vArgs) {
-    return `${this.name}: the value at path '${path}' must be either a string or a number ${vArgs ? this.errorFunc(vArgs) : ''}`;
-  }
 }
 
 class StringOrArray extends Bridge {
@@ -132,75 +127,71 @@ class StringOrArray extends Bridge {
   cast(value) {
     return Array.isArray(value) ? value.join(',') : value;
   }
-
-  error(path, vArgs) {
-    return `${this.name}: the value at path '${path}' must be either a string or an array ${vArgs ? this.errorFunc(vArgs) : ''}`;
-  }
 }
 
 function bridge(target) {
-  /* eslint-disable no-unused-vars */
+  /* eslint-disable no-unused-vars, max-len */
   /* istanbul ignore next */
   const vInfo = [
-    ...variants$(StringOnly, 'contains', args => `containing the value '${args[0]}'`, 'seed:string'),
-    // ...variants$(StringOnly, 'equals', args => `equal to the value '${args[0]}'`),
-    // ...variants$(StringOnly, 'isAfter', args => `equal to the value '${args[0]}'`),
-    ...variants$(StringOnly, 'isAlpha', args => 'containing only letters (a-zA-Z)', 'locale:string?'),
-    ...variants$(StringOnly, 'isAlphanumeric', args => 'containing only letters and numbers', 'locale:string?'),
-    ...variants$(StringOnly, 'isAscii', args => 'containing ASCII chars only'),
-    ...variants$(StringOnly, 'isBase64', args => 'base64 encoded'),
-    // ...variants$(StringOnly, 'isBefore', args => `equal to the value '${args[0]}'`),
-    // ...variants$(StringOnly, 'isBoolean', args => `equal to the value '${args[0]}'`),
-    ...variants$(StringOnly, 'isByteLength', args => 'whose length (in UTF-8 bytes) falls in the specified range', 'options:object?'),
-    ...variants$(StringOnly, 'isCreditCard', args => 'representing a credit card'),
-    ...variants$(StringOnly, 'isCurrency', args => 'representing a valid currency amount', 'options:object?'),
-    ...variants$(StringOnly, 'isDataURI', args => 'in data uri format'),
-    // ...variants$(StringOnly, 'isDecimal', args => `equal to the value '${args[0]}'`),
-    ...variants$(StringOrNumber, 'isDivisibleBy', args => `that's divisible by ${args[0]}`, 'divisor:integer'),
-    ...variants$(StringOnly, 'isEmail', args => 'representing an email address', 'options:object?'),
-    ...variants$(StringOnly, 'isEmpty', args => 'having a length of zero', 'options:object?'),
-    ...variants$(StringOrNumber, 'isFloat', args => 'that\'s a float falling in the specified range', 'options:object?'),
-    ...variants$(StringOnly, 'isFQDN', args => 'representing a fully qualified domain name (e.g. domain.com)', 'options:object?'),
-    ...variants$(StringOnly, 'isFullWidth', args => 'containing any full-width chars'),
-    ...variants$(StringOnly, 'isHalfWidth', args => 'containing any half-width chars'),
-    ...variants$(StringOnly, 'isHash', args => `matching to the format of the hash algorithm ${args[0]}`, 'algorithm:string?'),
-    ...variants$(StringOnly, 'isHexadecimal', args => 'representing a hexadecimal number'),
-    ...variants$(StringOnly, 'isHexColor', args => 'matching to a hexadecimal color'),
-    ...variants$(StringOnly, 'isIdentityCard', args => 'matching to a valid identity card code', 'locale:string?'),
-    // ...variants$(StringOnly, 'isIn', args => `equal to the value '${args[0]}'`),
-    ...variants$(StringOrNumber, 'isInt', args => 'that\'s an integer falling in the specified range', 'options:object?'),
-    ...variants$(StringOnly, 'isIP', args => 'matching to an IP', 'version:integer?'),
-    ...variants$(StringOnly, 'isIPRange', args => 'matching to an IP Range'),
-    ...variants$(StringOnly, 'isISBN', args => 'matching to an ISBN', 'version:integer?'),
-    ...variants$(StringOnly, 'isISIN', args => 'matching to an ISIN'),
-    ...variants$(StringOnly, 'isISO31661Alpha2', args => 'matching to a valid ISO 3166-1 alpha-2 officially assigned country code'),
-    ...variants$(StringOnly, 'isISO31661Alpha3', args => 'matching to a valid ISO 3166-1 alpha-3 officially assigned country code'),
-    ...variants$(StringOnly, 'isISO8601', args => 'matching to a valid ISO 8601 date'),
-    ...variants$(StringOnly, 'isISRC', args => 'matching to an ISRC'),
-    ...variants$(StringOnly, 'isISSN', args => 'matching to an ISSN', 'options:object?'),
-    ...variants$(StringOnly, 'isJSON', args => 'matching to a valid JSON'),
-    ...variants$(StringOnly, 'isJWT', args => 'matching to a valid JWT token'),
-    ...variants$(StringOrArray, 'isLatLong', 2, 'number', args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'"),
-    // ...variants$(StringOnly, 'isLength', args => 'whose length falls in the specified range'),
-    ...variants$(StringOnly, 'isLowercase', args => 'in lowercase'),
-    ...variants$(StringOnly, 'isMACAddress', args => 'in MAC address format'),
-    ...variants$(StringOnly, 'isMagnetURI', args => 'in magnet uri format'),
-    ...variants$(StringOnly, 'isMD5', args => 'representing a valid MD5 hash'),
-    ...variants$(StringOnly, 'isMimeType', args => 'matching to a valid MIME type format'),
-    ...variants$(StringOnly, 'isMobilePhone', args => 'representing a mobile phone number', 'locale:string|array?', 'options:object?'),
-    ...variants$(StringOnly, 'isMongoId', args => 'in the form of a valid hex-encoded representation of a MongoDB ObjectId.'),
-    ...variants$(StringOnly, 'isMultibyte', args => 'containing one or more multibyte chars'),
-    ...variants$(StringOnly, 'isNumeric', args => 'containing only numbers', 'options:object?'),
-    ...variants$(StringOrNumber, 'isPort', args => 'representing a valid port'),
-    ...variants$(StringOnly, 'isPostalCode', args => 'representing a postal code', 'options:object'),
-    ...variants$(StringOnly, 'isRFC3339', args => 'matching to a valid RFC 3339 date'),
-    ...variants$(StringOnly, 'isSurrogatePair', args => 'containing any surrogate pairs chars'),
-    ...variants$(StringOnly, 'isUppercase', args => 'in uppercase'),
-    ...variants$(StringOnly, 'isURL', args => 'representing a valid URL', 'options:object?'),
-    ...variants$(StringOnly, 'isUUID', args => 'matching to a UUID (version 3, 4 or 5)', 'version:integer?'),
-    ...variants$(StringOnly, 'isVariableWidth', args => 'containing a mixture of full and half-width chars'),
-    ...variants$(StringOnly, 'isWhitelisted', args => 'whose characters belongs to the whitelist', 'chars:string'),
-    ...variants$(StringOnly, 'matches', args => `matching the regex '${args[0]}'`, 'pattern:string|regex', 'modifiers:string?')
+    ...Info.variants(StringOnly, 'contains', args => `containing the value '${args[0]}'`, 'seed:string'),
+    // ...Info.variants(StringOnly, 'equals', args => `equal to the value '${args[0]}'`),
+    // ...Info.variants(StringOnly, 'isAfter', args => `equal to the value '${args[0]}'`),
+    ...Info.variants(StringOnly, 'isAlpha', args => 'containing only letters (a-zA-Z)', 'locale:string?'),
+    ...Info.variants(StringOnly, 'isAlphanumeric', args => 'containing only letters and numbers', 'locale:string?'),
+    ...Info.variants(StringOnly, 'isAscii', args => 'containing ASCII chars only'),
+    ...Info.variants(StringOnly, 'isBase64', args => 'base64 encoded'),
+    // ...Info.variants(StringOnly, 'isBefore', args => `equal to the value '${args[0]}'`),
+    // ...Info.variants(StringOnly, 'isBoolean', args => `equal to the value '${args[0]}'`),
+    ...Info.variants(StringOnly, 'isByteLength', args => 'whose length (in UTF-8 bytes) falls in the specified range', 'options:object?'),
+    ...Info.variants(StringOnly, 'isCreditCard', args => 'representing a credit card'),
+    ...Info.variants(StringOnly, 'isCurrency', args => 'representing a valid currency amount', 'options:object?'),
+    ...Info.variants(StringOnly, 'isDataURI', args => 'in data uri format'),
+    // ...Info.variants(StringOnly, 'isDecimal', args => `equal to the value '${args[0]}'`),
+    ...Info.variants(StringOrNumber, 'isDivisibleBy', args => `that's divisible by ${args[0]}`, 'divisor:integer'),
+    ...Info.variants(StringOnly, 'isEmail', args => 'representing an email address', 'options:object?'),
+    ...Info.variants(StringOnly, 'isEmpty', args => 'having a length of zero', 'options:object?'),
+    ...Info.variants(StringOrNumber, 'isFloat', args => 'that\'s a float falling in the specified range', 'options:object?'),
+    ...Info.variants(StringOnly, 'isFQDN', args => 'representing a fully qualified domain name (e.g. domain.com)', 'options:object?'),
+    ...Info.variants(StringOnly, 'isFullWidth', args => 'containing any full-width chars'),
+    ...Info.variants(StringOnly, 'isHalfWidth', args => 'containing any half-width chars'),
+    ...Info.variants(StringOnly, 'isHash', args => `matching to the format of the hash algorithm ${args[0]}`, 'algorithm:string?'),
+    ...Info.variants(StringOnly, 'isHexadecimal', args => 'representing a hexadecimal number'),
+    ...Info.variants(StringOnly, 'isHexColor', args => 'matching to a hexadecimal color'),
+    ...Info.variants(StringOnly, 'isIdentityCard', args => 'matching to a valid identity card code', 'locale:string?'),
+    // ...Info.variants(StringOnly, 'isIn', args => `equal to the value '${args[0]}'`),
+    ...Info.variants(StringOrNumber, 'isInt', args => 'that\'s an integer falling in the specified range', 'options:object?'),
+    ...Info.variants(StringOnly, 'isIP', args => 'matching to an IP', 'version:integer?'),
+    ...Info.variants(StringOnly, 'isIPRange', args => 'matching to an IP Range'),
+    ...Info.variants(StringOnly, 'isISBN', args => 'matching to an ISBN', 'version:integer?'),
+    ...Info.variants(StringOnly, 'isISIN', args => 'matching to an ISIN'),
+    ...Info.variants(StringOnly, 'isISO31661Alpha2', args => 'matching to a valid ISO 3166-1 alpha-2 officially assigned country code'),
+    ...Info.variants(StringOnly, 'isISO31661Alpha3', args => 'matching to a valid ISO 3166-1 alpha-3 officially assigned country code'),
+    ...Info.variants(StringOnly, 'isISO8601', args => 'matching to a valid ISO 8601 date'),
+    ...Info.variants(StringOnly, 'isISRC', args => 'matching to an ISRC'),
+    ...Info.variants(StringOnly, 'isISSN', args => 'matching to an ISSN', 'options:object?'),
+    ...Info.variants(StringOnly, 'isJSON', args => 'matching to a valid JSON'),
+    ...Info.variants(StringOnly, 'isJWT', args => 'matching to a valid JWT token'),
+    ...Info.variants(StringOrArray, 'isLatLong', 2, 'number', args => "representing a valid latitude-longitude coordinate in the format 'lat,long' or 'lat, long'"),
+    // ...Info.variants(StringOnly, 'isLength', args => 'whose length falls in the specified range'),
+    ...Info.variants(StringOnly, 'isLowercase', args => 'in lowercase'),
+    ...Info.variants(StringOnly, 'isMACAddress', args => 'in MAC address format'),
+    ...Info.variants(StringOnly, 'isMagnetURI', args => 'in magnet uri format'),
+    ...Info.variants(StringOnly, 'isMD5', args => 'representing a valid MD5 hash'),
+    ...Info.variants(StringOnly, 'isMimeType', args => 'matching to a valid MIME type format'),
+    ...Info.variants(StringOnly, 'isMobilePhone', args => 'representing a mobile phone number', 'locale:string|array?', 'options:object?'),
+    ...Info.variants(StringOnly, 'isMongoId', args => 'in the form of a valid hex-encoded representation of a MongoDB ObjectId.'),
+    ...Info.variants(StringOnly, 'isMultibyte', args => 'containing one or more multibyte chars'),
+    ...Info.variants(StringOnly, 'isNumeric', args => 'containing only numbers', 'options:object?'),
+    ...Info.variants(StringOrNumber, 'isPort', args => 'representing a valid port'),
+    ...Info.variants(StringOnly, 'isPostalCode', args => 'representing a postal code', 'options:object'),
+    ...Info.variants(StringOnly, 'isRFC3339', args => 'matching to a valid RFC 3339 date'),
+    ...Info.variants(StringOnly, 'isSurrogatePair', args => 'containing any surrogate pairs chars'),
+    ...Info.variants(StringOnly, 'isUppercase', args => 'in uppercase'),
+    ...Info.variants(StringOnly, 'isURL', args => 'representing a valid URL', 'options:object?'),
+    ...Info.variants(StringOnly, 'isUUID', args => 'matching to a UUID (version 3, 4 or 5)', 'version:integer?'),
+    ...Info.variants(StringOnly, 'isVariableWidth', args => 'containing a mixture of full and half-width chars'),
+    ...Info.variants(StringOnly, 'isWhitelisted', args => 'whose characters belongs to the whitelist', 'chars:string'),
+    ...Info.variants(StringOnly, 'matches', args => `matching the regex '${args[0]}'`, 'pattern:string|regex', 'modifiers:string?')
   ];
   /* eslint-enable no-unused-vars */
 

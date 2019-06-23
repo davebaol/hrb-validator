@@ -7,6 +7,10 @@ describe('Test utility Scope.compile($, scope).', () => {
     const defs = { $var: 'MY_OTHER_SCOPE' };
     assert.throws(() => Scope.compile(null, defs), Error, 'Root reference not allowed');
   });
+  it('Should throw an error if $ is shadowed ', () => {
+    const defs = { $: 'invalid variable' };
+    assert.throws(() => Scope.compile(null, defs), Error, '$ cannot be shadowed');
+  });
   it('Should return the same scope specified in input, if all its variables have no references (constants)', () => {
     const defs = { VARIABLE: 123 };
     assert(Scope.compile(null, defs).resources === defs, ':(');

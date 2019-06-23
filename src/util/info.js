@@ -1,33 +1,21 @@
+const camelCase = require('camelcase');
 const Argument = require('./argument');
 const { get } = require('../util/path');
+const { setFunctionName } = require('./misc');
 
 class Info {
-  constructor(validator, ...argDescriptors) {
-    if (typeof validator === 'function') {
-      if (!validator.name) {
-        throw new Error('Expected non anonymous function; otherwise make sure it\'s not an issue due to minification');
-      }
-      this.validator = validator;
-      this.name = validator.name.startsWith('_') ? validator.name.substring(1) : validator.name;
-    } else if (typeof validator === 'string') {
-      this.name = validator;
-    } else {
-      throw new Error('Expected the function or its name as first argument');
-    }
-    this.is$ = this.name.endsWith('$');
-    if (this.is$) {
-      this.baseName = this.name.substring(0, this.name.length - 1);
-      this.getValue = (expr, scope) => get(scope.find('$'), expr.result);
-      // will be processed in consolidate()
-      this.argDescriptors = ['path:path', ...argDescriptors.slice(1)];
-      [this.originalArg0Desc] = argDescriptors;
-    } else {
-      this.baseName = this.name;
-      this.getValue = expr => expr.result;
-      // will be processed in consolidate()
-      this.argDescriptors = argDescriptors;
-      this.originalArg0Desc = undefined;
-    }
+  constructor(baseName, ...argDescriptors) {
+    this.baseName = baseName;
+    this.argDescriptors = argDescriptors;
+  }
+
+  static variants(InfoClass, ...args) {
+    return [
+      new InfoClass(...args).prepare(false, false),
+      new InfoClass(...args).prepare(false, true),
+      new InfoClass(...args).prepare(true, false),
+      new InfoClass(...args).prepare(true, true)
+    ];
   }
 
   error(msg) {
@@ -67,9 +55,9 @@ class Info {
   }
 
   /* eslint-disable-next-line class-methods-use-this */
-  link() {
+  create() {
     /* istanbul ignore next */
-    throw new Error('To support anonymous function inherited classes have to implement the method link!');
+    throw new Error('Subclasses must implement the method create!');
   }
 
   processArgDescriptors(context) {
@@ -95,15 +83,45 @@ class Info {
     }
   }
 
+  variant(isOpt, is$, context) {
+    this.isOpt$ = !!isOpt;
+    this.is$ = !!is$;
+    this.name = isOpt ? camelCase(`opt ${this.baseName}`) : this.baseName;
+    if (isOpt) {
+      this.argDescriptors = [`${this.argDescriptors[0]}?`, ...this.argDescriptors.slice(1)];
+      const original = this.create();
+      this.create = () => (arg, ...args) => {
+        const aArg = this.argDescriptors[0];
+        const aExpr = aArg.compile(arg);
+        this.compileRestParams(args, 1); // Make sure other arguments compile correctly
+        return (scope) => {
+          if (!aExpr.resolved) {
+            if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+          }
+          return (this.getValue(aExpr, scope) ? original(aExpr.result, ...args)(scope) : undefined);
+        };
+      };
+    }
+    if (is$) {
+      this.name = `${this.name}$`;
+      this.getValue = (expr, scope) => get(scope.find('$'), expr.result);
+      [this.originalArg0Desc] = this.argDescriptors;
+      this.argDescriptors = ['path:path', ...this.argDescriptors.slice(1)];
+    } else {
+      this.getValue = expr => expr.result;
+      this.originalArg0Desc = undefined;
+    }
+    this.processArgDescriptors(context);
+    return this.create();
+  }
+
   /*
    This method MUST be called before using the instance
   */
-  consolidate(context) {
-    this.processArgDescriptors(context);
-    if (!this.validator) {
-      this.validator = this.link();
-    }
+  prepare(isOpt, is$, context) {
+    this.validator = this.variant(isOpt, is$, context);
     this.validator.info = this;
+    setFunctionName(this.validator, this.name);
     return Object.freeze(this); // Return this for chaining
   }
 }
