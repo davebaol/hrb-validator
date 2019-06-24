@@ -15,31 +15,34 @@ def:
           - isOneOf$: [key, {$var: validatorNames}]  # validator names are defined in the root scope and passed in by the code launching the validation
           - isType$: [value, array]
           - isLength$: [value, {min: 1}]
-          - call$: [value.0, {$var: $ARG_PATH}]
+          - if:
+            - matches: [key, '\$$']
+            - call$: [value.0, {$var: $ARG_PATH}]
+            - call$: [value.0, {$var: $ARG_ANY}]
 
     $BRANCH_VALIDATOR:
       xor:
-        - call$: [alter, {$var: $ARG_ONE_CHILD_AND_TWO_RESULTS}]
+        - call$: [alter, {$var: $ARG_TWO_ANY_AND_ONE_CHILD}]
         - call$: [and, {$var: $ARG_ZERO_OR_MORE_CHILDREN}]
-        - call$: [call, {$var: $ARG_PATH_AND_ONE_CHILD}]
+        - call$: [call, {$var: $ARG_ANY_AND_ONE_CHILD}]
         - call$: [call$, {$var: $ARG_PATH_AND_ONE_CHILD}]
         - call$: [def, {$var: $ARG_SCOPE_AND_ONE_CHILD}]
-        - call$: [every, {$var: $ARG_PATH_AND_ONE_CHILD}]
+        - call$: [every, {$var: $ARG_ANY_AND_ONE_CHILD}]
         - call$: [every$, {$var: $ARG_PATH_AND_ONE_CHILD}]
         - call$: [if, {$var: $ARG_TWO_OR_THREE_CHILDREN}]
         - call$: [not, {$var: $ARG_ONE_CHILD}]
-        - call$: [optCall, {$var: $ARG_PATH_AND_ONE_CHILD}]
+        - call$: [optCall, {$var: $ARG_ANY_AND_ONE_CHILD}]
         - call$: [optCall$, {$var: $ARG_PATH_AND_ONE_CHILD}]
-        - call$: [optEvery, {$var: $ARG_PATH_AND_ONE_CHILD}]
+        - call$: [optEvery, {$var: $ARG_ANY_AND_ONE_CHILD}]
         - call$: [optEvery$, {$var: $ARG_PATH_AND_ONE_CHILD}]
-        - call$: [optSome, {$var: $ARG_PATH_AND_ONE_CHILD}]
+        - call$: [optSome, {$var: $ARG_ANY_AND_ONE_CHILD}]
         - call$: [optSome$, {$var: $ARG_PATH_AND_ONE_CHILD}]
-        - call$: [optWhile, {$var: $ARG_PATH_AND_TWO_CHILDREN}]
+        - call$: [optWhile, {$var: $ARG_ANY_AND_TWO_CHILDREN}]
         - call$: [optWhile$, {$var: $ARG_PATH_AND_TWO_CHILDREN}]
         - call$: [or, {$var: $ARG_ZERO_OR_MORE_CHILDREN}]
-        - call$: [some, {$var: $ARG_PATH_AND_ONE_CHILD}]
+        - call$: [some, {$var: $ARG_ANY_AND_ONE_CHILD}]
         - call$: [some$, {$var: $ARG_PATH_AND_ONE_CHILD}]
-        - call$: [while, {$var: $ARG_PATH_AND_TWO_CHILDREN}]
+        - call$: [while, {$var: $ARG_ANY_AND_TWO_CHILDREN}]
         - call$: [while$, {$var: $ARG_PATH_AND_TWO_CHILDREN}]
         - call$: [xor, {$var: $ARG_ZERO_OR_MORE_CHILDREN}]
 
@@ -47,7 +50,6 @@ def:
       or:
         - isType$: ['', [string, number, 'null']]
         - isArrayOf$: ['', [string, number]]
-        - optIsSet$: [''] # Always true!!!! Temporary hack to be removed. 
     
     $ARG_REF:
       and:
@@ -73,17 +75,22 @@ def:
               - matches$: [key, ^\$.]
               - call$: [value, {$var: $VALIDATOR}]
 
+    $ARG_ANY:
+      or:
+        - $var: $ARG_REF
+        - isType$: ['', any]
+
     $ARG_STRING:
       or:
         - $var: $ARG_REF
         - isType$: ['', string]
 
-    $ARG_ONE_CHILD_AND_TWO_RESULTS:
+    $ARG_TWO_ANY_AND_ONE_CHILD:
       and:
         - isType$: ['', array]
-        - call$: [0, {$var: $VALIDATOR}]
-        - optCall$: [1, {$var: $ARG_STRING}]
-        - optCall$: [2, {$var: $ARG_STRING}]
+        - call$: [0, {$var: $ARG_ANY}]
+        - call$: [1, {$var: $ARG_ANY}]
+        - call$: [2, {$var: $VALIDATOR}]
 
     $ARG_SCOPE_AND_ONE_CHILD:
       and:
@@ -92,12 +99,27 @@ def:
         - optCall$: [0, {$var: $ARG_SCOPE}]
         - call$: [1, {$var: $VALIDATOR}]
 
+    $ARG_ANY_AND_ONE_CHILD:
+      and:
+        - isType$: ['', array]
+        - isLength$: ['', {min: 2, max: 2}]
+        - call$: [0, {$var: $ARG_ANY}]
+        - call$: [1, {$var: $VALIDATOR}]
+
     $ARG_PATH_AND_ONE_CHILD:
       and:
         - isType$: ['', array]
         - isLength$: ['', {min: 2, max: 2}]
         - call$: [0, {$var: $ARG_PATH}]
         - call$: [1, {$var: $VALIDATOR}]
+    
+    $ARG_ANY_AND_TWO_CHILDREN:
+      and:
+        - isType$: ['', array]
+        - isLength$: ['', {min: 3, max: 3}]
+        - call$: [0, {$var: $ARG_ANY}]
+        - call$: [1, {$var: $VALIDATOR}]
+        - call$: [2, {$var: $VALIDATOR}]
     
     $ARG_PATH_AND_TWO_CHILDREN:
       and:
