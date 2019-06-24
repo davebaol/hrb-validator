@@ -15,18 +15,13 @@ describe('Test references for all kinds of arguments', () => {
   const UNRESOLVABLE = {};
 
   function compileAndResolve(tInfo, refType, name, value) {
-    const scope = new Scope();
-    let obj = { [name]: value };
-    if (refType === '$var') {
-      if (value !== UNRESOLVABLE) {
-        scope.resources = obj;
-      }
-      obj = {};
-    } else if (refType !== '$path') {
-      throw new Error(`Fix your test!!!! Unknown refType '${refType}. Expected either '$path' or '$var'.`);
+    if (refType !== '$var') {
+      throw new Error(`Fix your test!!!! Unknown refType '${refType}. Expected '$var'.`);
     }
+    const resources = name !== '$' && value !== UNRESOLVABLE ? { [name]: value } : {};
+    const scope = new Scope(name === '$' ? value : {}, resources);
     const expr = tInfo.type.compile({ [refType]: name });
-    tInfo.type.resolve(expr, scope, obj);
+    tInfo.type.resolve(expr, scope);
     if (expr.error) {
       throw new Error(expr.error);
     }
@@ -38,7 +33,7 @@ describe('Test references for all kinds of arguments', () => {
     const testUnresolvedReferences = [];
     const mismatchedReferences = [];
     if (tInfo.acceptValueRef()) {
-      testRefToValues.push(good => compileAndResolve(tInfo, '$path', 'a', tInfo.value(good)));
+      testRefToValues.push(good => compileAndResolve(tInfo, '$var', '$', tInfo.value(good)));
       testRefToValues.push(good => compileAndResolve(tInfo, '$var', 'a', tInfo.value(good)));
       testUnresolvedReferences.push(() => compileAndResolve(tInfo, '$var', 'V1', UNRESOLVABLE));
       mismatchedReferences.push({ $var: '$VALIDATOR' });
@@ -46,7 +41,6 @@ describe('Test references for all kinds of arguments', () => {
     if (tInfo.acceptValidatorRef()) {
       testRefToValues.push(good => compileAndResolve(tInfo, '$var', '$V1', tInfo.value(good)));
       testUnresolvedReferences.push(() => compileAndResolve(tInfo, '$var', '$V1', UNRESOLVABLE));
-      mismatchedReferences.push({ $path: 'a' });
       mismatchedReferences.push({ $var: 'VARIABLE' });
     }
 

@@ -6,7 +6,7 @@ function typesToArray(typesAsString) {
 }
 
 function typesTypeInstance(typesAsString, useArray) {
-  const context = new Context();
+  const context = new Context({});
   const get1 = context.getType(typesAsString);
   const get2 = context.getType(useArray ? typesToArray(typesAsString) : typesAsString);
   assert(get1 === get2, ':(');

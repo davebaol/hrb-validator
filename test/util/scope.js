@@ -1,28 +1,31 @@
 import { assert } from 'chai';
-import Scope from '../../src/util/scope';
 import Expression from '../../src/util/expression';
-import V from '../../src';
+import { V, Scope } from '../../src';
 
-describe('Test utility Scope.compile(scope).', () => {
+describe('Test utility Scope.compile($, scope).', () => {
   it('Should throw an error if the scope is a root reference', () => {
     const defs = { $var: 'MY_OTHER_SCOPE' };
-    assert.throws(() => Scope.compile(defs), Error, 'Root reference not allowed');
+    assert.throws(() => Scope.compile(null, defs), Error, 'Root reference not allowed');
+  });
+  it('Should throw an error if $ is shadowed ', () => {
+    const defs = { $: 'invalid variable' };
+    assert.throws(() => Scope.compile(null, defs), Error, '$ cannot be shadowed');
   });
   it('Should return the same scope specified in input, if all its variables have no references (constants)', () => {
     const defs = { VARIABLE: 123 };
-    assert(Scope.compile(defs).resources === defs, ':(');
+    assert(Scope.compile(null, defs).resources === defs, ':(');
   });
   it('Should return the same scope specified in input, if all its its validators are hard-coded', () => {
     const defs = { $VALIDATOR: V.contains('a', 'x') };
-    assert(Scope.compile(defs).resources === defs, ':(');
+    assert(Scope.compile(null, defs).resources === defs, ':(');
   });
   it('Should return a new scope, if the scope specified in input defines any variable with references (non constant)', () => {
     const defs = { VARIABLE: { $var: 'V1' } };
-    assert(Scope.compile(defs).resources !== defs, ':(');
+    assert(Scope.compile(null, defs).resources !== defs, ':(');
   });
   it('Should return a new scope, if the scope specified in input defines any validator in the form of data', () => {
     const defs = { $VALIDATOR: { contains: ['a', 'x'] } };
-    assert(Scope.compile(defs).resources !== defs, ':(');
+    assert(Scope.compile(null, defs).resources !== defs, ':(');
   });
   it('Should return a new scope where the variables and validators have the expected type', () => {
     const defs = {
@@ -32,7 +35,7 @@ describe('Test utility Scope.compile(scope).', () => {
       $VALIDATOR_2: { contains: ['a', 'x'] }, // validator in the form of data
       $VALIDATOR_3: { $var: '$VALIDATOR_1' } // validator reference
     };
-    const { resources } = Scope.compile(defs);
+    const { resources } = Scope.compile(null, defs);
     const expected = resources !== defs
       && typeof resources.VAR_1 === 'object' && !(resources.VAR_1 instanceof Expression)
       && resources.VAR_2 instanceof Expression

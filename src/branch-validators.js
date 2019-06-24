@@ -1,388 +1,462 @@
-const { get } = require('./util/path');
-const Scope = require('./util/scope');
-const createShortcuts = require('./util/create-shortcuts');
 const Info = require('./util/info');
+const Scope = require('./util/scope');
 
 //
 // BRANCH VALIDATORS
-// They all take child validators as arguments.
+// They all take at least one child validator as arguments.
 //
 
-function call(path, child) {
-  const infoArgs = call.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  const cExpr = infoArgs[1].compile(child);
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, scope, obj);
-      if (cExpr.error) { return cExpr.error; }
-    }
-    return cExpr.result(get(obj, pExpr.result), scope);
-  };
+/* eslint-disable lines-between-class-members */
+
+class Call extends Info {
+  constructor() {
+    super('call', 'value:any', 'child:child');
+  }
+  create() {
+    return (arg, child) => {
+      const [aArg, cArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      const cExpr = cArg.compile(child);
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        if (!cExpr.resolved) {
+          if (cArg.resolve(cExpr, scope).error) { return this.error(cExpr.error); }
+        }
+        scope.context.push$(this.getValue(aExpr, scope));
+        const result = cExpr.result(scope);
+        scope.context.pop$();
+        return result;
+      };
+    };
+  }
 }
 
-function def(resources, child) {
-  const infoArgs = def.info.argDescriptors;
-  // const sExpr = infoArgs[0].compile(scope, true); // non referenceable object (refDepth = -1)
-  const childScope = Scope.compile(resources);
-  const cExpr = infoArgs[1].compile(child);
-  return (obj, scope) => {
-    if (!childScope.parent) {
-      childScope.setParent(scope);
-    }
-    if (!childScope.resolved) { // Let's process references
-      try {
-        childScope.resolve(obj);
-      } catch (e) {
-        return e.message;
-      }
-    }
-    if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, childScope, obj);
-      if (cExpr.error) { return cExpr.error; }
-    }
-    return cExpr.result(obj, childScope);
-  };
+class Def extends Info {
+  constructor() {
+    super('def', { def: 'scope:object', refDepth: -1 }, 'child:child');
+  }
+  create() {
+    return (resources, child) => {
+      // Parent scope unknown at compile time
+      const childScope = Scope.compile(undefined, resources);
+      const cArg = this.argDescriptors[1];
+      const cExpr = cArg.compile(child);
+      return (scope) => {
+        if (!childScope.parent) {
+          childScope.setParent(scope);
+        }
+        if (!childScope.resolved) { // Let's process references
+          try { childScope.resolve(); } catch (e) { return this.error(e.message); }
+        }
+        if (!cExpr.resolved) {
+          if (cArg.resolve(cExpr, childScope).error) { return this.error(cExpr.error); }
+        }
+        return cExpr.result(childScope);
+      };
+    };
+  }
 }
 
-function not(child) {
-  const infoArgs = not.info.argDescriptors;
-  const cExpr = infoArgs[0].compile(child);
-  return (obj, scope = new Scope()) => {
-    if (!cExpr.resolved) {
-      infoArgs[0].resolve(cExpr, scope, obj);
-      if (cExpr.error) { return cExpr.error; }
-    }
-    return cExpr.result(obj, scope) ? undefined : 'not: the child validator must fail';
-  };
+class Not extends Info {
+  constructor() {
+    super('not', 'child:child');
+  }
+  create() {
+    return (child) => {
+      const [cArg] = this.argDescriptors;
+      const cExpr = cArg.compile(child);
+      return (scope) => {
+        if (!cExpr.resolved) {
+          if (cArg.resolve(cExpr, scope).error) { return this.error(cExpr.error); }
+        }
+        return cExpr.result(scope) ? undefined : this.error('the child validator must fail');
+      };
+    };
+  }
 }
 
-function and(...children) {
-  const { info } = and;
-  const childArg = info.argDescriptors[0];
-  const offspring = info.compileRestParams(children);
-  return (obj, scope = new Scope()) => {
-    for (let i = 0, len = offspring.length; i < len; i += 1) {
-      const cExpr = offspring[i];
-      if (!cExpr.resolved) {
-        childArg.resolve(cExpr, scope, obj);
-        if (cExpr.error) { return cExpr.error; }
-      }
-      const error = (cExpr.result)(obj, scope); // Validate child
-      if (error) {
-        return error;
-      }
-    }
-    return undefined;
-  };
-}
-
-function or(...children) {
-  const { info } = or;
-  const childArg = info.argDescriptors[0];
-  const offspring = info.compileRestParams(children);
-  return (obj, scope = new Scope()) => {
-    let error;
-    for (let i = 0, len = offspring.length; i < len; i += 1) {
-      const cExpr = offspring[i];
-      if (!cExpr.resolved) {
-        childArg.resolve(cExpr, scope, obj);
-        if (cExpr.error) { return cExpr.error; }
-      }
-      error = (cExpr.result)(obj, scope); // Validate child
-      if (!error) {
+class And extends Info {
+  constructor() {
+    super('and', '...child:child');
+  }
+  create() {
+    return (...children) => {
+      const [cArg] = this.argDescriptors;
+      const offspring = this.compileRestParams(children);
+      return (scope) => {
+        for (let i = 0, len = offspring.length; i < len; i += 1) {
+          const cExpr = offspring[i];
+          if (!cExpr.resolved) {
+            if (cArg.resolve(cExpr, scope).error) { return this.error(cExpr.error); }
+          }
+          const error = cExpr.result(scope); // Validate child
+          if (error) { return error; }
+        }
         return undefined;
-      }
-    }
-    return error;
-  };
+      };
+    };
+  }
 }
 
-function xor(...children) {
-  const { info } = xor;
-  const childArg = info.argDescriptors[0];
-  const offspring = info.compileRestParams(children);
-  return (obj, scope = new Scope()) => {
-    let count = 0;
-    for (let i = 0, len = offspring.length; i < len; i += 1) {
-      const cExpr = offspring[i];
-      if (!cExpr.resolved) {
-        childArg.resolve(cExpr, scope, obj);
-        if (cExpr.error) { return cExpr.error; }
-      }
-      const error = (cExpr.result)(obj, scope); // Validate child
-      count += error ? 0 : 1;
-      if (count === 2) {
-        break;
-      }
-    }
-    return count === 1 ? undefined : `xor: expected exactly 1 valid child; found ${count} instead`;
-  };
-}
-
-// eslint-disable-next-line no-underscore-dangle
-function _if(condChild, thenChild, elseChild) {
-  const infoArgs = _if.info.argDescriptors;
-  const ccExpr = infoArgs[0].compile(condChild);
-  const tcExpr = infoArgs[1].compile(thenChild);
-  const ecExpr = infoArgs[2].compile(elseChild);
-  return (obj, scope = new Scope()) => {
-    if (!ccExpr.resolved) {
-      infoArgs[0].resolve(ccExpr, scope, obj);
-      if (ccExpr.error) { return ccExpr.error; }
-    }
-    if (!tcExpr.resolved) {
-      infoArgs[1].resolve(tcExpr, scope, obj);
-      if (tcExpr.error) { return tcExpr.error; }
-    }
-    if (!ecExpr.resolved) {
-      infoArgs[2].resolve(ecExpr, scope, obj);
-      if (ecExpr.error) { return ecExpr.error; }
-    }
-    if (ecExpr.result == null) {
-      return ccExpr.result(obj, scope) ? undefined : tcExpr.result(obj, scope);
-    }
-    // either then or else is validated, not both!
-    return (ccExpr.result(obj, scope) ? ecExpr.result : tcExpr.result)(obj, scope);
-  };
-}
-
-function every(path, child) {
-  const infoArgs = every.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  const cExpr = infoArgs[1].compile(child);
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, scope);
-      if (cExpr.error) { return cExpr.error; }
-    }
-    const value = get(obj, pExpr.result);
-    if (Array.isArray(value)) {
-      let error;
-      const found = value.find((item, index) => {
-        error = cExpr.result({ index, value: item, original: obj }, scope);
-        return error;
-      });
-      return found ? error : undefined;
-    }
-    if (typeof value === 'object') {
-      let error;
-      const found = Object.keys(value).find((key, index) => {
-        error = cExpr.result({
-          index, key, value: value[key], original: obj
-        }, scope);
-        return error;
-      });
-      return found ? error : undefined;
-    }
-    if (typeof value === 'string') {
-      let error;
-      // eslint-disable-next-line no-cond-assign
-      for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
-        error = cExpr.result({ index, value: char, original: obj }, scope);
-        if (error) {
-          break;
-        }
-      }
-      return error;
-    }
-    return `every: the value at path '${path}' must be either a string, an array or an object; found type '${typeof value}'`;
-  };
-}
-
-function some(path, child) {
-  const infoArgs = some.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  const cExpr = infoArgs[1].compile(child);
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, scope);
-      if (cExpr.error) { return cExpr.error; }
-    }
-    const value = get(obj, pExpr.result);
-    if (Array.isArray(value)) {
-      let error;
-      const found = value.find((item, index) => {
-        error = cExpr.result({ index, value: item, original: obj }, scope);
-        return !error;
-      });
-      return found ? undefined : error;
-    }
-    if (typeof value === 'object') {
-      let error;
-      const found = Object.keys(value).find((key, index) => {
-        error = cExpr.result({
-          index, key, value: value[key], original: obj
-        }, scope);
-        return !error;
-      });
-      return found ? undefined : error;
-    }
-    if (typeof value === 'string') {
-      let error;
-      // eslint-disable-next-line no-cond-assign
-      for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
-        error = cExpr.result({ index, value: char, original: obj }, scope);
-        if (!error) {
-          break;
-        }
-      }
-      return error;
-    }
-    return `some: the value at path '${path}' must be either a string, an array or an object; found type '${typeof value}' instead`;
-  };
-}
-
-function alter(resultOnSuccess, resultOnError, child) {
-  const infoArgs = alter.info.argDescriptors;
-  const sExpr = infoArgs[0].compile(resultOnSuccess);
-  const fExpr = infoArgs[1].compile(resultOnError);
-  const cExpr = infoArgs[2].compile(child);
-  return (obj, scope = new Scope()) => {
-    if (!sExpr.resolved) {
-      infoArgs[0].resolve(sExpr, scope, obj);
-      if (sExpr.error) { return sExpr.error; }
-    }
-    if (!fExpr.resolved) {
-      infoArgs[1].resolve(fExpr, scope, obj);
-      if (fExpr.error) { return fExpr.error; }
-    }
-    if (!cExpr.resolved) {
-      infoArgs[2].resolve(cExpr, scope, obj);
-      if (cExpr.error) { return cExpr.error; }
-    }
-    const r = cExpr.result(obj, scope) === undefined ? sExpr.result : fExpr.result;
-    return r == null ? undefined : r;
-  };
-}
-
-function onError(result, child) {
-  const infoArgs = onError.info.argDescriptors;
-  const rExpr = infoArgs[0].compile(result);
-  const cExpr = infoArgs[1].compile(child);
-  return (obj, scope = new Scope()) => {
-    if (!rExpr.resolved) {
-      infoArgs[0].resolve(rExpr, scope, obj);
-      if (rExpr.error) { return rExpr.error; }
-    }
-    if (!cExpr.resolved) {
-      infoArgs[1].resolve(cExpr, scope, obj);
-      if (cExpr.error) { return cExpr.error; }
-    }
-    if (cExpr.result(obj, scope) === undefined) { return undefined; }
-    return rExpr.result == null ? undefined : rExpr.result;
-  };
-}
-
-// eslint-disable-next-line no-underscore-dangle
-function _while(path, condChild, doChild) {
-  const infoArgs = _while.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  const ccExpr = infoArgs[1].compile(condChild);
-  const dcExpr = infoArgs[2].compile(doChild);
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    if (!ccExpr.resolved) {
-      infoArgs[1].resolve(ccExpr, scope, obj);
-      if (ccExpr.error) { return ccExpr.error; }
-    }
-    if (!dcExpr.resolved) {
-      infoArgs[2].resolve(dcExpr, scope, obj);
-      if (dcExpr.error) { return dcExpr.error; }
-    }
-    const value = get(obj, pExpr.result);
-    const status = { succeeded: 0, failed: 0, original: obj };
-    if (Array.isArray(value)) {
-      let error;
-      const found = value.find((item, index) => {
-        status.index = index;
-        status.value = item;
-        error = ccExpr.result(status, scope);
-        if (!error) {
-          status.failed += dcExpr.result(status, scope) ? 1 : 0;
-          status.succeeded = index + 1 - status.failed;
+class Or extends Info {
+  constructor() {
+    super('or', '...child:child');
+  }
+  create() {
+    return (...children) => {
+      const [cArg] = this.argDescriptors;
+      const offspring = this.compileRestParams(children);
+      return (scope) => {
+        let error;
+        for (let i = 0, len = offspring.length; i < len; i += 1) {
+          const cExpr = offspring[i];
+          if (!cExpr.resolved) {
+            if (cArg.resolve(cExpr, scope).error) { return this.error(cExpr.error); }
+          }
+          error = cExpr.result(scope); // Validate child
+          if (!error) { return undefined; }
         }
         return error;
-      });
-      return found ? error : undefined;
-    }
-    if (typeof value === 'object') {
-      let error;
-      const found = Object.keys(value).find((key, index) => {
-        status.index = index;
-        status.key = key;
-        status.value = value[key];
-        error = ccExpr.result(status, scope);
-        if (!error) {
-          status.failed += dcExpr.result(status, scope) ? 1 : 0;
-          status.succeeded = index + 1 - status.failed;
+      };
+    };
+  }
+}
+
+class Xor extends Info {
+  constructor() {
+    super('xor', '...child:child');
+  }
+  create() {
+    return (...children) => {
+      const [cArg] = this.argDescriptors;
+      const offspring = this.compileRestParams(children);
+      return (scope) => {
+        let count = 0;
+        for (let i = 0, len = offspring.length; i < len; i += 1) {
+          const cExpr = offspring[i];
+          if (!cExpr.resolved) {
+            if (cArg.resolve(cExpr, scope).error) { return this.error(cExpr.error); }
+          }
+          const error = cExpr.result(scope); // Validate child
+          count += error ? 0 : 1;
+          if (count === 2) { break; }
         }
-        return error;
-      });
-      return found ? error : undefined;
-    }
-    if (typeof value === 'string') {
-      let error;
-      // eslint-disable-next-line no-cond-assign
-      for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
-        status.index = index;
-        status.value = char;
-        error = ccExpr.result(status, scope);
-        if (error) {
-          break;
+        return count === 1 ? undefined : this.error(`expected exactly 1 valid child; found ${count} instead`);
+      };
+    };
+  }
+}
+
+class If extends Info {
+  constructor() {
+    super('if', 'cond:child', 'then:child', 'else:child?');
+  }
+  create() {
+    return (condChild, thenChild, elseChild) => {
+      const [ccArg, tcArg, ecArg] = this.argDescriptors;
+      const ccExpr = ccArg.compile(condChild);
+      const tcExpr = tcArg.compile(thenChild);
+      const ecExpr = ecArg.compile(elseChild);
+      return (scope) => {
+        if (!ccExpr.resolved) {
+          if (ccArg.resolve(ccExpr, scope).error) { return this.error(ccExpr.error); }
         }
-        status.failed += dcExpr.result(status, scope) ? 1 : 0;
-        status.succeeded = index + 1 - status.failed;
-      }
-      return error;
-    }
-    return `while: the value at path '${path}' must be either a string, an array or an object; found type '${typeof value}'`;
-  };
+        if (!tcExpr.resolved) {
+          if (tcArg.resolve(tcExpr, scope).error) { return this.error(tcExpr.error); }
+        }
+        if (!ecExpr.resolved) {
+          if (ecArg.resolve(ecExpr, scope).error) { return this.error(ecExpr.error); }
+        }
+        if (ecExpr.result == null) {
+          return ccExpr.result(scope) ? undefined : tcExpr.result(scope);
+        }
+        // Either then or else is validated, never both!
+        return (ccExpr.result(scope) ? ecExpr.result : tcExpr.result)(scope);
+      };
+    };
+  }
+}
+
+class Every extends Info {
+  constructor() {
+    super('every', 'value:any', 'child:child');
+  }
+  create() {
+    return (arg, child) => {
+      const [aArg, cArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      const cExpr = cArg.compile(child);
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        if (!cExpr.resolved) {
+          if (cArg.resolve(cExpr, scope).error) { return this.error(cExpr.error); }
+        }
+        const $ = scope.find('$');
+        const value = this.getValue(aExpr, scope);
+        if (Array.isArray(value)) {
+          const new$ = { original: $ };
+          scope.context.push$(new$);
+          let error;
+          const found = value.find((item, index) => {
+            new$.value = item;
+            new$.index = index;
+            error = cExpr.result(scope);
+            return error;
+          });
+          scope.context.pop$();
+          return found ? error : undefined;
+        }
+        if (typeof value === 'object') {
+          const new$ = { original: $ };
+          scope.context.push$(new$);
+          let error;
+          const found = Object.keys(value).find((key, index) => {
+            new$.key = key;
+            new$.value = value[key];
+            new$.index = index;
+            error = cExpr.result(scope);
+            return error;
+          });
+          scope.context.pop$();
+          return found ? error : undefined;
+        }
+        if (typeof value === 'string') {
+          const new$ = { original: $ };
+          scope.context.push$(new$);
+          let error;
+          // eslint-disable-next-line no-cond-assign
+          for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
+            new$.value = char;
+            new$.index = index;
+            error = cExpr.result(scope);
+            if (error) { break; }
+          }
+          scope.context.pop$();
+          return error;
+        }
+        return this.error(`the value at path '${arg}' must be either a string, an array or an object; found type '${typeof value}'`);
+      };
+    };
+  }
+}
+
+class Some extends Info {
+  constructor() {
+    super('some', 'value:any', 'child:child');
+  }
+  create() {
+    return (arg, child) => {
+      const [aArg, cArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      const cExpr = cArg.compile(child);
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        if (!cExpr.resolved) {
+          if (cArg.resolve(cExpr, scope).error) { return this.error(cExpr.error); }
+        }
+        const $ = scope.find('$');
+        const value = this.getValue(aExpr, scope);
+        if (Array.isArray(value)) {
+          const new$ = { original: $ };
+          scope.context.push$(new$);
+          let error;
+          const found = value.find((item, index) => {
+            new$.value = item;
+            new$.index = index;
+            error = cExpr.result(scope);
+            return !error;
+          });
+          scope.context.pop$();
+          return found ? undefined : error;
+        }
+        if (typeof value === 'object') {
+          const new$ = { original: $ };
+          scope.context.push$(new$);
+          let error;
+          const found = Object.keys(value).find((key, index) => {
+            new$.key = key;
+            new$.value = value[key];
+            new$.index = index;
+            error = cExpr.result(scope);
+            return !error;
+          });
+          scope.context.pop$();
+          return found ? undefined : error;
+        }
+        if (typeof value === 'string') {
+          const new$ = { original: $ };
+          scope.context.push$(new$);
+          let error;
+          // eslint-disable-next-line no-cond-assign
+          for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
+            new$.value = char;
+            new$.index = index;
+            error = cExpr.result(scope);
+            if (!error) { break; }
+          }
+          scope.context.pop$();
+          return error;
+        }
+        return this.error(`the value at path '${arg}' must be either a string, an array or an object; found type '${typeof value}' instead`);
+      };
+    };
+  }
+}
+
+class Alter extends Info {
+  constructor() {
+    super('alter', 'resultOnSuccess:any?', 'resultOnError:any?', 'child:child');
+  }
+  create() {
+    return (resultOnSuccess, resultOnError, child) => {
+      const [sArg, fArg, cArg] = this.argDescriptors;
+      const sExpr = sArg.compile(resultOnSuccess);
+      const fExpr = fArg.compile(resultOnError);
+      const cExpr = cArg.compile(child);
+      return (scope) => {
+        if (!sExpr.resolved) {
+          if (sArg.resolve(sExpr, scope).error) { return this.error(sExpr.error); }
+        }
+        if (!fExpr.resolved) {
+          if (fArg.resolve(fExpr, scope).error) { return this.error(fExpr.error); }
+        }
+        if (!cExpr.resolved) {
+          if (cArg.resolve(cExpr, scope).error) { return this.error(cExpr.error); }
+        }
+        const r = cExpr.result(scope) === undefined ? sExpr.result : fExpr.result;
+        return r == null ? undefined : r;
+      };
+    };
+  }
+}
+
+class OnError extends Info {
+  constructor() {
+    super('onError', 'result:any?', 'child:child');
+  }
+  create() {
+    return (result, child) => {
+      const [rArg, cArg] = this.argDescriptors;
+      const rExpr = rArg.compile(result);
+      const cExpr = cArg.compile(child);
+      return (scope) => {
+        if (!rExpr.resolved) {
+          if (rArg.resolve(rExpr, scope).error) { return this.error(rExpr.error); }
+        }
+        if (!cExpr.resolved) {
+          if (cArg.resolve(cExpr, scope).error) { return this.error(cExpr.error); }
+        }
+        if (cExpr.result(scope) === undefined) { return undefined; }
+        return rExpr.result == null ? undefined : rExpr.result;
+      };
+    };
+  }
+}
+
+class While extends Info {
+  constructor() {
+    super('while', 'value:any', 'cond:child', 'do:child');
+  }
+  create() {
+    return (arg, condChild, doChild) => {
+      const [aArg, ccArg, dcArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      const ccExpr = ccArg.compile(condChild);
+      const dcExpr = dcArg.compile(doChild);
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        if (!ccExpr.resolved) {
+          if (ccArg.resolve(ccExpr, scope).error) { return this.error(ccExpr.error); }
+        }
+        if (!dcExpr.resolved) {
+          if (dcArg.resolve(dcExpr, scope).error) { return this.error(dcExpr.error); }
+        }
+        const $ = scope.find('$');
+        const value = this.getValue(aExpr, scope);
+        const status = { succeeded: 0, failed: 0, original: $ };
+        if (Array.isArray(value)) {
+          scope.context.push$(status);
+          let error;
+          const found = value.find((item, index) => {
+            status.index = index;
+            status.value = item;
+            error = ccExpr.result(scope);
+            if (!error) {
+              status.failed += dcExpr.result(scope) ? 1 : 0;
+              status.succeeded = index + 1 - status.failed;
+            }
+            return error;
+          });
+          scope.context.pop$();
+          return found ? error : undefined;
+        }
+        if (typeof value === 'object') {
+          scope.context.push$(status);
+          let error;
+          const found = Object.keys(value).find((key, index) => {
+            status.index = index;
+            status.key = key;
+            status.value = value[key];
+            error = ccExpr.result(scope);
+            if (!error) {
+              status.failed += dcExpr.result(scope) ? 1 : 0;
+              status.succeeded = index + 1 - status.failed;
+            }
+            return error;
+          });
+          scope.context.pop$();
+          return found ? error : undefined;
+        }
+        if (typeof value === 'string') {
+          scope.context.push$(status);
+          let error;
+          // eslint-disable-next-line no-cond-assign
+          for (let index = 0, char = ''; (char = value.charAt(index)); index += 1) {
+            status.index = index;
+            status.value = char;
+            error = ccExpr.result(scope);
+            if (error) { break; }
+            status.failed += dcExpr.result(scope) ? 1 : 0;
+            status.succeeded = index + 1 - status.failed;
+          }
+          scope.context.pop$();
+          return error;
+        }
+        return this.error(`the value at path '${arg}' must be either a string, an array or an object; found type '${typeof value}'`);
+      };
+    };
+  }
 }
 
 function branchValidators() {
-  /* eslint-disable no-unused-vars */
-  /* istanbul ignore next */
   const vInfo = [
-    new Info(call, 'path:path', 'child:child'),
-    new Info(def, { def: 'scope:object', refDepth: -1 }, 'child:child'),
-    new Info(not, 'child:child'),
-    new Info(and, '...child:child'),
-    new Info(or, '...child:child'),
-    new Info(xor, '...child:child'),
-    new Info(_if, 'cond:child', 'then:child', 'else:child?'),
-    new Info(every, 'path:path', 'child:child'),
-    new Info(some, 'path:path', 'child:child'),
-    new Info(alter, 'resultOnSuccess:any?', 'resultOnError:any?', 'child:child'),
-    new Info(onError, 'result:any?', 'child:child'),
-    new Info(_while, 'path:path', 'cond:child', 'do:child')
+    ...Info.variants(Call),
+    new Def().prepare(),
+    new Not().prepare(),
+    new And().prepare(),
+    new Or().prepare(),
+    new Xor().prepare(),
+    new If().prepare(),
+    ...Info.variants(Every),
+    ...Info.variants(Some),
+    new Alter().prepare(),
+    new OnError().prepare(),
+    ...Info.variants(While)
   ];
-  /* eslint-enable no-unused-vars */
 
   const target = vInfo.reduce((acc, info) => {
-    info.consolidate();
     const k = info.name;
     acc[k] = info.validator; // eslint-disable-line no-param-reassign
     return acc;
   }, {});
-
-  // Augment with shortcut 'opt' all branch validators taking a path as first argument
-  createShortcuts(target, target, ['call', 'every', 'some', 'while']);
 
   return target;
 }

@@ -1,157 +1,187 @@
 const deepEqual = require('fast-deep-equal');
 const lengthOf = require('@davebaol/length-of');
 const bridge = require('./bridge');
-const { get } = require('../util/path');
-const createShortcuts = require('../util/create-shortcuts');
 const Info = require('../util/info');
-const Scope = require('../util/scope');
 const { getType } = require('../util/types');
 
 //
 // LEAF VALIDATORS
-// They all take path as the first argument and have no children
+// They all have no children and exist in 2 flavours:
+//  - standard: first argument is a value of type any
+//  - suffix $: first argument is a path in the object to validate
 //
 
-function equals(path, value, deep) {
-  const infoArgs = equals.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  const vExpr = infoArgs[1].compile(value);
-  const dExpr = infoArgs[2].compile(deep);
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    if (!vExpr.resolved) {
-      infoArgs[1].resolve(vExpr, scope, obj);
-      if (vExpr.error) { return vExpr.error; }
-    }
-    if (!dExpr.resolved) {
-      infoArgs[2].resolve(dExpr, scope, obj);
-      if (dExpr.error) { return dExpr.error; }
-    }
-    const result = dExpr.result
-      ? deepEqual(get(obj, pExpr.result), vExpr.result)
-      : get(obj, pExpr.result) === vExpr.result;
-    return result ? undefined : `equals: the value at path '${path}' must be equal to ${vExpr.result}`;
-  };
-}
+/* eslint-disable lines-between-class-members */
 
-function isLength(path, options) {
-  const infoArgs = isLength.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  const optsExpr = infoArgs[1].compile(options);
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    if (!optsExpr.resolved) {
-      infoArgs[1].resolve(optsExpr, scope, obj);
-      if (optsExpr.error) { return optsExpr.error; }
-    }
-    const opts = optsExpr.result;
-    const min = opts.min || 0;
-    const max = opts.max; // eslint-disable-line prefer-destructuring
-    const len = lengthOf(get(obj, pExpr.result));
-    if (len === undefined) {
-      return `isLength: the value at path '${path}' must be a string, an array or an object`;
-    }
-    return len >= min && (max === undefined || len <= max) ? undefined : `isLength: the value at path '${path}' must have a length between ${opts.min} and ${opts.max}`;
-  };
-}
-
-function isSet(path) {
-  const infoArgs = isSet.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    return get(obj, pExpr.result) != null ? undefined : `isSet: the value at path '${path}' must be set`;
-  };
-}
-
-function isType(path, type) {
-  const infoArgs = isType.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  const tExpr = infoArgs[1].compile(type);
-  if (tExpr.resolved) {
-    tExpr.result = getType(tExpr.result);
+class Equals extends Info {
+  constructor() {
+    super('equals', 'value:any', 'other:any', 'deep:boolean?');
   }
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    if (!tExpr.resolved) {
-      infoArgs[1].resolve(tExpr, scope, obj);
-      if (tExpr.error) { return tExpr.error; }
-      try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
-    }
-    const t = tExpr.result;
-    return t.check(get(obj, pExpr.result)) ? undefined : `isType: the value at path '${path}' must be a '${t.name}'`;
-  };
-}
-
-function isOneOf(path, values) {
-  const infoArgs = isOneOf.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  const aExpr = infoArgs[1].compile(values);
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    if (!aExpr.resolved) {
-      infoArgs[1].resolve(aExpr, scope, obj);
-      if (aExpr.error) { return aExpr.error; }
-    }
-    return aExpr.result.includes(get(obj, pExpr.result)) ? undefined : `isOneOf: the value at path '${path}' must be one of ${aExpr.result}`;
-  };
-}
-
-function isArrayOf(path, type) {
-  const infoArgs = isType.info.argDescriptors;
-  const pExpr = infoArgs[0].compile(path);
-  const tExpr = infoArgs[1].compile(type);
-  if (tExpr.resolved) {
-    tExpr.result = getType(tExpr.result);
+  create() {
+    return (arg, other, deep) => {
+      const [aArg, oArg, dArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      const oExpr = oArg.compile(other);
+      const dExpr = dArg.compile(deep);
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        if (!oExpr.resolved) {
+          if (oArg.resolve(oExpr, scope).error) { return this.error(oExpr.error); }
+        }
+        if (!dExpr.resolved) {
+          if (dArg.resolve(dExpr, scope).error) { return this.error(dExpr.error); }
+        }
+        const value = this.getValue(aExpr, scope);
+        const result = dExpr.result ? deepEqual(value, oExpr.result) : value === oExpr.result;
+        return result ? undefined : this.error(`expected a value equal to ${oExpr.result}`);
+      };
+    };
   }
-  return (obj, scope = new Scope()) => {
-    if (!pExpr.resolved) {
-      infoArgs[0].resolve(pExpr, scope, obj);
-      if (pExpr.error) { return pExpr.error; }
-    }
-    if (!tExpr.resolved) {
-      infoArgs[1].resolve(tExpr, scope, obj);
-      if (tExpr.error) { return tExpr.error; }
-      try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) { return e.message; }
-    }
-    const value = get(obj, pExpr.result);
-    const t = tExpr.result;
-    if (!Array.isArray(value)) return `isArrayOf: the value at path '${path}' must be an array`;
-    const flag = value.every(e => t.check(e));
-    return flag ? undefined : `isArrayOf: the value at path '${path}' must be an array of '${t.name}'`;
-  };
+}
+
+class IsLength extends Info {
+  constructor() {
+    super('isLength', 'value:any', 'options:object?');
+  }
+  create() {
+    return (arg, options) => {
+      const [aArg, optsArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      const optsExpr = optsArg.compile(options);
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        if (!optsExpr.resolved) {
+          if (optsArg.resolve(optsExpr, scope).error) { return this.error(optsExpr.error); }
+        }
+        const opts = optsExpr.result;
+        const min = opts.min || 0;
+        const max = opts.max; // eslint-disable-line prefer-destructuring
+        const len = lengthOf(this.getValue(aExpr, scope));
+        if (len === undefined) {
+          return this.error('expected a string, an array or an object');
+        }
+        return len >= min && (max === undefined || len <= max) ? undefined : this.error(`expected string, array or object of length between ${opts.min} and ${opts.max}`);
+      };
+    };
+  }
+}
+
+class IsSet extends Info {
+  constructor() {
+    super('isSet', 'value:any');
+  }
+  create() {
+    return (arg) => {
+      const [aArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        return this.getValue(aExpr, scope) != null ? undefined : this.error(`the value at path '${arg}' must be set`);
+      };
+    };
+  }
+}
+
+class IsType extends Info {
+  constructor() {
+    super('isType', 'value:any', 'type:string|array');
+  }
+  create() {
+    return (arg, type) => {
+      const [aArg, tArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      const tExpr = tArg.compile(type);
+      if (tExpr.resolved) {
+        tExpr.result = getType(tExpr.result);
+      }
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        if (!tExpr.resolved) {
+          if (tArg.resolve(tExpr, scope).error) { return this.error(tExpr.error); }
+          try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) {
+            return this.error(e.message);
+          }
+        }
+        const t = tExpr.result;
+        return t.check(this.getValue(aExpr, scope)) ? undefined : this.error(`the value at path '${arg}' must be a '${t.name}'`);
+      };
+    };
+  }
+}
+
+class IsOneOf extends Info {
+  constructor() {
+    super('isOneOf', 'value:any', 'values:array');
+  }
+  create() {
+    return (arg, values) => {
+      const [aArg, vArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      const vExpr = vArg.compile(values);
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        if (!vExpr.resolved) {
+          if (vArg.resolve(vExpr, scope).error) { return this.error(vExpr.error); }
+        }
+        return vExpr.result.includes(this.getValue(aExpr, scope)) ? undefined : this.error(`the value at path '${arg}' must be one of ${aExpr.result}`);
+      };
+    };
+  }
+}
+
+class IsArrayOf extends Info {
+  constructor() {
+    super('isArrayOf', 'value:any', 'type:string|array');
+  }
+  create() {
+    return (arg, type) => {
+      const [aArg, tArg] = this.argDescriptors;
+      const aExpr = aArg.compile(arg);
+      const tExpr = tArg.compile(type);
+      if (tExpr.resolved) {
+        tExpr.result = getType(tExpr.result);
+      }
+      return (scope) => {
+        if (!aExpr.resolved) {
+          if (aArg.resolve(aExpr, scope).error) { return this.error(aExpr.error); }
+        }
+        if (!tExpr.resolved) {
+          if (tArg.resolve(tExpr, scope).error) { return this.error(tExpr.error); }
+          try { tExpr.result = scope.context.getType(tExpr.result); } catch (e) {
+            return this.error(e.message);
+          }
+        }
+        const value = this.getValue(aExpr, scope);
+        const t = tExpr.result;
+        if (!Array.isArray(value)) return this.error(`the value at path '${arg}' must be an array`);
+        const flag = value.every(e => t.check(e));
+        return flag ? undefined : this.error(`the value at path '${arg}' must be an array of '${t.name}'`);
+      };
+    };
+  }
 }
 
 function leafValidators() {
-  /* eslint-disable no-unused-vars */
-  /* istanbul ignore next */
   const vInfo = [
-    new Info(equals, 'path:path', 'value:any', 'deep:boolean?'),
-    new Info(isArrayOf, 'path:path', 'type:string|array'),
-    new Info(isLength, 'path:path', 'options:object?'),
-    new Info(isOneOf, 'path:path', 'values:array'),
-    new Info(isSet, 'path:path'),
-    new Info(isType, 'path:path', 'type:string|array')
+    ...Info.variants(Equals),
+    ...Info.variants(IsArrayOf),
+    ...Info.variants(IsLength),
+    ...Info.variants(IsOneOf),
+    ...Info.variants(IsSet),
+    ...Info.variants(IsType)
   ];
-  /* eslint-enable no-unused-vars */
 
   const target = vInfo.reduce((acc, info) => {
-    info.consolidate();
     const k = info.name;
     acc[k] = info.validator; // eslint-disable-line no-param-reassign
     return acc;
@@ -159,9 +189,6 @@ function leafValidators() {
 
   // Augment leaf validators with the ones bridged from validator package
   bridge(target);
-
-  // Augment all leaf validators with shortcut 'opt'
-  createShortcuts(target, target);
 
   return target;
 }

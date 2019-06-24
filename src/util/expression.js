@@ -1,10 +1,8 @@
 const camelCase = require('camelcase');
-const clone = require('rfdc')({ proto: false, circles: false });
 const { get, set, ensureArrayPath } = require('./path');
-const { checkUniqueKey, ANY_VALUE } = require('./misc');
+const { checkUniqueKey, ANY_VALUE, clone } = require('./misc');
 
 const REF_VALID_KEYS = {
-  $path: true,
   $var: true
 };
 
@@ -14,18 +12,12 @@ function unexpectedReferenceError(key, value, refType, type) {
 
 function createRefPath(type, tPath, key, value) {
   const targetPath = ensureArrayPath(tPath);
-  if (key === '$path') {
-    if (type && type.acceptsValidator && !type.acceptsValue) {
-      throw unexpectedReferenceError(key, value, 'value', type.name);
-    }
-    return { targetPath, path: ensureArrayPath(value) }; // no varName
-  }
   // Split value in varName and path
   const index = value.indexOf('.');
   const varName = index < 0 ? value : value.substr(0, index);
   const path = index < 0 ? '' : value.substr(index + 1);
   if (type) {
-    const isValidator = varName.startsWith('$');
+    const isValidator = varName.startsWith('$') && varName.length > 1;
     if (isValidator) {
       if (!type.acceptsValidator) {
         throw unexpectedReferenceError(key, value, 'validator', type.name);
@@ -72,14 +64,10 @@ function prepareRefPaths(type, o, refPaths, path) {
 const VAR_NOT_FOUND = {};
 
 // Any error is reported to the reference by setting its error property
-function resolveRefPathAt(reference, index, scope, obj) {
+function resolveRefPathAt(reference, index, scope) {
   const rp = reference.refPaths[index];
-  if (rp.varName === undefined) {
-    // Return the value at the referenced path in the input object
-    return get(obj, rp.path);
-  }
   // Retrieve the referenced variable/validator
-  const isValidator = rp.varName.startsWith('$');
+  const isValidator = rp.varName.startsWith('$') && rp.varName.length > 1;
   const value = scope.find(rp.varName, VAR_NOT_FOUND);
   if (value === VAR_NOT_FOUND) {
     reference.setError(`Unresolved ${isValidator ? 'validator' : 'value'} reference to '${rp.varName}'`);
@@ -115,19 +103,19 @@ class Expression {
     return prepareRefPaths(type, source);
   }
 
-  resolve(scope, obj) {
+  resolve(scope) {
     if (this.error || this.resolved) {
       return this;
     }
 
     if (this.isRootRef) {
       // Resolve root reference
-      this.result = resolveRefPathAt(this, 0, scope, obj);
+      this.result = resolveRefPathAt(this, 0, scope);
     } else {
       // Resolve embedded references
       const { result: value, refPaths } = this;
       for (let i = 0, len = refPaths.length; i < len; i += 1) {
-        const rpValue = resolveRefPathAt(this, i, scope, obj);
+        const rpValue = resolveRefPathAt(this, i, scope);
         if (this.error) {
           break;
         }

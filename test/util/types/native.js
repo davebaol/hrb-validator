@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import { isRegExp } from 'util';
 import getValue from 'get-value';
 import types from '../../../src/util/types';
-import V from '../../../src';
+import { V } from '../../../src';
 
 function merge(source, ...keys) {
   return keys.reduce((acc, k) => acc.concat(getValue(source, k)), []);
